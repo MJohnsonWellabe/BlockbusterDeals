@@ -7,316 +7,249 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 <style>
+
 :root{
-  --bb-navy:#1C2B6B;--bb-blue:#1A3A8F;--bb-yellow:#FFD700;--bb-gold:#E6C200;
-  --bb-lyellow:#FFF9CC;--bb-white:#FFF;--bb-offwhite:#F7F6F0;--bb-gray:#EEEDE8;
-  --bb-mid:#9A9890;--bb-dark:#1A1A1A;--bb-muted:#5A5A5A;
-  --bb-success:#2D7A4F;--bb-danger:#C0392B;--bb-warn:#D4880A;--bb-border:#D6D4CC;
+  --navy:#1C2B6B;--blue:#1A3A8F;--yel:#FFD700;--gold:#E6C200;
+  --ly:#FFF9CC;--wh:#FFF;--off:#F7F6F0;--gray:#EEEDE8;
+  --mid:#9A9890;--dk:#1A1A1A;--mu:#5A5A5A;
+  --ok:#2D7A4F;--err:#C0392B;--warn:#D4880A;--bdr:#D6D4CC;
   --ft:'Georgia',serif;--fb:'Verdana',sans-serif;--fm:'Courier New',monospace;
   --r:4px;--sh:0 2px 8px rgba(28,43,107,.10);--shl:0 4px 20px rgba(28,43,107,.18);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
-body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);min-height:100vh;display:flex;flex-direction:column}
-
-/* HEADER */
-#hdr{background:var(--bb-navy);border-bottom:4px solid var(--bb-yellow);padding:0 20px;display:flex;align-items:center;gap:16px;height:58px;position:sticky;top:0;z-index:100;box-shadow:var(--shl)}
-.logo{width:36px;height:36px;background:var(--bb-yellow);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo svg{width:24px;height:24px}
-.apptitle{font-family:var(--ft);font-size:1.2rem;font-weight:bold;color:var(--bb-yellow);line-height:1.1}
-.apptitle span{display:block;font-size:.6rem;color:rgba(255,215,0,.6);font-family:var(--fb);font-weight:normal;letter-spacing:.08em;text-transform:uppercase}
-#pystatus{font-size:.7rem;padding:3px 8px;border-radius:20px;font-family:var(--fm);background:rgba(255,255,255,.08);color:rgba(255,215,0,.8);border:1px solid rgba(255,215,0,.3);transition:all .3s}
-#pystatus.ready{background:rgba(45,122,79,.25);color:#7EE8A2;border-color:rgba(126,232,162,.4)}
-#pystatus.error{background:rgba(192,57,43,.25);color:#FF9090;border-color:rgba(255,144,144,.4)}
-
-/* NAV */
-#nav{background:var(--bb-blue);display:flex;border-bottom:3px solid var(--bb-yellow);padding:0 20px;overflow-x:auto}
-.ntab{padding:9px 16px;font-size:.74rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;transition:color .15s,border-color .15s;white-space:nowrap;user-select:none}
-.ntab:hover{color:rgba(255,255,255,.85)}
-.ntab.active{color:var(--bb-yellow);border-bottom-color:var(--bb-yellow)}
-.nbadge{display:inline-block;background:var(--bb-yellow);color:var(--bb-navy);font-size:.58rem;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:middle}
-
-/* MAIN */
-#main{flex:1;padding:20px;max-width:1400px;margin:0 auto;width:100%}
+body{font-family:var(--fb);background:var(--off);color:var(--dk);min-height:100vh;display:flex;flex-direction:column}
+#hdr{background:var(--navy);border-bottom:4px solid var(--yel);padding:0 20px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shl)}
+.logo{width:34px;height:34px;background:var(--yel);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:22px;height:22px}
+.at{font-family:var(--ft);font-size:1.15rem;font-weight:bold;color:var(--yel);line-height:1.1}
+.at span{display:block;font-size:.58rem;color:rgba(255,215,0,.6);font-family:var(--fb);font-weight:normal;letter-spacing:.08em;text-transform:uppercase}
+#pyst{font-size:.68rem;padding:3px 8px;border-radius:20px;font-family:var(--fm);background:rgba(255,255,255,.08);color:rgba(255,215,0,.8);border:1px solid rgba(255,215,0,.3);transition:all .3s}
+#pyst.ready{background:rgba(45,122,79,.25);color:#7EE8A2;border-color:rgba(126,232,162,.4)}
+#pyst.error{background:rgba(192,57,43,.25);color:#FF9090;border-color:rgba(255,144,144,.4)}
+#nav{background:var(--blue);display:flex;border-bottom:3px solid var(--yel);padding:0 20px;overflow-x:auto}
+.nt{padding:9px 14px;font-size:.72rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;transition:color .15s,border-color .15s;white-space:nowrap;user-select:none}
+.nt:hover{color:rgba(255,255,255,.85)}
+.nt.active{color:var(--yel);border-bottom-color:var(--yel)}
+.nbadge{display:inline-block;background:var(--yel);color:var(--navy);font-size:.58rem;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:middle}
+#main{flex:1;padding:18px;max-width:1400px;margin:0 auto;width:100%}
 .panel{display:none}.panel.active{display:block}
-
-/* CARD */
-.card{background:var(--bb-white);border:1px solid var(--bb-border);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px}
-.ch{background:var(--bb-navy);color:var(--bb-yellow);padding:9px 14px;font-family:var(--ft);font-size:.9rem;font-weight:bold;border-radius:var(--r) var(--r) 0 0;display:flex;align-items:center;gap:8px}
-.ch .cbadge{margin-left:auto;font-size:.62rem;font-family:var(--fb);background:rgba(255,215,0,.15);color:var(--bb-yellow);padding:2px 8px;border-radius:20px;letter-spacing:.05em}
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px}
+.ch{background:var(--navy);color:var(--yel);padding:8px 14px;font-family:var(--ft);font-size:.88rem;font-weight:bold;border-radius:var(--r) var(--r) 0 0;display:flex;align-items:center;gap:8px}
+.ch .cbadge{margin-left:auto;font-size:.6rem;font-family:var(--fb);background:rgba(255,215,0,.15);color:var(--yel);padding:2px 8px;border-radius:20px;letter-spacing:.05em}
 .cb{padding:14px}
-
-/* UPLOAD */
-.upzone{border:2px dashed var(--bb-navy);border-radius:var(--r);background:var(--bb-lyellow);padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
-.upzone:hover,.upzone.drag-over{border-color:var(--bb-yellow);background:#FFFACC;box-shadow:inset 0 0 0 3px rgba(255,215,0,.3)}
+.upzone{border:2px dashed var(--navy);border-radius:var(--r);background:var(--ly);padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upzone:hover,.upzone.drag-over{border-color:var(--yel);background:#FFFACC;box-shadow:inset 0 0 0 3px rgba(255,215,0,.3)}
 .upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.upzone h3{font-family:var(--ft);color:var(--bb-navy);margin-bottom:4px;font-size:.9rem}
-.upzone p{color:var(--bb-muted);font-size:.74rem}
-.upstat{margin-top:8px;font-size:.74rem;font-family:var(--fm);padding:5px 10px;border-radius:var(--r);display:inline-block}
-.upstat.ok{background:#EEF8F2;color:var(--bb-success);border:1px solid #BEE3CE}
-.upstat.err{background:#FEF0EE;color:var(--bb-danger);border:1px solid #FACACA}
-.upstat.warn{background:#FFF8E1;color:var(--bb-warn);border:1px solid #FFE082}
-
-/* GRIDS */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.upzone h3{font-family:var(--ft);color:var(--navy);margin-bottom:3px;font-size:.85rem}
+.upzone p{color:var(--mu);font-size:.72rem}
+.upstat{margin-top:6px;font-size:.7rem;font-family:var(--fm);padding:4px 9px;border-radius:var(--r);display:inline-block}
+.upstat.ok{background:#EEF8F2;color:var(--ok);border:1px solid #BEE3CE}
+.upstat.err{background:#FEF0EE;color:var(--err);border:1px solid #FACACA}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr}}
-
-/* METRIC TILES */
-.mtile{background:var(--bb-navy);color:#fff;padding:14px;border-radius:var(--r);border-left:4px solid var(--bb-yellow)}
-.mtile .ml{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,215,0,.65);margin-bottom:3px}
-.mtile .mv{font-family:var(--ft);font-size:1.35rem;color:var(--bb-yellow);font-weight:bold}
-.mtile .ms{font-size:.66rem;color:rgba(255,255,255,.45);margin-top:2px}
-
-/* TABLES */
-.tblwrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bb-border)}
-.bbt{width:100%;border-collapse:collapse;font-size:.72rem;font-family:var(--fm)}
-.bbt thead tr{background:var(--bb-navy)}
-.bbt thead th{color:var(--bb-yellow);padding:6px 9px;text-align:right;font-size:.64rem;letter-spacing:.04em;white-space:nowrap;border-right:1px solid rgba(255,215,0,.1)}
+.mtile{background:var(--navy);color:#fff;padding:12px;border-radius:var(--r);border-left:4px solid var(--yel)}
+.mtile .ml{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,215,0,.65);margin-bottom:2px}
+.mtile .mv{font-family:var(--ft);font-size:1.25rem;color:var(--yel);font-weight:bold}
+.mtile .ms{font-size:.62rem;color:rgba(255,255,255,.4);margin-top:1px}
+.tw{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bdr)}
+.bbt{width:100%;border-collapse:collapse;font-size:.7rem;font-family:var(--fm)}
+.bbt thead tr{background:var(--navy)}
+.bbt thead th{color:var(--yel);padding:5px 8px;text-align:right;font-size:.62rem;letter-spacing:.04em;white-space:nowrap;border-right:1px solid rgba(255,215,0,.1)}
 .bbt thead th:first-child{text-align:left}
-.bbt tbody tr{border-bottom:1px solid var(--bb-border)}
-.bbt tbody tr:nth-child(even){background:var(--bb-offwhite)}
-.bbt tbody tr:hover{background:var(--bb-lyellow)}
-.bbt td{padding:5px 9px;text-align:right;white-space:nowrap;border-right:1px solid var(--bb-border)}
-.bbt td:first-child{text-align:left;font-family:var(--fb);font-weight:600;padding-left:10px}
-.bbt tr.sub td{font-weight:bold;background:#EEF2FF;border-top:1px solid var(--bb-navy)}
-.bbt tr.tot td{font-weight:bold;background:var(--bb-navy);color:var(--bb-yellow)}
-.bbt tr.de td{font-weight:bold;background:#1a1a2e;color:#FFD700;border-top:2px solid var(--bb-yellow)}
-.neg{color:var(--bb-danger)}.pos{color:var(--bb-success)}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:var(--r);font-size:.74rem;font-weight:bold;letter-spacing:.04em;cursor:pointer;border:none;transition:all .15s;text-transform:uppercase}
-.btn-p{background:var(--bb-navy);color:var(--bb-yellow)}.btn-p:hover{background:var(--bb-blue)}
-.btn-y{background:var(--bb-yellow);color:var(--bb-navy)}.btn-y:hover{background:var(--bb-gold)}
-.btn-o{background:transparent;color:var(--bb-navy);border:2px solid var(--bb-navy)}.btn-o:hover{background:var(--bb-navy);color:var(--bb-yellow)}
-.btn-d{background:var(--bb-danger);color:#fff}
-.btn-sm{padding:4px 9px;font-size:.66rem}
+.bbt tbody tr{border-bottom:1px solid var(--bdr)}
+.bbt tbody tr:nth-child(even){background:var(--off)}
+.bbt tbody tr:hover{background:var(--ly)}
+.bbt td{padding:4px 8px;text-align:right;white-space:nowrap;border-right:1px solid var(--bdr)}
+.bbt td:first-child{text-align:left;font-family:var(--fb);font-weight:600;padding-left:9px}
+.bbt tr.sub td{font-weight:bold;background:#EEF2FF;border-top:1px solid #aab}
+.bbt tr.tot td{font-weight:bold;background:var(--navy);color:var(--yel)}
+.bbt tr.de td{font-weight:bold;background:#1a1a2e;color:#FFD700;border-top:2px solid var(--yel)}
+.bbt tr.hdr td{background:rgba(28,43,107,.08);font-weight:bold;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+.neg{color:var(--err)}.pos{color:var(--ok)}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:var(--r);font-size:.7rem;font-weight:bold;letter-spacing:.04em;cursor:pointer;border:none;transition:all .15s;text-transform:uppercase}
+.btn-p{background:var(--navy);color:var(--yel)}.btn-p:hover{background:var(--blue)}
+.btn-y{background:var(--yel);color:var(--navy)}.btn-y:hover{background:var(--gold)}
+.btn-o{background:transparent;color:var(--navy);border:2px solid var(--navy)}.btn-o:hover{background:var(--navy);color:var(--yel)}
+.btn-sm{padding:3px 8px;font-size:.65rem}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* FORMS */
-.flabel{display:block;font-size:.65rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:var(--bb-muted);margin-bottom:3px}
-.finput{width:100%;padding:6px 9px;border:1.5px solid var(--bb-border);border-radius:var(--r);font-family:var(--fm);font-size:.78rem;background:#fff;transition:border-color .15s}
-.finput:focus{outline:none;border-color:var(--bb-navy);box-shadow:0 0 0 2px rgba(28,43,107,.12)}
-.fgroup{margin-bottom:12px}
-
-/* MATRIX TABLE */
+.fl{display:block;font-size:.63rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);margin-bottom:3px}
+.fi{width:100%;padding:5px 8px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--fm);font-size:.76rem;background:#fff;transition:border-color .15s}
+.fi:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(28,43,107,.12)}
+.fg{margin-bottom:10px}
 .mtx{border-collapse:collapse;width:100%}
-.mtx th{background:var(--bb-navy);color:var(--bb-yellow);padding:5px 8px;font-size:.64rem;letter-spacing:.05em;text-align:center;white-space:nowrap}
-.mtx td{border:1px solid var(--bb-border);padding:0;text-align:center}
-.mtx td.rhdr{background:var(--bb-navy);color:var(--bb-yellow);padding:5px 8px;font-size:.68rem;font-weight:bold;white-space:nowrap}
-.mtx td input{width:65px;border:none;padding:4px 5px;text-align:right;font-family:var(--fm);font-size:.76rem;background:transparent}
-.mtx td input:focus{background:var(--bb-lyellow);outline:none}
-.mtx td.nc{background:var(--bb-gray)}
-.mtx tr:hover td:not(.nc):not(.rhdr){background:var(--bb-lyellow)}
-
-/* SUB-TABS */
-.stabs{display:flex;border-bottom:2px solid var(--bb-border);margin-bottom:14px;background:#fff;overflow-x:auto}
-.stab{padding:7px 14px;font-size:.7rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:var(--bb-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-.stab:hover{color:var(--bb-navy)}.stab.active{color:var(--bb-navy);border-bottom-color:var(--bb-navy)}
-
-/* TOOLBAR */
-.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.vtog{display:flex;border:1.5px solid var(--bb-border);border-radius:var(--r);overflow:hidden}
-.vtog button{padding:4px 10px;font-size:.66rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;border:none;cursor:pointer;background:#fff;color:var(--bb-muted);transition:all .15s}
-.vtog button.active{background:var(--bb-navy);color:var(--bb-yellow)}
-
-/* SCENARIO CARDS */
-.scard{border:1px solid var(--bb-border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
-.sch{background:var(--bb-navy);color:var(--bb-yellow);padding:7px 12px;display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:bold}
-.scb{padding:10px 12px;font-size:.74rem;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.sm .sml{font-size:.6rem;color:var(--bb-muted);text-transform:uppercase;letter-spacing:.05em}
-.sm .smv{font-family:var(--fm);font-weight:bold;font-size:.86rem}
-
-/* AUDIT */
-.aentry{border:1px solid var(--bb-border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
-.aeh{background:var(--bb-offwhite);padding:7px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bb-border);font-size:.74rem;flex-wrap:wrap}
+.mtx th{background:var(--navy);color:var(--yel);padding:4px 8px;font-size:.62rem;letter-spacing:.05em;text-align:center;white-space:nowrap}
+.mtx td{border:1px solid var(--bdr);padding:0;text-align:center}
+.mtx td.rh{background:var(--navy);color:var(--yel);padding:4px 8px;font-size:.66rem;font-weight:bold;white-space:nowrap}
+.mtx td input{width:62px;border:none;padding:3px 5px;text-align:right;font-family:var(--fm);font-size:.72rem;background:transparent}
+.mtx td input:focus{background:var(--ly);outline:none}
+.mtx td.nc{background:var(--gray)}
+.mtx tr:hover td:not(.nc):not(.rh){background:var(--ly)}
+.stabs{display:flex;border-bottom:2px solid var(--bdr);margin-bottom:12px;background:#fff;overflow-x:auto;flex-wrap:nowrap}
+.stab{padding:6px 13px;font-size:.68rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.stab:hover{color:var(--navy)}.stab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.tb{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.vtog{display:flex;border:1.5px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.vtog button{padding:3px 9px;font-size:.64rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;border:none;cursor:pointer;background:#fff;color:var(--mu);transition:all .15s}
+.vtog button.active{background:var(--navy);color:var(--yel)}
+.scard{border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.sch{background:var(--navy);color:var(--yel);padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:.74rem;font-weight:bold}
+.scb{padding:9px 12px;font-size:.72rem;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sm .sml{font-size:.6rem;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.sm .smv{font-family:var(--fm);font-weight:bold;font-size:.84rem}
+.ae{border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
+.aeh{background:var(--off);padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);font-size:.72rem;flex-wrap:wrap}
 .aeb{padding:10px 12px}
-.abadge{padding:2px 9px;border-radius:20px;font-size:.6rem;font-weight:bold;letter-spacing:.06em;text-transform:uppercase}
+.abd{padding:2px 8px;border-radius:20px;font-size:.6rem;font-weight:bold;letter-spacing:.06em;text-transform:uppercase}
 .bd{background:#FFF3CD;color:#856404;border:1px solid #FFEAA7}
 .br{background:#CCE5FF;color:#004085;border:1px solid #9BC8F7}
 .ba{background:#D4EDDA;color:#155724;border:1px solid #A8D5B5}
-
-/* REVIEW CHECKLIST */
-.rcheck{border:1px solid var(--bb-border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
-.rcheck-hdr{background:var(--bb-offwhite);padding:8px 12px;font-size:.72rem;font-weight:bold;border-bottom:1px solid var(--bb-border);display:flex;align-items:center;gap:8px}
-.rcheck-body{padding:0}
-.rcheck-row{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid var(--bb-border);font-size:.74rem}
-.rcheck-row:last-child{border-bottom:none}
-.rcheck-row input[type=checkbox]{margin-top:2px;width:14px;height:14px;cursor:pointer;accent-color:var(--bb-navy)}
-.rcheck-label{flex:1}
-.rcheck-label strong{display:block;color:var(--bb-dark)}
-.rcheck-label span{color:var(--bb-muted);font-size:.68rem}
-.rcheck-evidence{margin-left:auto;font-family:var(--fm);font-size:.68rem;color:var(--bb-navy);background:var(--bb-lyellow);padding:2px 8px;border-radius:12px;white-space:nowrap}
-
-/* DIAG TABLE */
-.diag-ok{color:var(--bb-success);font-weight:bold}
-.diag-fail{color:var(--bb-danger);font-weight:bold}
-.diag-na{color:var(--bb-mid)}
-
-/* LOADING */
+/* Peer review */
+.rck{border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.rckh{background:var(--off);padding:7px 12px;font-size:.7rem;font-weight:bold;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px}
+.rckr{display:flex;align-items:flex-start;gap:8px;padding:7px 12px;border-bottom:1px solid var(--bdr);font-size:.7rem}
+.rckr:last-child{border-bottom:none}
+.rckr input[type=checkbox]{margin-top:2px;width:13px;height:13px;cursor:pointer;accent-color:var(--navy);flex-shrink:0}
+.rckl{flex:1;min-width:0}
+.rckl strong{display:block;color:var(--dk);font-size:.7rem}
+.rckl span{color:var(--mu);font-size:.65rem}
+.rckev{font-family:var(--fm);font-size:.64rem;color:var(--navy);background:var(--ly);padding:2px 6px;border-radius:10px;white-space:normal;word-break:break-word;max-width:200px;text-align:right;flex-shrink:0}
+/* Loading */
 #loading{position:fixed;inset:0;background:rgba(28,43,107,.97);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
 #loading.hidden{display:none}
-.ldlogo{width:68px;height:68px;background:var(--bb-yellow);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:pulse 1.5s ease-in-out infinite}
+.ldl{width:64px;height:64px;background:var(--yel);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-.ldtitle{font-family:var(--ft);font-size:1.5rem;color:var(--bb-yellow);margin-bottom:4px}
-.ldsub{font-size:.76rem;color:rgba(255,255,255,.55);margin-bottom:24px}
+.ldt{font-family:var(--ft);font-size:1.4rem;color:var(--yel);margin-bottom:4px}
+.lds{font-size:.76rem;color:rgba(255,255,255,.55);margin-bottom:22px}
 .ldbw{width:220px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-bottom:10px}
-.ldb{height:100%;background:var(--bb-yellow);border-radius:2px;transition:width .4s ease}
-.ldmsg{font-family:var(--fm);font-size:.68rem;color:rgba(255,215,0,.7)}
+.ldb{height:100%;background:var(--yel);border-radius:2px;transition:width .4s ease}
+.ldm{font-family:var(--fm);font-size:.68rem;color:rgba(255,215,0,.7)}
+.stitle{font-family:var(--ft);font-size:.92rem;color:var(--navy);margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--yel);display:flex;align-items:center;gap:8px}
+.bbdiv{border:none;border-top:2px solid var(--yel);margin:14px 0}
+.tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:.6rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase}
+.tgn{background:var(--navy);color:var(--yel)}.tgy{background:var(--yel);color:var(--navy)}.tgg{background:var(--gray);color:var(--mu)}
+.empty{text-align:center;padding:36px 20px;color:var(--mu)}
+.empty .ei{font-size:2rem;margin-bottom:9px}
+.empty h3{font-family:var(--ft);color:var(--navy);margin-bottom:5px}
 
-/* MISC */
-.stitle{font-family:var(--ft);font-size:.95rem;color:var(--bb-navy);margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid var(--bb-yellow);display:flex;align-items:center;gap:8px}
-.bbdiv{border:none;border-top:2px solid var(--bb-yellow);margin:16px 0}
-.tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.6rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase}
-.tgn{background:var(--bb-navy);color:var(--bb-yellow)}.tgy{background:var(--bb-yellow);color:var(--bb-navy)}.tgg{background:var(--bb-gray);color:var(--bb-muted)}
-.empty{text-align:center;padding:40px 20px;color:var(--bb-muted)}
-.empty .ei{font-size:2.2rem;margin-bottom:10px}
-.empty h3{font-family:var(--ft);color:var(--bb-navy);margin-bottom:5px}
-.rbc-table{width:100%;border-collapse:collapse;font-size:.72rem}
-.rbc-table th{background:var(--bb-navy);color:var(--bb-yellow);padding:5px 9px;text-align:right;white-space:nowrap}
-.rbc-table th:first-child{text-align:left}
-.rbc-table td{padding:5px 9px;text-align:right;border-bottom:1px solid var(--bb-border);font-family:var(--fm)}
-.rbc-table td:first-child{text-align:left;font-family:var(--fb);font-weight:600}
-.rbc-table tr.rbc-hi td{background:var(--bb-navy);color:var(--bb-yellow);font-weight:bold}
-.rbc-table tr.rbc-sub td{background:var(--bb-offwhite);font-weight:bold}
 </style>
 </head>
 <body>
 
 <div id="loading">
-  <div class="ldlogo"><svg viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/><rect x="11" y="11.5" width="4" height="5" rx="0.5" fill="#FFD700" opacity=".5"/><rect x="4" y="4" width="3" height="2.5" rx=".5" fill="#FFD700" opacity=".6"/><rect x="19" y="4" width="3" height="2.5" rx=".5" fill="#FFD700" opacity=".6"/></svg></div>
-  <div class="ldtitle">Blockbuster Deals</div>
-  <div class="ldsub">Reinsurance Projection Model — Loading Python runtime...</div>
+  <div class="ldl"><svg viewBox="0 0 26 26" fill="none" width="22" height="22"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/><rect x="11" y="11.5" width="4" height="5" rx=".5" fill="#FFD700" opacity=".5"/></svg></div>
+  <div class="ldt">Blockbuster Deals</div>
+  <div class="lds">Reinsurance Projection Model — Loading Python runtime...</div>
   <div class="ldbw"><div class="ldb" id="ldb" style="width:0%"></div></div>
-  <div class="ldmsg" id="ldmsg">Initializing Pyodide...</div>
+  <div class="ldm" id="ldm">Initializing Pyodide...</div>
 </div>
-
 <header id="hdr">
-  <div class="logo"><svg viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/><rect x="11" y="11.5" width="4" height="5" rx=".5" fill="#FFD700" opacity=".5"/><rect x="4" y="4" width="3" height="2.5" rx=".5" fill="#FFD700" opacity=".6"/><rect x="19" y="4" width="3" height="2.5" rx=".5" fill="#FFD700" opacity=".6"/></svg></div>
-  <div class="apptitle">Blockbuster Deals<span>Reinsurance Projection Model</span></div>
+  <div class="logo"><svg viewBox="0 0 26 26" fill="none" width="22" height="22"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/><rect x="11" y="11.5" width="4" height="5" rx=".5" fill="#FFD700" opacity=".5"/></svg></div>
+  <div class="at">Blockbuster Deals<span>Reinsurance Projection Model</span></div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
-    <span id="scenname" style="font-size:.68rem;color:rgba(255,215,0,.55);font-family:var(--fm)"></span>
-    <span id="pystatus">⏳ Loading...</span>
-    <button class="btn btn-y btn-sm" onclick="runModel()" id="runbtn" disabled>▶ Run Model</button>
+    <span id="scenname" style="font-size:.66rem;color:rgba(255,215,0,.55);font-family:var(--fm)"></span>
+    <span id="pyst">⏳ Loading...</span>
+    <button class="btn btn-y btn-sm" onclick="runModel()" id="runbtn" disabled>▶ Run</button>
   </div>
 </header>
 <nav id="nav">
-  <div class="ntab active" onclick="showTab('upload')" id="tab-upload">📁 Upload</div>
-  <div class="ntab" onclick="showTab('assumptions')" id="tab-assumptions">⚙️ Assumptions</div>
-  <div class="ntab" onclick="showTab('results')" id="tab-results">📊 Results</div>
-  <div class="ntab" onclick="showTab('scenarios')" id="tab-scenarios">🎬 Scenarios <span class="nbadge" id="sccount">0</span></div>
-  <div class="ntab" onclick="showTab('audit')" id="tab-audit">📜 Audit Log</div>
-  <div class="ntab" onclick="showTab('review')" id="tab-review">✍️ Peer Review</div>
+  <div class="nt active" onclick="showTab('upload')" id="tab-upload">📁 Upload</div>
+  <div class="nt" onclick="showTab('assumptions')" id="tab-assumptions">⚙️ Assumptions</div>
+  <div class="nt" onclick="showTab('results')" id="tab-results">📊 Results</div>
+  <div class="nt" onclick="showTab('scenarios')" id="tab-scenarios">🎬 Scenarios <span class="nbadge" id="sccount">0</span></div>
+  <div class="nt" onclick="showTab('audit')" id="tab-audit">📜 Audit</div>
+  <div class="nt" onclick="showTab('review')" id="tab-review">✍️ Review</div>
 </nav>
 <main id="main">
 
-<!-- ═══ UPLOAD ═══════════════════════════════════════════ -->
+
 <div class="panel active" id="panel-upload">
   <div class="stitle">📁 Data Upload</div>
-  <p style="color:var(--bb-muted);font-size:.76rem;margin-bottom:16px;">Upload your EV projection file. RBC and Balance Plan use embedded defaults — upload replacements only if you have updated files. All data is processed locally in your browser.</p>
-  <div class="g3" style="margin-bottom:16px;">
-
-    <!-- EV -->
+  <div class="g3" style="margin-bottom:14px;">
     <div class="card">
       <div class="ch">📋 EV Projection Data <span class="cbadge">REQUIRED</span></div>
       <div class="cb">
         <div class="upzone" id="dz-ev" onclick="document.getElementById('fi-ev').click()">
           <input type="file" id="fi-ev" accept=".xlsx,.xls" onchange="handleUpload(event,'ev')">
-          <div style="font-size:1.8rem;margin-bottom:6px;">📼</div>
+          <div style="font-size:1.5rem;margin-bottom:5px;">📼</div>
           <h3>EV_Data.xlsx</h3>
-          <p>Sheet must start with header row containing VarName</p>
-          <p style="margin-top:3px;">Accepts Value000 → Value360 columns</p>
+          <p>Sheet with VarName header · Value000→Value360</p>
         </div>
         <div id="st-ev" class="upstat" style="display:none"></div>
-        <div style="margin-top:8px;font-size:.68rem;color:var(--bb-muted);">
-          Required columns: ScenId, SensId, ck.IssYear, ck.IssMon, ck.NewBus, Product, ProjPer, ProjMode, VarName, Scale, Value000+
-        </div>
       </div>
     </div>
-
-    <!-- RBC -->
     <div class="card">
       <div class="ch">🛡 RBC / Surplus Data <span class="cbadge">DEFAULT LOADED</span></div>
       <div class="cb">
         <div class="upzone" id="dz-rbc" onclick="document.getElementById('fi-rbc').click()">
           <input type="file" id="fi-rbc" accept=".xlsx,.xls" onchange="handleUpload(event,'rbc')">
-          <div style="font-size:1.8rem;margin-bottom:6px;">📊</div>
+          <div style="font-size:1.5rem;margin-bottom:5px;">📊</div>
           <h3>RBC.xlsx</h3>
-          <p>Year-end RBC charges, surplus, covariance</p>
-          <p style="margin-top:3px;color:var(--bb-success);">✓ Default file loaded</p>
+          <p>RBC charges · surplus · ratios</p>
         </div>
         <div id="st-rbc" class="upstat ok">✓ Default RBC data loaded</div>
       </div>
     </div>
-
-    <!-- Balance Plan -->
     <div class="card">
       <div class="ch">⚖️ Balance Plan <span class="cbadge">DEFAULT LOADED</span></div>
       <div class="cb">
         <div class="upzone" id="dz-bp" onclick="document.getElementById('fi-bp').click()">
           <input type="file" id="fi-bp" accept=".xlsx,.xls" onchange="handleUpload(event,'bp')">
-          <div style="font-size:1.8rem;margin-bottom:6px;">📋</div>
+          <div style="font-size:1.5rem;margin-bottom:5px;">📋</div>
           <h3>balanceplan.xlsx</h3>
           <p>Annual plan figures for reconciliation</p>
-          <p style="margin-top:3px;color:var(--bb-success);">✓ Default file loaded</p>
         </div>
         <div id="st-bp" class="upstat ok">✓ Default Balance Plan loaded</div>
       </div>
     </div>
   </div>
-
-  <!-- Data summary -->
   <div class="card" id="summary-card" style="display:none">
-    <div class="ch">📊 Loaded Data Summary</div>
+    <div class="ch">📊 Data Summary</div>
     <div class="cb"><div class="g4" id="summary-grid"></div></div>
   </div>
-
-  <!-- Run -->
   <div class="card">
     <div class="ch">▶ Model Execution</div>
     <div class="cb">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <button class="btn btn-p" onclick="runModel()" id="runbtn2" disabled style="font-size:.82rem;padding:9px 20px;">▶ Run Model</button>
-        <button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">⬇ CSV (Predeal)</button>
-        <button class="btn btn-o btn-sm" onclick="exportCSV('net')">⬇ CSV (Net)</button>
-        <span id="runstat" style="font-size:.7rem;color:var(--bb-muted);font-family:var(--fm)"></span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-p" onclick="runModel()" id="runbtn2" disabled style="font-size:.8rem;padding:8px 18px;">▶ Run Model</button>
+        <button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">⬇ CSV Predeal</button>
+        <button class="btn btn-o btn-sm" onclick="exportCSV('net')">⬇ CSV Net</button>
+        <span id="runstat" style="font-size:.68rem;color:var(--mu);font-family:var(--fm)"></span>
       </div>
       <div id="runprog" style="display:none;margin-top:10px;">
         <div class="ldbw" style="width:100%;height:5px;"><div class="ldb" id="runbar" style="width:0%"></div></div>
-        <div id="runmsg" style="font-size:.68rem;color:var(--bb-muted);margin-top:3px;"></div>
+        <div id="runmsg" style="font-size:.65rem;color:var(--mu);margin-top:3px;"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══ ASSUMPTIONS ══════════════════════════════════════ -->
 <div class="panel" id="panel-assumptions">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-    <div class="stitle" style="margin:0;">⚙️ Assumption Management</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <div class="stitle" style="margin:0;">⚙️ Assumptions</div>
     <button class="btn btn-y btn-sm" onclick="runModel()">▶ Re-Run</button>
-    <button class="btn btn-o btn-sm" onclick="resetAssumptions()">↺ Reset Defaults</button>
+    <button class="btn btn-o btn-sm" onclick="resetAssumptions()">↺ Reset</button>
   </div>
   <div class="g2">
-    <!-- Scalars -->
     <div class="card">
       <div class="ch">📐 Scalar Assumptions</div>
       <div class="cb">
         <div class="g2">
-          <div class="fgroup"><label class="flabel">Premium Tax Rate</label><input class="finput" type="number" id="a-ptax" step="0.001" value="0.021" oninput="markDirty()"></div>
-          <div class="fgroup"><label class="flabel">Discount Rate (PVDE)</label><input class="finput" type="number" id="a-disc" step="0.001" value="0.08" oninput="markDirty()"></div>
-          <div class="fgroup"><label class="flabel">Ceding Comm Ongoing ($/policy/yr)</label><input class="finput" type="number" id="a-ccong" step="1" value="200" oninput="markDirty()"></div>
-          <div class="fgroup"><label class="flabel">Base Calendar Year (Value000 = Dec)</label><input class="finput" type="number" id="a-base" step="1" value="2025" oninput="markDirty()"></div>
+          <div class="fg"><label class="fl">Premium Tax Rate</label><input class="fi" type="number" id="a-ptax" step="0.001" value="0.021" oninput="markDirty()"></div>
+          <div class="fg"><label class="fl">Discount Rate (PVDE)</label><input class="fi" type="number" id="a-disc" step="0.001" value="0.08" oninput="markDirty()"></div>
+          <div class="fg"><label class="fl">Ceding Comm Ongoing ($/policy/yr)</label><input class="fi" type="number" id="a-ccong" step="1" value="200" oninput="markDirty()"></div>
+          <div class="fg"><label class="fl">Base Calendar Year (Value000=Dec)</label><input class="fi" type="number" id="a-base" step="1" value="2025" oninput="markDirty()"></div>
         </div>
         <hr class="bbdiv">
-        <div class="flabel" style="margin-bottom:6px;">Front-End Ceding Commission (by calendar year, $)</div>
+        <div class="fl" style="margin-bottom:6px;">Front-End Ceding Comm (by calendar year, $)</div>
         <table class="mtx" style="width:auto"><thead><tr><th>Year</th><th>Amount ($)</th><th></th></tr></thead>
         <tbody id="ccfront-tbody"></tbody></table>
         <button class="btn btn-o btn-sm" style="margin-top:6px;" onclick="addCCFrontRow()">+ Add Year</button>
       </div>
     </div>
-    <!-- Annual assumptions -->
     <div class="card">
       <div class="ch">📅 Annual Assumptions</div>
       <div class="cb" style="overflow-x:auto;">
@@ -324,13 +257,12 @@ body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);mi
       </div>
     </div>
   </div>
-  <!-- Reins % Matrix -->
   <div class="card">
-    <div class="ch">📐 Reinsurance % Matrix — Issue Year × Calendar Year <span class="cbadge">LOWER TRIANGLE = PRE-ISSUE (BLANK)</span></div>
+    <div class="ch">📐 Reinsurance % Matrix — Issue Year × Calendar Year <span class="cbadge">LOWER TRIANGLE = PRE-ISSUE</span></div>
     <div class="cb">
-      <p style="font-size:.72rem;color:var(--bb-muted);margin-bottom:10px;">Values shown as percentages. Blank cells = 0% (business not yet issued in that calendar year). Each cell represents the % of that issue year's flows ceded.</p>
+      <p style="font-size:.7rem;color:var(--mu);margin-bottom:9px;">Values as percentages (10 = 10%). Blank = 0%. Ceding begins the calendar year after issue year.</p>
       <div style="overflow-x:auto;"><table class="mtx" id="reins-mtx"><thead id="reins-hd"></thead><tbody id="reins-bd"></tbody></table></div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
+      <div style="display:flex;gap:7px;margin-top:8px;">
         <button class="btn btn-o btn-sm" onclick="addReinsRow()">+ Issue Year</button>
         <button class="btn btn-o btn-sm" onclick="addReinsCol()">+ Calendar Year</button>
       </div>
@@ -338,54 +270,75 @@ body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);mi
   </div>
 </div>
 
-<!-- ═══ RESULTS ═══════════════════════════════════════════ -->
 <div class="panel" id="panel-results">
-  <div id="res-empty" class="empty"><div class="ei">🎬</div><h3>No Results Yet</h3><p>Upload EV data and run the model.</p><button class="btn btn-p" style="margin-top:12px;" onclick="showTab('upload')">Go to Upload</button></div>
+  <div id="res-empty" class="empty"><div class="ei">🎬</div><h3>No Results Yet</h3><p>Upload EV data and run the model.</p><button class="btn btn-p" style="margin-top:10px;" onclick="showTab('upload')">Go to Upload</button></div>
   <div id="res-content" style="display:none">
     <div class="stitle">📊 Summary Metrics</div>
-    <div class="g4" id="metric-tiles" style="margin-bottom:16px;"></div>
-    <div class="stabs">
-      <div class="stab active" onclick="showSub('predeal')" id="st-predeal">Predeal (Wellabe Direct)</div>
-      <div class="stab" onclick="showSub('ceded')" id="st-ceded">Ceded (Gen Re)</div>
-      <div class="stab" onclick="showSub('net')" id="st-net">Net (Wellabe Final)</div>
-      <div class="stab" onclick="showSub('balance')" id="st-balance">Balance Plan</div>
-      <div class="stab" onclick="showSub('rbc')" id="st-rbc">RBC &amp; Surplus</div>
-      <div class="stab" onclick="showSub('issyr')" id="st-issyr">Issue Year Diagnostic</div>
+    <div class="g4" id="metric-tiles" style="margin-bottom:14px;"></div>
+    <div class="stabs" id="main-stabs">
+      <div class="stab active" onclick="showSub('predeal')" id="mst-predeal">Predeal</div>
+      <div class="stab" onclick="showSub('ceded')" id="mst-ceded">Ceded</div>
+      <div class="stab" onclick="showSub('net')" id="mst-net">Net</div>
+      <div class="stab" onclick="showSub('ev')" id="mst-ev">EV Data</div>
+      <div class="stab" onclick="showSub('evc')" id="mst-evc">EV Ceded</div>
+      <div class="stab" onclick="showSub('balance')" id="mst-balance">Balance Plan</div>
+      <div class="stab" onclick="showSub('rbc')" id="mst-rbc">RBC &amp; Surplus</div>
+      <div class="stab" onclick="showSub('issyr')" id="mst-issyr">Issue Yr Diagnostic</div>
     </div>
-    <!-- Predeal -->
+    <!-- Income Statement panels (predeal/ceded/net) -->
     <div id="sp-predeal">
-      <div class="toolbar">
+      <div class="tb">
         <div class="vtog"><button class="active" onclick="setView('predeal','annual',this)">Annual</button><button onclick="setView('predeal','monthly',this)">Monthly</button></div>
         <button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">⬇ CSV</button>
       </div>
-      <div class="tblwrap"><table class="bbt" id="tbl-predeal"></table></div>
-      <canvas id="ch-predeal" height="90" style="margin-top:16px;"></canvas>
+      <div class="tw"><table class="bbt" id="tbl-predeal"></table></div>
+      <canvas id="ch-predeal" height="90" style="margin-top:14px;"></canvas>
     </div>
-    <!-- Ceded -->
     <div id="sp-ceded" style="display:none">
-      <div class="toolbar">
+      <div class="tb">
         <div class="vtog"><button class="active" onclick="setView('ceded','annual',this)">Annual</button><button onclick="setView('ceded','monthly',this)">Monthly</button></div>
         <button class="btn btn-o btn-sm" onclick="exportCSV('ceded')">⬇ CSV</button>
       </div>
-      <div class="tblwrap"><table class="bbt" id="tbl-ceded"></table></div>
-      <canvas id="ch-ceded" height="90" style="margin-top:16px;"></canvas>
+      <div class="tw"><table class="bbt" id="tbl-ceded"></table></div>
+      <canvas id="ch-ceded" height="90" style="margin-top:14px;"></canvas>
     </div>
-    <!-- Net -->
     <div id="sp-net" style="display:none">
-      <div class="toolbar">
+      <div class="tb">
         <div class="vtog"><button class="active" onclick="setView('net','annual',this)">Annual</button><button onclick="setView('net','monthly',this)">Monthly</button></div>
         <button class="btn btn-o btn-sm" onclick="exportCSV('net')">⬇ CSV</button>
       </div>
-      <div class="tblwrap"><table class="bbt" id="tbl-net"></table></div>
-      <canvas id="ch-net" height="90" style="margin-top:16px;"></canvas>
+      <div class="tw"><table class="bbt" id="tbl-net"></table></div>
+      <canvas id="ch-net" height="90" style="margin-top:14px;"></canvas>
+    </div>
+    <!-- EV raw data viewers -->
+    <div id="sp-ev" style="display:none">
+      <div class="tb">
+        <div class="fg" style="margin:0;"><label class="fl">Filter VarName</label>
+          <select class="fi" id="ev-varname-filter" onchange="renderEVTable('direct')" style="width:auto;min-width:160px;"><option value="">All VarNames</option></select>
+        </div>
+        <div class="fg" style="margin:0;"><label class="fl">Filter Issue Year</label>
+          <select class="fi" id="ev-issyr-filter" onchange="renderEVTable('direct')" style="width:auto;min-width:120px;"><option value="">All Years</option></select>
+        </div>
+      </div>
+      <div class="tw"><table class="bbt" id="tbl-ev"></table></div>
+    </div>
+    <div id="sp-evc" style="display:none">
+      <div class="tb">
+        <div class="fg" style="margin:0;"><label class="fl">Filter VarName</label>
+          <select class="fi" id="evc-varname-filter" onchange="renderEVTable('ceded')" style="width:auto;min-width:160px;"><option value="">All VarNames</option></select>
+        </div>
+        <div class="fg" style="margin:0;"><label class="fl">Filter Issue Year</label>
+          <select class="fi" id="evc-issyr-filter" onchange="renderEVTable('ceded')" style="width:auto;min-width:120px;"><option value="">All Years</option></select>
+        </div>
+      </div>
+      <div class="tw"><table class="bbt" id="tbl-evc"></table></div>
     </div>
     <!-- Balance Plan -->
     <div id="sp-balance" style="display:none">
-      <div class="tblwrap"><table class="bbt" id="tbl-balance"></table></div>
+      <div class="tw"><table class="bbt" id="tbl-balance"></table></div>
     </div>
     <!-- RBC -->
     <div id="sp-rbc" style="display:none">
-      <p style="font-size:.74rem;color:var(--bb-muted);margin-bottom:10px;">RBC charges and surplus loaded from uploaded file. RBC Ratio improvement (lift) from ceding is a key deal evaluation metric.</p>
       <div id="rbc-content"></div>
     </div>
     <!-- Issue Year Diagnostic -->
@@ -393,24 +346,22 @@ body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);mi
       <div class="card">
         <div class="ch">🔍 Issue Year Diagnostic — Ceded Ratio Verification</div>
         <div class="cb">
-          <p style="font-size:.74rem;color:var(--bb-muted);margin-bottom:12px;">Verifies that each income statement line item for the <em>Ceded</em> view equals exactly X% of the <em>Direct</em> view for the expected calendar years. Any deviation signals a mapping or calculation issue.</p>
-          <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;">
-            <div class="fgroup" style="margin:0;">
-              <label class="flabel">Issue Year</label>
-              <select class="finput" id="iy-select" onchange="renderIYDiag()" style="width:auto;min-width:120px;"><option value="">— select —</option></select>
+          <p style="font-size:.7rem;color:var(--mu);margin-bottom:10px;">Shows actual dollar amounts for Predeal and Ceded, then validates the ceded/direct ratio matches the expected Reins% from assumptions (tolerance: ±0.5%).</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label class="fl">Issue Year</label>
+              <select class="fi" id="iy-select" onchange="renderIYDiag()" style="width:auto;min-width:110px;"><option value="">— select —</option></select>
             </div>
           </div>
-          <div id="iy-diag-content"><p style="color:var(--bb-muted);font-size:.76rem;">Select an issue year to see the ceded ratio check.</p></div>
+          <div id="iy-diag-content"><p style="color:var(--mu);font-size:.74rem;">Select an issue year above.</p></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══ SCENARIOS ════════════════════════════════════════ -->
 <div class="panel" id="panel-scenarios">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-    <div class="stitle" style="margin:0;">🎬 Scenario Manager</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <div class="stitle" style="margin:0;">🎬 Scenarios</div>
     <button class="btn btn-y btn-sm" onclick="saveScenario()">💾 Save Run</button>
     <button class="btn btn-o btn-sm" onclick="clearScenarios()">🗑 Clear All</button>
     <button class="btn btn-o btn-sm" onclick="exportScenariosJSON()">⬇ Export JSON</button>
@@ -419,80 +370,62 @@ body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);mi
   <div id="sc-list"></div>
 </div>
 
-<!-- ═══ AUDIT LOG ════════════════════════════════════════ -->
 <div class="panel" id="panel-audit">
   <div class="stitle">📜 Audit Log</div>
-  <p style="color:var(--bb-muted);font-size:.74rem;margin-bottom:14px;">Every model run is logged with a full assumption snapshot. Entries are immutable once created. Logs persist in your browser.</p>
+  <p style="color:var(--mu);font-size:.72rem;margin-bottom:12px;">Every model run is logged with a full assumption snapshot. Immutable once created.</p>
   <div id="al-empty" class="empty" style="display:none"><div class="ei">📜</div><h3>No Entries Yet</h3><p>Run the model to create the first audit entry.</p></div>
   <div id="al-list"></div>
 </div>
 
-<!-- ═══ PEER REVIEW ══════════════════════════════════════ -->
 <div class="panel" id="panel-review">
   <div class="stitle">✍️ Peer Review</div>
-  <p style="color:var(--bb-muted);font-size:.74rem;margin-bottom:14px;">Work through the checklist below before signing off. Evidence is drawn from the most recent model run. Each item links to the relevant section of results.</p>
-
-  <div id="rev-norun" style="display:none;" class="empty"><div class="ei">▶</div><h3>Run the Model First</h3><p>Peer review requires an active model run.</p></div>
-
+  <p style="color:var(--mu);font-size:.7rem;margin-bottom:12px;">Work through the checklist. Evidence auto-populates from the latest model run.</p>
+  <div id="rev-norun" class="empty" style="display:none"><div class="ei">▶</div><h3>Run the Model First</h3></div>
   <div id="rev-content" style="display:none">
-    <div class="g2" style="margin-bottom:16px;">
+    <div class="g2">
       <div>
-        <!-- Checklist sections -->
-        <div class="rcheck">
-          <div class="rcheck-hdr">1 · Data Integrity</div>
-          <div class="rcheck-body">
-            <div class="rcheck-row"><input type="checkbox" id="rc1"><div class="rcheck-label"><strong>EV file loaded and parsed without errors</strong><span>All required columns present; Value### columns detected; row count reasonable</span></div><div class="rcheck-evidence" id="re1">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc2"><div class="rcheck-label"><strong>Issue years span expected range</strong><span>Check that ck.IssYear values match the deal population</span></div><div class="rcheck-evidence" id="re2">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc3"><div class="rcheck-label"><strong>Projection periods complete</strong><span>Max period should be 360 (30 years monthly) for full run</span></div><div class="rcheck-evidence" id="re3">—</div></div>
-          </div>
+        <div class="rck">
+          <div class="rckh">1 · Data Integrity</div>
+          <div class="rckr"><input type="checkbox" id="rc1"><div class="rckl"><strong>EV file parsed without errors</strong><span>Required columns present; Value### columns detected; row count reasonable</span></div><div class="rckev" id="re1">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc2"><div class="rckl"><strong>Issue years span expected range</strong><span>ck.IssYear values cover the deal population</span></div><div class="rckev" id="re2" style="white-space:normal;word-break:break-all;">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc3"><div class="rckl"><strong>Projection periods complete</strong><span>Max period = 360 for a full 30-year run</span></div><div class="rckev" id="re3">—</div></div>
         </div>
-
-        <div class="rcheck">
-          <div class="rcheck-hdr">2 · Reinsurance Structure</div>
-          <div class="rcheck-body">
-            <div class="rcheck-row"><input type="checkbox" id="rc4"><div class="rcheck-label"><strong>Reins% matrix is correctly populated</strong><span>Lower triangle blank; expected rates in upper triangle</span></div><div class="rcheck-evidence" id="re4">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc5"><div class="rcheck-label"><strong>Issue year diagnostic passes — all lines</strong><span>Ceded/Direct ratio matches expected Reins% for every issue year × calendar year</span></div><div class="rcheck-evidence" id="re5">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc6"><div class="rcheck-label"><strong>Ceding commissions are reasonable</strong><span>Front-end and ongoing amounts reviewed against deal terms</span></div><div class="rcheck-evidence" id="re6">—</div></div>
-          </div>
+        <div class="rck">
+          <div class="rckh">2 · Reinsurance Structure</div>
+          <div class="rckr"><input type="checkbox" id="rc4"><div class="rckl"><strong>Reins% matrix correctly populated</strong><span>Lower triangle blank; expected rates in upper triangle</span></div><div class="rckev" id="re4">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc5"><div class="rckl"><strong>Issue year diagnostic passes — all lines</strong><span>Ceded/Direct ratio matches Reins% for each IssYr×CalYr</span></div><div class="rckev" id="re5">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc6"><div class="rckl"><strong>Ceding commissions reviewed</strong><span>Front-end and ongoing amounts match deal terms</span></div><div class="rckev" id="re6" style="white-space:normal;word-break:break-word;">—</div></div>
         </div>
-
-        <div class="rcheck">
-          <div class="rcheck-hdr">3 · Income Statement Reasonableness</div>
-          <div class="rcheck-body">
-            <div class="rcheck-row"><input type="checkbox" id="rc7"><div class="rcheck-label"><strong>Predeal loss ratio is within expected range</strong><span>Claims / Revenue; review against balance plan</span></div><div class="rcheck-evidence" id="re7">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc8"><div class="rcheck-label"><strong>Net EV is greater than Predeal EV (deal accretive)</strong><span>Ceding commissions should make net economics better than direct</span></div><div class="rcheck-evidence" id="re8">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc9"><div class="rcheck-label"><strong>Balance plan reconciliation reviewed</strong><span>Model premium within reasonable tolerance of plan premium</span></div><div class="rcheck-evidence" id="re9">—</div></div>
-          </div>
+        <div class="rck">
+          <div class="rckh">3 · Income Statement Reasonableness</div>
+          <div class="rckr"><input type="checkbox" id="rc7"><div class="rckl"><strong>Predeal loss ratio within expected range</strong><span>Claims / Revenue; compare to balance plan</span></div><div class="rckev" id="re7">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc8"><div class="rckl"><strong>Net EV vs Predeal EV (deal accretive?)</strong><span>Ceding comms should improve net economics</span></div><div class="rckev" id="re8">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc9"><div class="rckl"><strong>Balance plan reconciliation reviewed</strong><span>Model premium within tolerance of plan premium</span></div><div class="rckev" id="re9">—</div></div>
         </div>
-
-        <div class="rcheck">
-          <div class="rcheck-hdr">4 · Key Metrics</div>
-          <div class="rcheck-body">
-            <div class="rcheck-row"><input type="checkbox" id="rc10"><div class="rcheck-label"><strong>Discount rate reviewed and appropriate</strong><span>Currently set to the rate below; confirm alignment with company standard</span></div><div class="rcheck-evidence" id="re10">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc11"><div class="rcheck-label"><strong>IRR directionally sensible</strong><span>Net IRR higher than Predeal IRR given favorable ceding terms</span></div><div class="rcheck-evidence" id="re11">—</div></div>
-            <div class="rcheck-row"><input type="checkbox" id="rc12"><div class="rcheck-label"><strong>Maximum negative cumulative DE reviewed</strong><span>Peak statutory strain understood and within acceptable limits</span></div><div class="rcheck-evidence" id="re12">—</div></div>
-          </div>
+        <div class="rck">
+          <div class="rckh">4 · Key Metrics</div>
+          <div class="rckr"><input type="checkbox" id="rc10"><div class="rckl"><strong>Discount rate reviewed</strong><span>Confirm alignment with company standard</span></div><div class="rckev" id="re10">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc11"><div class="rckl"><strong>IRR directionally sensible</strong><span>Net IRR higher than Predeal IRR given favorable ceding terms</span></div><div class="rckev" id="re11">—</div></div>
+          <div class="rckr"><input type="checkbox" id="rc12"><div class="rckl"><strong>Max negative cumulative DE reviewed</strong><span>Peak statutory strain understood and within acceptable limits</span></div><div class="rckev" id="re12">—</div></div>
         </div>
       </div>
-
-      <!-- Sign-off panel -->
       <div>
         <div class="card">
-          <div class="ch">📋 Current Run Summary</div>
-          <div class="cb" id="rev-runsummary" style="font-size:.74rem;line-height:1.7;"></div>
+          <div class="ch">📋 Run Summary</div>
+          <div class="cb" id="rev-runsummary" style="font-size:.72rem;line-height:1.7;"></div>
         </div>
         <div class="card">
-          <div class="ch">✍️ Reviewer Sign-Off</div>
+          <div class="ch">✍️ Sign-Off</div>
           <div class="cb">
-            <div class="fgroup"><label class="flabel">Reviewer Name &amp; Credentials</label><input class="finput" id="rev-name" placeholder="e.g. Jane Doe, FSA MAAA"></div>
-            <div class="fgroup"><label class="flabel">Review Date</label><input class="finput" id="rev-date" type="date"></div>
-            <div class="fgroup"><label class="flabel">Comments / Exceptions</label><textarea class="finput" id="rev-comment" rows="4" placeholder="Summarize review findings, any exceptions noted, conditions of approval..."></textarea></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="fg"><label class="fl">Reviewer Name &amp; Credentials</label><input class="fi" id="rev-name" placeholder="e.g. Jane Doe, FSA MAAA"></div>
+            <div class="fg"><label class="fl">Review Date</label><input class="fi" id="rev-date" type="date"></div>
+            <div class="fg"><label class="fl">Comments / Exceptions</label><textarea class="fi" id="rev-comment" rows="3" placeholder="Findings, exceptions, conditions of approval..."></textarea></div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;">
               <button class="btn btn-y" onclick="signOff('approved')">✓ Approve</button>
               <button class="btn btn-o" onclick="signOff('review')">📋 Under Review</button>
-              <button class="btn btn-d btn-sm" onclick="signOff('rejected')">✗ Reject</button>
+              <button class="btn btn-sm" style="background:rgba(192,57,43,.15);color:var(--err);" onclick="signOff('rejected')">✗ Reject</button>
             </div>
-            <div id="rev-progress" style="margin-top:10px;font-size:.72rem;color:var(--bb-muted);"></div>
+            <div id="rev-progress" style="margin-top:8px;font-size:.7rem;color:var(--mu);"></div>
           </div>
         </div>
       </div>
@@ -500,401 +433,129 @@ body{font-family:var(--fb);background:var(--bb-offwhite);color:var(--bb-dark);mi
   </div>
 </div>
 
-</main>
-<footer style="background:var(--bb-navy);color:rgba(255,215,0,.4);font-size:.62rem;text-align:center;padding:8px;border-top:2px solid var(--bb-yellow);font-family:var(--fm);">
-  BLOCKBUSTER DEALS: REINSURANCE · All data processed locally · Be kind, rewind
-</footer>
+</main><footer style='background:var(--navy);color:rgba(255,215,0,.4);font-size:.6rem;text-align:center;padding:7px;border-top:2px solid var(--yel);font-family:var(--fm);'>BLOCKBUSTER DEALS: REINSURANCE · All data processed locally · Be kind, rewind</footer>
 <script>
+
 const DEFAULT_RBC_B64 = "UEsDBBQABgAIAAAAIQBi7p1oXgEAAJAEAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACslMtOwzAQRfdI/EPkLUrcskAINe2CxxIqUT7AxJPGqmNbnmlp/56J+xBCoRVqN7ESz9x7MvHNaLJubbaCiMa7UgyLgcjAVV4bNy/Fx+wlvxcZknJaWe+gFBtAMRlfX41mmwCYcbfDUjRE4UFKrBpoFRY+gOOd2sdWEd/GuQyqWqg5yNvB4E5W3hE4yqnTEOPRE9RqaSl7XvPjLUkEiyJ73BZ2XqVQIVhTKWJSuXL6l0u+cyi4M9VgYwLeMIaQvQ7dzt8Gu743Hk00GrKpivSqWsaQayu/fFx8er8ojov0UPq6NhVoXy1bnkCBIYLS2ABQa4u0Fq0ybs99xD8Vo0zL8MIg3fsl4RMcxN8bZLqej5BkThgibSzgpceeRE85NyqCfqfIybg4wE/tYxx8bqbRB+QERfj/FPYR6brzwEIQycAhJH2H7eDI6Tt77NDlW4Pu8ZbpfzL+BgAA//8DAFBLAwQUAAYACAAAACEAtVUwI/QAAABMAgAACwAIAl9yZWxzLy5yZWxzIKIEAiigAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKySTU/DMAyG70j8h8j31d2QEEJLd0FIuyFUfoBJ3A+1jaMkG92/JxwQVBqDA0d/vX78ytvdPI3qyCH24jSsixIUOyO2d62Gl/pxdQcqJnKWRnGs4cQRdtX11faZR0p5KHa9jyqruKihS8nfI0bT8USxEM8uVxoJE6UchhY9mYFaxk1Z3mL4rgHVQlPtrYawtzeg6pPPm3/XlqbpDT+IOUzs0pkVyHNiZ9mufMhsIfX5GlVTaDlpsGKecjoieV9kbMDzRJu/E/18LU6cyFIiNBL4Ms9HxyWg9X9atDTxy515xDcJw6vI8MmCix+o3gEAAP//AwBQSwMEFAAGAAgAAAAhADmexeOYAwAAAAkAAA8AAAB4bC93b3JrYm9vay54bWysVVFvozgQfj/p/gPinWITIAE1XYUQdJXaVZXm2runygGn+Ao2Z5smVbX/fccQ0nZzOuW6V6U2tofP38x8M5x/2dWV9UylYoJPbXyGbIvyXBSMP07t31eZM7EtpQkvSCU4ndovVNlfLn795Xwr5NNaiCcLALia2qXWTey6Ki9pTdSZaCiHk42QNdGwlI+uaiQlhSop1XXlegiFbk0Yt3uEWJ6CITYbltNU5G1Nue5BJK2IBvqqZI0a0Or8FLiayKe2cXJRNwCxZhXTLx2obdV5fPnIhSTrCtze4cDaSfiF8I8RDN5wExwdXVWzXAolNvoMoN2e9JH/GLkYfwjB7jgGpyH5rqTPzOTwwEqGn2QVHrDCNzCMfhoNg7Q6rcQQvE+iBQdunn1xvmEVveula5Gm+Upqk6nKtiqi9KJgmhZTewxLsaUfNmTbJC2r4NSLJp5nuxcHOd9Iq6Ab0lZ6BUIe4MEQeSOEjCUIY1ZpKjnRdC64Bh3u/fpZzXXY81KAwq0l/btlkkJhgb7AVxhJHpO1uiG6tFpZ9RFUUHLgtmQ54ZI27bpiOeOqlYTn1KlfzlRJYF8w3kuxgXAJTiq3/kuUHB4ftrSqyJo+GKEOdaXcd+Imx5X0H+RNchMzF4LWO9Y//xhA8E/Gg4RvtLTg+TK9gjTekmdIKkin2Nf8JWRt8vA6Ho2jBGWpE2U+dvwE+c4sQqmzCGZJ5EVeOPfxN/BChnEuSKvLvVAM5tT2QRVHR9dkN5xgFLeseLv/Fe3/HDP/MAxn34ynpiXeMbpVb5IyS2t3z3ghtlPbwaYQXj4ut93hPSt0CU048j0w6fd+o+yxBMYYByA/03cMs6n9ikYzFKZe5kQeuO2H84UDWp47XjpKxwlGKAknHSP3HaWu+QK1brZ4VzC3piFj6PJmNtGFZxmbO+RlgbvsDa/lpMqhQMzUGUYYeZGxoDt9pXQ3gzYZ0MM+mo1R5DtoMQocfxJ5zsQfec7cT71FMF6kiyQw+TEfj/j/aKFdicTDV8mwBOXrlST5E3zLlnSTEAVK6h0Cvu/JJsEkQSOg6Gc4c3wcISdJQt8J0mwUjHE6XwTZG1nj/uaTDWzidm9TolsoblPX3To2Y7bfPWxu+o19nj4UXbxMTdz3b/+b4S14X9ETjbO7Ew3nX69X1yfaXi1WD/fZqcaz6ySdnW4/Wy5nf64WfwxXuP8YULdLuBk7mbqDTC6+AwAA//8DAFBLAwQUAAYACAAAACEAgT6Ul/MAAAC6AgAAGgAIAXhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArFJNS8QwEL0L/ocwd5t2FRHZdC8i7FXrDwjJtCnbJiEzfvTfGyq6XVjWSy8Db4Z5783Hdvc1DuIDE/XBK6iKEgR6E2zvOwVvzfPNAwhi7a0egkcFExLs6uur7QsOmnMTuT6SyCyeFDjm+CglGYejpiJE9LnShjRqzjB1Mmpz0B3KTVney7TkgPqEU+ytgrS3tyCaKWbl/7lD2/YGn4J5H9HzGQlJPA15ANHo1CEr+MFF9gjyvPxmTXnOa8Gj+gzlHKtLHqo1PXyGdCCHyEcffymSc+WimbtV7+F0QvvKKb/b8izL9O9m5MnH1d8AAAD//wMAUEsDBBQABgAIAAAAIQD/sOnIORMAADlAAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1spJtdb9vIkobvF9j/YOjeNPuLzQ7iHBxbliVbCyz281pxlMQY28raSjKDg/3v+xSbktlF52h0NphxHPJVq9ldXfXWW8X3f/n98eHkx/r55X7zdD4xVT05WT/dbT7dP305n/znf8xO28nJy3b19Gn1sHlan0/+WL9M/vLhn//p/c/N828vX9fr7QkjPL2cT75ut9/enZ293H1dP65eqs239RN3Pm+eH1db/vn85ezl2/N69an70OPDma3r5uxxdf80ySO8e/4zY2w+f76/W083d98f10/bPMjz+mG1Zf4vX++/vexGe7z7M8M9rp5/+/7t9G7z+I0hPt4/3G//6AadnDzevVt8edo8rz4+8Ny/G7+6O/n9mf8s/7vd13TXR9/0eH/3vHnZfN5WjHyW5zx+/HSWzlZ3+5HGz/+nhjH+7Hn941428HUo+49NyYT9WPZ1MPcPDtbsB5Plen73/f7T+eRvrfd1aKf+9NKadOrry3jahtn0NFxc1LNZc+ku2vS/kw/vP92zw/JUJ8/rz+eTv5p3S2cmZx/edwb0X/frny+D30+2q4//vn5Y323XfImZnIh9ftxsfhPggks1Q750ABlydbe9/7G+XD88nE/mHhP/n+5L+JUvONt/w/D33bfNOov+1+eTT+vPq+8P23/b/Jyv77983fK1vgo8qZjKu09/TNcvd9goX125IOPebR4YhJ8nj/dy2LCx1e95sveftl/PJ85UqW4sY3xcv2xn9zLk5OTu+8t28/jfGdKtwH4INqkbgr9/9vfrqjWNP2oUdidPpBimblPrXTw4mbP8WN2aTVfb1Yf3z5ufJxgzU3/5thLXYN4Zhu5WiOG2X+/vfrvY5Id7Y7E8O3UnA/xVRujGAfvC1R8f6vdnP9iUux5xkRG2W135yKW+MNUXrvSFmb5wrS/M9YWFvnCjL9zqC8t8wXX2xQLtV4mFGa9S+ws78mG/NvK58wmmu18bo9YmI+QTPz74pra2vH9Z3ndtLO9Py/sxqM9fFfejMW35+Vl537euvH9d3m+9+vy8uN9aoz6/KO+HmMrxb8r7yfvy/m1xP7lafX6Z7zd5/VITXz9/NtxATk+xgW8f/51JC/p8Egfbppb1IiPa7mtNxXPLce7/6DW+HIJtxZE1IbS+btmt6NSCTUuwC9HE2rS1t21srLKeqxKMUzKRQZ3BtTS1WspZCW6TM03dhsZEZ4JXI18Pwa4yjTG2tsE30eFv1JznJdjbROywyQXvmZAaeVGCm9SkmCwrYVgQG5R5lODUeFm82MbUBh8V+HYETixbZC7BtI0CLzM4dTvoKkZOxtnYGOt8Y39hRRKDhs7y71uRoEsrUut2kRHZilyoWDSTMCROYWoaddIuC3BbWR8sixFjE5PT4OkQ7OuqceyzaxPGFKJXS3FVgF3F87MOtW9CqI1Xlj8rwE0VsbPYsIGxdt41ynsMwaGu6sij1T6l1JjQKPvsIvz5JK9GsFVKxiRbN3WKrmmU31sUIzdVbWML0kFbUqud5M0Q3NRYs8whEjqt/KI8TgEOVRMj8zUmtKYeGVHGZiOKpooJ+6x9bVPitO7HLTwRsfUIGxJ0aUNq1S4yYueJajEezmpjcS1MXEWTIbiukjcu2daDbmrHMqvYUqJbcS9NXbdYXhLaUaKvSjRnGlO2NU6gaZvRlswUGpflZO0IEDxBq2z/ukSzJTLzxrHVbLqOCXOFdrWp2b4gvshEq2x0UaJDKx4GB8MZsCFpj3uj0MHVMTjxitE0mJ+yJYXmeLdO9qYRaw3KMy4zOltTXfkUDJsZk0neGRde97Kwp+YoexJ0aU/KGVxkRLanVAXX1ilwAPIfBb4cgk1dhbppI+c1pEBQUQs9LcCGg8Wxbp2LNdZRK/DVGOzkBMbWyxoqEqPAMQWH3aVo65ScOgPXCsxs68akwFyaoP3ovADbSvajjW3d8pGR010UYIc7d22DAw0OJ6mmfFNgfRUDhozNGR/92IwKcFNxXFk7XHpjGk5NuRjLDM5WZFzFc+HkmC9bUrtXcGFEUJ0jnJKgSyNSu3eREdmIPE9noAN7K9JGNASHhuQqSVDhvAYT9NmeDsFNC5mybHXbeI4WnEC5pCE4Qtc9NpEwaGi20SPPhuA2VuwDji5gEia22mlcD8Ep4Elt62B0eH5Z5XIa8yHY1LZy0bIg8J3GETlL8KIEx8qHlok4eB0kTFtRATacKSKrGDLGgctQzqgEh8o4Y5k2ERavqMDLDO6tyLSAcXESi1noQZgvrEhUqD9PjwRdWpGK8RcZka3IGlbCs8U7lq1c7WUBthVHH34ku+3xGcowpgqcGNm3psWRE7jVgboqwK6CpbbGRQ9Zbb2OmbMC7OGVsObGwSxb29ZqGtcFuIGXYMfeN03oVltZUQHGLhw7DEGCZ5u21VZUgFsSFOdhaA1mZPUpuRliHTII9paIxAbiDAdURlSASWYSPsUbaFeLoqFmsczgnmNDsuVA4eBYahKgt+lROsqGBF3akNq8i4zINtSyaByOuE/UdLI9BCd4sCEvITMRvsGuKHY0BBP7IjaECyBaC61Ux+mqAGOdrBb8CDpOrjFgip2iMivALBunvw4Opgoh0CNfF2ByCCE6Qt0JDzATZUMFOOI9myDUT3iO0wy7wOI8MTTnJb+ER3ntiApw4owk1o60C+dMwFQ2NARzruH4jrPEzjAX7bWWGZxtyNoqSPh35NsWfjSIfYUjMgjkR3iiDl6akSINFz0k2xEZBCFKUeuDiOlBxNVBxOwg4vogYn4QsTiIuDmIuD2IWPaIHd8t1rTcTi1S/v282/SKJEbwKruNNMkeZLKEg2WRedSweXQIPMRod0s4KTWEjWCEIIH3U05nuptBP3iImC1xBX5JvB2JHFcKHknBQ4wcYLwJeZzOwBW8TVVNJEfDqTnG4yBTwnFNuCqHwtDi1aCyKgmZK7gRuskhTp3PbnTwWCi4bUUcx1MYlhGfovUcBfdQlpoIiX91cBGdEd0qeAgVHkh4kPW1IWVU1HcHt92m2sZDiEgRcVgOnzXY1NK8tLp7wLyy5Ij1SrVA9OwLEc5FA8+6f5a4R5emY9TV+NJsfOl6fGk+vrQYX7oZX7odX1ruLnUCfbkyx8mmZqybGq1395g+IPsKcg1bJZ9vRDLUmleBFp5tcfs+OCIh4VONPS3Q5IpkYC2Kd+ySA6e10xJtyHWxLVKOQKLCmVYpZommBmTl3KP1YFcjVf26RHsCvsibFFNb4rhWCeYlOnAmyAxkRRBHsV2VIJRokbOglmQeouSO5LobhW4rpAprARNsST9UZC7REZYpuabtPJ3VDGHZo/skoWV7SBJwMEm2c6CClzZ1nIhqssQmX/XqzLUavwN1hcHuSF7uLuXKSqxYmRYtffezuTrValf5Cas/ka5OdW2l/AQJ/+v48l3jT8zKTyCI6ozgEGB+CLA4BLg5BLg9BFjuALnqUjxFudXHaZ1mLHZqNnjRYwpPq+Q+okhDCCf7swQuHd+m/Qh9Vlm5OiBnIltBKkUJVQpCgfaVFY0PNYA8VH5TLmVWoBsoghX3wIkg5QhJuZTrAo2FovHhgmpqFg2JgabuCk1uRkzDp1CSgzwrO1oUaGQSmAQ5miEHFctU875RaLIknCtgMky+ZOQkhgtObklwdQ7FBqELfVUX6Pqxs5NIlUWgSOix0A/kkoFAXVrOcaqmGcua2oFf9JjCcoa6muVByPRQ+HBdEKRBJbHzKNN+gL5aU0HMGg9HQ8wNqEqj6DIcW7RA1GSpn4nCQOjQ0aVEJ0ii9x7yZzsFvURfFzMRo0SPsFI8hjG6WnmpuUJT1AkIYChhFCKxfR1dhjPxFXTSo67VEeaH81Sx6KYYO1Q0NBh5RM4HtQddgLxVaGcdcQvVQBLFEeVe9uhsOCS2wlVJyUXyQBz8RXXFHKdkdnCIW5EqaEV8B8psvj3IWbJ0hqFJTT+hI2BODgdAZYo0XssI5eg4gQoujz5JzUlIt66yKLiNlRRuqPmSVoyq4zOFhm7jjxgW+o8ybrU0ruAB9VjkD3F2Fmejdn+u4A3aGFOnjINh4XvV6AsFj1Lig3Dhq9EsIXSlJd4oeAuJ4iFbnCm1Qz6iqUux7NRRmTt+PRd/WSGdKvTwPlWo6cjBNSJAWGqOyb8+aumXjpM4zVjj1FWRix7D03atM3C/IG0BljIt9d1hKbonNnnMPZ5tkXIY1deIK6KkomQqPT5aPKHAwekMgZLP6oinx6emGlB+8dn4GMoI2nVpPCItk5eMDk8fR+WX0Xwk5snJwBdR4BkV88Z41gRhktKHfERX88bwgDInRRsyah5b95+8MR0sgM/g1in6WpWR3I7xGCSuDsOhck9Wou2sX56dchSJBDgDHhjpNPC5Pb40tON0ULMTQncp6bK/wl/SK1f0Mh0njlmBizi2z3a5IqYq/SDlw16+3tFW+HpH29vrnVFr0v57tJ/af8YpWWf+eke3nbze0Y7m9Y6umLzeUW542a8Ky5uXYuBfysU+TrqyfUdaEY90WWQHygGGxhVCAEdZynzyRxdGSjjCMBwMBsuhplFIk7tpifaR8EVh27SEC/QlXa26UnBy15r8DxeN4zVBs6KZgie8rnAovBFKF5VxRXTU1ImliYqq9AnRRaJzp3mJxn+iLKNAoS5TV0GIVkynhCOyIwAQQRkbBUu3vdyUaDJ+gyLeVcdJMsYcWcFZ7AoHDT9D76AFQFf+d/AcjRhOykyJqRMgpaHjbSdhjxOuOvj5REz3NZXW9ZIdKBsXARd5AT9LabrrBNC6aAln/Zg3ZSyYLlUedlUFIwVHMkAjpOmD/IE0YkSiSzjciaQca6SrDNGQCalQpOAiSEBepCRL2YIKmLauLNGx9nKGKdJJax4qJN0zUqkadTqW8AjxFlsJNCVKA5vyHYtyMhFeh4jK0D7SKTXqUFJozhGhH/WKs4G8o233VsGRgKkReeqA/M/CK4+x3MGzeRFlK4g3bTHCF6Sg8wvzOk79s1n9K81L11F2oF4Zp7BMms4Bop1H/owCSj/mDk4nG4SOCiUUhvivPPm0HF2qRYrcHALMDgGuDwHmJaBFy8dS6XMhAaAsp53WQi1Ii0BHVY6WHziLseN22WJBLCcCAYPsjG2XBjxdaVOzhRT7RrRTSn4w6AH56LjlcgfPdsL6VlhHoiaHK0KKfDXxMsYdp+jZrOgVdmJ1eWYHcrk8EygrcNqg/WTnsK1RjOvH7OGkOZBECuMIE+hwup1sWo5+StGCPJv+SNFmpatsxFGK4U9FWpZSOn7Loi2TlWpHpPBG8IQ3sikcQKp1e5uaD2UOEnkyXQpSHGncSzn+XOENjUk0GkiPmGwvxqZDXTEfskBSbg4dTXfka9hNCb9Ri59gDFRohC2IO9LCyG0Jp9mpQmpqKBfjYBDAdFPADi5vEOB2ybzIFYnnNIzRO/YLV3SckigvZxScddlfeYsOHyc12ayPlNY7aurPyqjzsCGawHTkWfaDvDWb4/QLm7NYfu4jun6D4KLH9GEuNMRcdh2aBp17y+XmIXs4zQkVZIiKC1GanutxRC/hMDqJhTWBseOLWr4oJ0N1gcooxE96tIUvKkucqblL7xQNAKShmS+qc3pdwtGKOBf0fPG4whf1MZ0rOPUlWoViw7FmfN0KuCjR0Di4q8VVIzXQGKt1nZsSjkKImUsjLG6GBFzHgdsSzqA0USC8SWs+HVo6zV3u4D1hJEVHPxZPR2JJ1+GvIvpx8oUdyxe6T+yix3C+ujdYcFzUoFkcMuGAc9QFvRLuyFxE8MbRoahD0jRdzBPoB0cZg1ris+SFAU/XyMi4Cril9RHTxVbEuaMFadG1nAtwsn4aTJmR9PApU7zWM6+7AjSaujQ3jlr+NJooQVMqRggL4Dc184WGw266/iB6zw0vJmjZVS86siKaFZVLdp5jpzzu7WiPknQTit4ljlorNMsdPDsxSu6EFWmPlQYk6b79hYs+TrGw49atwVsXuazeY/rt510DwjnHAR5AXseeavUhD7k3RdYO7wthZNUjoUgbl4I7Ar+850L+gi6jF/GqnAzKKLsZKXpAjejQ1C5+puEsteTDpH4QAJrEdC5STIaer8i7GpSB0NLISBWNnZeDk4ig/aGLS3s7BqlZ9ELDqXDTuiJZOoXuUenipoQH2lU7FsVK8rfudbnVm8TmsCJ1YH8YvNEtGjt4Ni6qXrx5Q4VZeg67bsa3jcsdp1l18KFmteyvvBFxeV31//sGZDcEiXURhnUVYQfKQuBBYy7hFGLoAZb0VN6AklZVZcwaDhhJGJYnrcZ4KJUHlXDpCJKOYdoAiR4QSe0pR3B5s4OiAC1btJ7qts9rPRnai5FUurewkNd1yWk+mjt2liC08kMcjyKzGi55kqj2neBMqqLIbAmHWTtIL/USD6FFEdb6rt4mXlPiXRMRhEREHmVMO3j/ChASkojYJCnyHkkctBLnjCm/tJxfwP22+rL+l9Xzl/unl5OH9efuFWQs6Dm/pUxDKaRu801eTO5e791seb9496+vvKK/pvOIbt3JyefNZrv7h4i9+5f+P/wfAAAA//8DAFBLAwQUAAYACAAAACEA9mC0QbgHAAARIgAAEwAAAHhsL3RoZW1lL3RoZW1lMS54bWzsWs2PG7cVvwfI/0DMXdbM6HthOdCnN/bueuGVXeRISZSGXs5wQFK7KxQBCufUS4ECadFLgd56KIoGaIAGueSPMWAjTf+IPHJGmuGKir3+QJJidy8z1O89/ua9x8c3j3P3k6uYoQsiJOVJ1wvu+B4iyYzPabLsek8m40rbQ1LhZI4ZT0jXWxPpfXLv44/u4gMVkZggkE/kAe56kVLpQbUqZzCM5R2ekgR+W3ARYwW3YlmdC3wJemNWDX2/WY0xTTyU4BjUPlos6IygiVbp3dsoHzG4TZTUAzMmzrRqYkkY7Pw80Ai5lgMm0AVmXQ/mmfPLCblSHmJYKvih6/nmz6veu1vFB7kQU3tkS3Jj85fL5QLz89DMKZbT7aT+KGzXg61+A2BqFzdq6/+tPgPAsxk8acalrDNoNP12mGNLoOzSobvTCmo2vqS/tsM56DT7Yd3Sb0CZ/vruM447o2HDwhtQhm/s4Ht+2O/ULLwBZfjmDr4+6rXCkYU3oIjR5HwX3Wy1280cvYUsODt0wjvNpt8a5vACBdGwjS49xYInal+sxfgZF2MAaCDDiiZIrVOywDOI4l6quERDKlOG1x5KccIlDPthEEDo1f1w+28sjg8ILklrXsBE7gxpPkjOBE1V13sAWr0S5OU337x4/vWL5/958cUXL57/Cx3RZaQyVZbcIU6WZbkf/v7H//31d+i///7bD1/+yY2XZfyrf/7+1bff/ZR6WGqFKV7++atXX3/18i9/+P4fXzq09wSeluETGhOJTsglesxjeEBjCps/mYqbSUwiTC0JHIFuh+qRiizgyRozF65PbBM+FZBlXMD7q2cW17NIrBR1zPwwii3gMeesz4XTAA/1XCULT1bJ0j25WJVxjzG+cM09wInl4NEqhfRKXSoHEbFonjKcKLwkCVFI/8bPCXE83WeUWnY9pjPBJV8o9BlFfUydJpnQqRVIhdAhjcEvaxdBcLVlm+OnqM+Z66mH5MJGwrLAzEF+Qphlxvt4pXDsUjnBMSsb/AiryEXybC1mZdxIKvD0kjCORnMipUvmkYDnLTn9IYbE5nT7MVvHNlIoeu7SeYQ5LyOH/HwQ4Th1cqZJVMZ+Ks8hRDE65coFP+b2CtH34Aec7HX3U0osd78+ETyBBFemVASI/mUlHL68T7i9HtdsgYkry/REbGXXnqDO6OivllZoHxHC8CWeE4KefOpg0OepZfOC9IMIssohcQXWA2zHqr5PiIQySdc1uynyiEorZM/Iku/hc7y+lnjWOImx2Kf5BLxuhe5UwGJ0UHjEZudl4AmF8g/ixWmURxJ0lIJ7tE/raYStvUvfS3e8roXlvzdZY7Aun910XYIMubEMJPY3ts0EM2uCImAmmKIjV7oFEcv9hYjeV43Yyim3sBdt4QYojKx6J6bJ64qfEywEv/x5ap8PVvW4Fb9LvbMvrxxeq3L24X6Ftc0Qr5JTAtvJbuK6LW1uSxvv/7602beWbwua24LmtqBxvYJ9kIKmqGGgvClaPabxE+/t+ywoY2dqzciRNK0fCa818zEMmp6UaUxu+4BpBJf6eWACC7cU2MggwdVvqIrOIpxCfygwXcylzFUvJUq5hLaRGTb9VHJNt2k+reJjPs/anaa/5GcmlFgV434DGk/ZOLSqVIZutvJBzW9D3bBdmlbrhoCWvQmJ0mQ2iZqDRGsz+BoSunP2flh0HCzaWv3GVTumAGpbr8B7N4K39a7XqGeMoCMHNfpc+ylz9ca72jnv1dP7jMnKEQCtxV1PdzTXvY+nny4LtTfwtEXCOCULK5uE8ZUp8GQEb8N5dJb77j8VcDf1dadwqUVPm2KzGgoarfaH8LVOItdyA0vKmYIl6BLWeAiLzkMznHa9BfSN4TJOIXikfvfCbAmHLzMlshX/NqklFVINsYwyi5usk/knpooIxGjc9fTzb8OBJSaJZOQ6sHR/qeRCveB+aeTA67aXyWJBZqrs99KItnR2Cyk+SxbOX43424O1JF+Bu8+i+SWaspV4jCHEGq1Ae3dOJRwfBJmr5xTOw7aZrIi/aztTnv2tQ64iH2OWRjjfUsrZPIObDWVLx9xtbVC6y58ZDLprwulS77DvvO2+fq/Wliv2x06xaVppRW+b7mz64Xb5EqtiF7VYZbn7es7tbJIdBKpzm3j3vb9ErZjMoqYZ7+ZhnbTzUZvae6wISrtPc4/dtpuE0xJvu/WD3PWo1TvEprA0gW8Ozstn23z6DJLHEE4RVyw77WYJ3JnSMj0VxrdTPl/nl0xmiSbzuS5Ks1T+mCwQnV91vdBVOeaHx3k1wBJAm5oXVthW0Fnt2YJ6s8tFswW7Fc7K2Gv1qi28ldgcs26FTWvRRVtdbU7Uda1uZtYOy57apGFjKbjatSK0yQWG0jk7zM1yL+SZK5VX2nCFVoJ2vd/6jV59EDYGFb/dGFXqtbpfaTd6tUqv0agFo0bgD/vh50BPRXHQyL58GMNpEFvn3z+Y8Z1vIOLNgdedGY+r3HzjUDXeN99ABOH+byDAkUArHAX1sBcOKoNh0KzUw2Gz0m7VepVB2ByGPdi0m+Pe5x66MOCgPxyOx42w0hwAru73GpVevzaoNNujfjgORvWhD+B8+7mCtxidc3NbwKXhde9HAAAA//8DAFBLAwQUAAYACAAAACEAThwOP1MFAAAdHgAADQAAAHhsL3N0eWxlcy54bWzMWVtvozgUfl9p/wOi2tXMaimXAE0yId2mbaSRZqtK7Ur7MFJFwKTWAM4a00lmtf99j+2QkAsJNE3blwQbfM53Lj4Xu3c+TWLlCdEMk9RTzVNDVVAakBCnY0/9636otVUlY34a+jFJkafOUKae93/+qZexWYzuHhFiCpBIM099ZGzS1fUseESJn52SCUrhTURo4jMY0rGeTSjyw4wvSmLdMgxXT3ycqpJCNwnqEEl8+i2faAFJJj7DIxxjNhO0VCUJup/HKaH+KAaoU9P2A2VqutRSprRgImY3+CQ4oCQjETsFujqJIhygTbgdvaP7wZISUH4eJdPRDWtF9il9JiVbp+gJc/Op/V6aJ8OEZUpA8pR5amsxpcg3n0NPtVuqIo1ySUJQ08OH35ST309OjFPDePj4iQ+/figmvsqJX//JCfukyb/zc/HZHw8fVb1gWaJvuvYqAyD8S8WXTiWUdST7gehz4fu9iKRLHbhgLu4I3W8p+Z4O+Svwc1AM/6rfy34oT34MMyaHGJCYUIWBA4NixEzqJ0h+cTFhJFNufErJd/5t5Cc4nsl3Fp8Qjj//OMHghnxSl2zegNmIQ3pN6VYY2m+rTghjDPMtoBmnLbvTabuW67pnxlnLOesIZ3xJu+5R9WuBEb6WgWfiOF7EAIu7Okz0exAuGaLpEAbK/Pl+NgFHTyGyS18V3+35ekz9mWk5pQW6YNjvjQgNIZMU0cfkrOVcvxejiIFDUjx+5P+MTOB3RBiDcNvvhdgfk9SP+YYpVpRXQgqCbOOpCQpxngBZuVFxGqIpgpgGIYcv5UxWeNRcB2gKMDVXSOT7ga+K/G7g1AQirCWM9ebIX88DarjjoVZtwOIVLHXE/ddkjxdKbSzxawSSBY+jxodjc3m+al9A7Hlgh/wUoDi+4wH972glTU2jUhkJSZMXTbxi5Y+QmeaPMi/IAShsZVFnucisXKT4k0k845WgIC1HQH85GohEthxfxHicJqi84JYShgImuiZDJJ+yVFLGkngtA5JWc/mUabRd0BraAQUUq6XEhVTwQshckorXw34hpPJIKP4B6uF1cQBSI3oJI5zmJM+EqNOouTDW+4IDTdBbaIf3XttcGVqmVTjSPQtTHWC67QYzRY+2e3tBc7aK6SZPRogORUPP26N1t1rfjXWY8PZs7uOSXFMmNXbCWbWt1yGDl+6POrUQN9hd201UAwqczTRTXuONv3e7c5TbHHpD51UOvcMCVbTB5HXEXuX4kvaoAlbTHkfe26UdwXf5sazDz262Z+W3sM781ElGtCqxF45TxK7twebYsVcekO2GunCl9wO1ugybG/z9Q30fWq2RsjYiybICWA+YhyXABhmBn66oCj9z4YWwOB3VNypB0xVnuvsK9z0hYqOSqEO1cTZc5yJPxl8Yeh2iByMv9T21d2ndhFyD9sa2qku7hu8C+6pCfUf3V6UFcyMFvKAa4A5hLRLuIK7zfhE6xFI7vNIML9pJhV9BeOoNL7vjkjJGOY6hKVv0h+sLbhHlzVsJUmmFPL5dLAEU4XTZjIuGlvFbNNGmL3CB8kIU+XnM7hcvPXX5/Kc4noXqaP7VLX4iTJDw1OXzF34GbLq8tERT9iWDI1v4V3KKPfXf68FZ5+p6aGltY9DW7BZytI4zuNIc+3JwdTXsGJZx+V/pLu+Amzxx9QiNrGl3sxju++hc2Dn4u+Wcp5YGEr4ojAF2GXvHco0LxzS0YcswNdv121rbbTna0DGtK9ceXDtDp4TdeeaNn6Gbprw75OCdLsMJinFa2KqwUHkWjATDHULohSX05b1u/38AAAD//wMAUEsDBBQABgAIAAAAIQDD9HPgeQEAALsDAAAUAAAAeGwvc2hhcmVkU3RyaW5ncy54bWx8k1FLKzEQhd8v+B+GgBdFarZViujuSg0IgmDZ1r7HbdoGdmfWTLZX//1Nr1ytm62P+eYMOXMySW/f6gq2xrElzMTwPBFgsKSlxXUmnuf3gysB7DUudUVoMvFuWNzmR79SZg+hFzkTG++baym53Jha8zk1BkNlRa7WPhzdWnLjjF7yxhhfV3KUJGNZa4sCSmrRZ2I0FtCifW2N+gR5yjZPff7k7NqirlLp81Tu2Acv7hSojXZrw93SfKaSHjaM2WORDMd9UjXroaMedtHDLnUffIkgeV3BydQZULTVzmoszWlXNaWQ9Fe9W1aEbNxWe8s1rHTpyXUlk+XuOWF4HOL+Eh9QXRxDRcxAq6D+b+qQ8+/WIuuHXc//jT5rXVO10fM9IDw+3UV4Ss6HLQWLgIQDixwc/qT6UITsXBMNuyiimSYKTtRvXTc3MziDyaKI5tmtXBGSJgj7PDgcz54uJLQnhD9Qh4212L38hw5JUY8Mny//CwAA//8DAFBLAwQUAAYACAAAACEAxcxv9kMBAABpAgAAEQAIAWRvY1Byb3BzL2NvcmUueG1sIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlJJfS8MwFMXfBb9DyXubtmNjC20HKnsQB4ITxbeQ3G3B5g9JtNu3N223Wp0vPibn3F/OuaRYHmQdfYJ1QqsSZUmKIlBMc6F2JXrerOI5ipynitNaKyjRERxaVtdXBTOEaQuPVhuwXoCLAkk5wkyJ9t4bgrFje5DUJcGhgrjVVlIfjnaHDWXvdAc4T9MZluApp57iFhibgYhOSM4GpPmwdQfgDEMNEpR3OEsy/O31YKX7c6BTRk4p/NGETqe4YzZnvTi4D04MxqZpkmbSxQj5M/y6fnjqqsZCtbtigKqCM8IsUK9ttabeR/d6r5xWBR4J7RJr6vw67HsrgN8cf3kv9cDtavRw4FEIRvoaZ+Vlcnu3WaEqT/NZnE7jNNtkCzKdk3z21j7/Y74N2l/IU4j/ECeLEfEMqAp88TmqLwAAAP//AwBQSwMEFAAGAAgAAAAhAGFJCRCJAQAAEQMAABAACAFkb2NQcm9wcy9hcHAueG1sIKIEASigAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnJJBb9swDIXvA/ofDN0bOd1QDIGsYkhX9LBhAZK2Z02mY6GyJIiskezXj7bR1Nl66o3ke3j6REndHDpf9JDRxVCJ5aIUBQQbaxf2lXjY3V1+FQWSCbXxMUAljoDiRl98UpscE2RygAVHBKxES5RWUqJtoTO4YDmw0sTcGeI272VsGmfhNtqXDgLJq7K8lnAgCDXUl+kUKKbEVU8fDa2jHfjwcXdMDKzVt5S8s4b4lvqnszlibKj4frDglZyLium2YF+yo6MulZy3amuNhzUH68Z4BCXfBuoezLC0jXEZtepp1YOlmAt0f3htV6L4bRAGnEr0JjsTiLEG29SMtU9IWT/F/IwtAKGSbJiGYzn3zmv3RS9HAxfnxiFgAmHhHHHnyAP+ajYm0zvEyznxyDDxTjjbgW86c843XplP+id7HbtkwpGFU/XDhWd8SLt4awhe13k+VNvWZKj5BU7rPg3UPW8y+yFk3Zqwh/rV878wPP7j9MP18npRfi75XWczJd/+sv4LAAD//wMAUEsBAi0AFAAGAAgAAAAhAGLunWheAQAAkAQAABMAAAAAAAAAAAAAAAAAAAAAAFtDb250ZW50X1R5cGVzXS54bWxQSwECLQAUAAYACAAAACEAtVUwI/QAAABMAgAACwAAAAAAAAAAAAAAAACXAwAAX3JlbHMvLnJlbHNQSwECLQAUAAYACAAAACEAOZ7F45gDAAAACQAADwAAAAAAAAAAAAAAAAC8BgAAeGwvd29ya2Jvb2sueG1sUEsBAi0AFAAGAAgAAAAhAIE+lJfzAAAAugIAABoAAAAAAAAAAAAAAAAAgQoAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAi0AFAAGAAgAAAAhAP+w6cg5EwAAOUAAABgAAAAAAAAAAAAAAAAAtAwAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbFBLAQItABQABgAIAAAAIQD2YLRBuAcAABEiAAATAAAAAAAAAAAAAAAAACMgAAB4bC90aGVtZS90aGVtZTEueG1sUEsBAi0AFAAGAAgAAAAhAE4cDj9TBQAAHR4AAA0AAAAAAAAAAAAAAAAADCgAAHhsL3N0eWxlcy54bWxQSwECLQAUAAYACAAAACEAw/Rz4HkBAAC7AwAAFAAAAAAAAAAAAAAAAACKLQAAeGwvc2hhcmVkU3RyaW5ncy54bWxQSwECLQAUAAYACAAAACEAxcxv9kMBAABpAgAAEQAAAAAAAAAAAAAAAAA1LwAAZG9jUHJvcHMvY29yZS54bWxQSwECLQAUAAYACAAAACEAYUkJEIkBAAARAwAAEAAAAAAAAAAAAAAAAACvMQAAZG9jUHJvcHMvYXBwLnhtbFBLBQYAAAAACgAKAIACAABuNAAAAAA=";
 const DEFAULT_BP_B64  = "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";
-function b64ToBytes(b64){const bin=atob(b64);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
+const PY_ENGINE = "\nimport json,re,datetime\nfrom collections import defaultdict\n\n# Variable sets - exact names from EV_Data.xlsx\n# Premium = EarnedPrem - ReinsPrem\n# Claims = IncClaims - ReinsClaims\n# Reserves = (TabRes - CededALRstat) delta period-over-period\n# NII reserve base = TabRes + CLRes + TS - CededALRstat\n# Commissions = Comm (negative)\n# PremTax = PremTax (negative)\n# Maintenance = MaintExpUnit + MaintExpQ + OverheadExp (negative)\n\nEV_REQ={\"ScenId\",\"SensId\",\"ck.IssYear\",\"ck.IssMon\",\"ck.NewBus\",\"Product\",\"ProjPer\",\"ProjMode\",\"VarName\",\"Scale\"}\n\ndef val_ev(hdr):\n    hs=set(h for h in hdr if h);errs=[]\n    miss=EV_REQ-hs\n    if miss:errs.append(\"Missing columns: \"+\", \".join(sorted(miss)))\n    if not[h for h in hdr if h and re.match(r\"Value[0-9]+$\",h)]:errs.append(\"No Value### columns found\")\n    return errs\n\ndef parse_ev(hdr_row,data_rows):\n    hdr=[str(c) if c is not None else None for c in hdr_row]\n    errs=val_ev(hdr)\n    if errs:return{\"error\":\"; \".join(errs)}\n    vc={i:int(h[5:]) for i,h in enumerate(hdr) if h and re.match(r\"Value[0-9]+$\",h)}\n    meta={h:i for i,h in enumerate(hdr) if h and not re.match(r\"Value[0-9]+$\",h)}\n    recs=[]\n    for raw in data_rows:\n        row=list(raw)\n        if not any(v is not None and str(v).strip()!=\"\" for v in row):continue\n        vi=meta.get(\"VarName\",-1);var=row[vi] if 0<=vi<len(row) else None\n        if var is None or str(var).strip()==\"\":continue\n        def g(k,d=None):\n            i=meta.get(k,-1);v=row[i] if 0<=i<len(row) else None\n            return v if v is not None else d\n        # NO scale factor - values are already in dollars\n        rec={\"ck_IssYear\":int(float(g(\"ck.IssYear\",0) or 0)),\n             \"ck_IssMon\":int(float(g(\"ck.IssMon\",0) or 0)),\n             \"ck_NewBus\":str(g(\"ck.NewBus\",\"E\")),\n             \"Product\":str(g(\"Product\",\"\")),\n             \"VarName\":str(var).strip(),\"values\":{}}\n        for ci,p in vc.items():\n            v=row[ci] if ci<len(row) else None\n            rec[\"values\"][p]=float(v) if isinstance(v,(int,float)) else 0.0\n        recs.append(rec)\n    return{\"records\":recs,\"max_period\":max(vc.values()) if vc else 0,\"errors\":[]}\n\ndef parse_rbc(rows):\n    yrc={}\n    for row in rows:\n        dts=[c for c in row if isinstance(c,datetime.datetime) and 2020<=c.year<=2040]\n        yis=[c for c in row if isinstance(c,(int,float)) and 2020<=c<=2040]\n        if dts:\n            for j,c in enumerate(row):\n                if isinstance(c,datetime.datetime) and 2020<=c.year<=2040:yrc[j]=c.year\n            break\n        if len(yis)>=3:\n            for j,c in enumerate(row):\n                if isinstance(c,(int,float)) and 2020<=c<=2040:yrc[j]=int(c)\n            break\n    if not yrc:return{}\n    m={}\n    for row in rows:\n        if not row or all(c is None for c in row):continue\n        lbl=next((str(c).strip() for c in row if isinstance(c,str) and c.strip()),\"\")\n        if not lbl:continue\n        vals={yr:float(row[j]) for j,yr in yrc.items() if j<len(row) and isinstance(row[j],(int,float))}\n        if vals:m[lbl]=vals\n    return m\n\ndef parse_bp(rows):\n    yrc={}\n    for row in rows:\n        yv=[(j,c) for j,c in enumerate(row) if isinstance(c,(int,float)) and 2020<=c<=2060]\n        if len(yv)>=3:yrc={j:int(c) for j,c in yv};break\n    if not yrc:return{}\n    bp={}\n    for row in rows:\n        if not row or all(c is None for c in row):continue\n        lbl=next((str(c).strip() for c in row if isinstance(c,str) and c.strip()),\"\")\n        if not lbl:continue\n        vals={yr:float(row[j]) for j,yr in yrc.items() if j<len(row) and isinstance(row[j],(int,float))}\n        if vals:bp[lbl]=vals\n    return{k:{str(yr):v for yr,v in vd.items()} for k,vd in bp.items()}\n\ndef agg(recs,vnames):\n    t=defaultdict(float)\n    for r in recs:\n        if r[\"VarName\"] in vnames:\n            for p,v in r[\"values\"].items():t[p]+=v\n    return dict(t)\n\ndef apply_rp(recs,rp,by):\n    out=[]\n    for rec in recs:\n        iy=rec[\"ck_IssYear\"];nv={}\n        for p,v in rec[\"values\"].items():\n            cy=by+1+(p//12);rate=float(rp.get(iy,{}).get(cy) or 0)\n            nv[p]=v*rate\n        nr=dict(rec);nr[\"values\"]=nv;out.append(nr)\n    return out\n\ndef bld(recs,assum,by,periods):\n    # Build income statement\n    nier={int(k):float(v) for k,v in assum.get(\"nier\",{}).items()}\n\n    # === REVENUE ===\n    # Premium = EarnedPrem - ReinsPrem (net of reinsurance ceded out)\n    ep=agg(recs,{\"EarnedPrem\"})\n    rp=agg(recs,{\"ReinsPrem\"})\n    prem={p:ep.get(p,0)-rp.get(p,0) for p in periods}\n\n    # NII = avg(TabRes+CLRes+TS-CededALRstat, prior period) * NIER / 12\n    tabres=agg(recs,{\"TabRes\"})\n    clres=agg(recs,{\"CLRes\"})\n    ts_r=agg(recs,{\"TS\"})\n    ceded_alr=agg(recs,{\"CededALRstat\"})\n\n    def tot_res(p):\n        return tabres.get(p,0)+clres.get(p,0)+ts_r.get(p,0)-ceded_alr.get(p,0)\n\n    nii={}\n    for p in periods:\n        cy=by+1+(p//12)\n        ni=nier.get(cy,0.04)\n        r_now=tot_res(p);r_prev=tot_res(p-1) if p>0 else r_now\n        nii[p]=((r_now+r_prev)/2)*ni/12\n\n    revenue={p:prem.get(p,0)+nii.get(p,0) for p in periods}\n\n    # === BENEFITS ===\n    # Claims = IncClaims - ReinsClaims\n    ic=agg(recs,{\"IncClaims\"})\n    rc=agg(recs,{\"ReinsClaims\"})\n    claims={p:ic.get(p,0)-rc.get(p,0) for p in periods}\n\n    # Reserve change = delta(TabRes - CededALRstat) period over period\n    net_stat={p:tabres.get(p,0)-ceded_alr.get(p,0) for p in periods}\n    def ns(p):return tabres.get(p,0)-ceded_alr.get(p,0)\n    delta_res={p:ns(p)-ns(p-1) for p in periods}\n\n    benefits={p:claims.get(p,0)+delta_res.get(p,0) for p in periods}\n\n    # === EXPENSES ===\n    # Commissions = Comm (already negative in EV)\n    comm_raw=agg(recs,{\"Comm\"})\n    commissions={p:-abs(comm_raw.get(p,0)) if comm_raw.get(p,0)!=0 else 0 for p in periods}\n\n    # Premium Tax = PremTax (ensure negative)\n    pt_raw=agg(recs,{\"PremTax\"})\n    prem_tax={p:-abs(pt_raw.get(p,0)) if pt_raw.get(p,0)!=0 else 0 for p in periods}\n\n    # Maintenance = MaintExpUnit + MaintExpQ + OverheadExp (ensure negative)\n    mnt_raw=agg(recs,{\"MaintExpUnit\",\"MaintExpQ\",\"OverheadExp\"})\n    maint={p:-abs(mnt_raw.get(p,0)) if mnt_raw.get(p,0)!=0 else 0 for p in periods}\n\n    selling={p:commissions.get(p,0)+prem_tax.get(p,0) for p in periods}\n    op_exp={p:selling.get(p,0)+maint.get(p,0) for p in periods}\n\n    pretax={p:revenue.get(p,0)+benefits.get(p,0)+op_exp.get(p,0) for p in periods}\n\n    # Distributable Earnings = pretax - delta(TS)\n    delta_ts={p:ts_r.get(p,0)-ts_r.get(p-1,0) for p in periods}\n    de={p:pretax.get(p,0)-delta_ts.get(p,0) for p in periods}\n\n    # Issues for ceding comm2\n    issues=agg(recs,{\"AEGapplications\",\"UnitsIssued\",\"LivesIssued\"})\n\n    return{\"periods\":periods,\"premium\":prem,\"nii\":nii,\"revenue\":revenue,\n           \"claims\":claims,\"delta_reserves\":delta_res,\"benefits\":benefits,\n           \"commissions\":commissions,\"prem_tax\":prem_tax,\"maint_expense\":maint,\n           \"selling_expense\":selling,\"op_expense\":op_exp,\"pretax_income\":pretax,\n           \"distributable_earnings\":de,\"net_stat_reserve\":dict(net_stat),\n           \"target_surplus\":dict(ts_r),\"issues\":issues,\"base_year\":by,\n           # Store raw EV components for diagnostic\n           \"raw_earnedprem\":dict(ep),\"raw_reinsprem\":dict(rp),\n           \"raw_incclaims\":dict(ic),\"raw_reinsclaims\":dict(rc),\n           \"raw_tabres\":dict(tabres),\"raw_cededalr\":dict(ceded_alr)}\n\ndef add_cc(sn,sp,assum,by,periods):\n    ccf={int(k):float(v) for k,v in assum.get(\"ceding_comm_front\",{}).items()}\n    cco=float(assum.get(\"ceding_comm_ongoing\",200))\n    iss=sp.get(\"issues\",{})\n    c1={};c2={}\n    for p in periods:\n        cy=by+1+(p//12)\n        c1[p]=float(ccf.get(cy,0)) if p%12==11 else 0.0\n        c2[p]=sum(iss.get(pp,0) for pp in range(p-12,p) if pp>=0)*cco/12\n    sn[\"comm1\"]=c1;sn[\"comm2\"]=c2\n    for p in periods:\n        sn[\"revenue\"][p]=sn[\"revenue\"].get(p,0)+c1.get(p,0)+c2.get(p,0)\n        sn[\"pretax_income\"][p]=sn[\"revenue\"].get(p,0)+sn[\"benefits\"].get(p,0)+sn[\"op_expense\"].get(p,0)\n        sn[\"distributable_earnings\"][p]=sn[\"pretax_income\"].get(p,0)-sn[\"target_surplus\"].get(p,0)+sn[\"target_surplus\"].get(p-1,0)\n    return sn\n\ndef mtr(stmt,disc,periods):\n    de=stmt.get(\"distributable_earnings\",stmt[\"pretax_income\"])\n    mr=disc/12;pvde=sum(de.get(p,0)/((1+mr)**i) for i,p in enumerate(periods))\n    dl=[de.get(p,0) for p in periods];irr=None\n    try:\n        def npv(r):return sum(v/((1+r)**i) for i,v in enumerate(dl))\n        if npv(-0.5)*npv(5.0)<0:\n            lo,hi=-0.5,5.0\n            for _ in range(100):\n                mid=(lo+hi)/2\n                try:\n                    if npv(mid)>0:lo=mid\n                    else:hi=mid\n                except:break\n            irr=(1+(lo+hi)/2)**12-1\n    except:pass\n    cum=mn=0\n    for p in periods:\n        cum+=de.get(p,0)\n        if cum<mn:mn=cum\n    return{\"pvde\":pvde,\"irr\":irr,\"max_neg_cum_de\":mn}\n\ndef ann(stmt,by,periods):\n    out={}\n    for k,v in stmt.items():\n        if isinstance(v,dict) and v and all(isinstance(kk,int) for kk in v):\n            a=defaultdict(float)\n            for p,vv in v.items():a[by+1+(p//12)]+=vv\n            out[k]=dict(a)\n        else:out[k]=v\n    out[\"periods\"]=sorted(set(by+1+(p//12) for p in periods))\n    return out\n\ndef ser(d):\n    if isinstance(d,dict):return{str(k):ser(v) for k,v in d.items()}\n    if isinstance(d,list):return[ser(i) for i in d]\n    return d\n\nDIAG_LINES=[\n    (\"Premium\",\"premium\"),(\"Claims\",\"claims\"),(\"Benefits\",\"benefits\"),\n    (\"Commissions\",\"commissions\"),(\"Prem Tax\",\"prem_tax\"),\n    (\"Op Expense\",\"op_expense\"),(\"Pretax Income\",\"pretax_income\")]\n\ndef run_model(ev_hdr,ev_rows,assum,by,rbc_rows=None,bp_rows=None,ev_raw_recs=None):\n    ev=parse_ev(ev_hdr,ev_rows)\n    if \"error\" in ev:return{\"error\":ev[\"error\"]}\n    recs=ev[\"records\"];max_p=ev[\"max_period\"]\n    if not recs:return{\"error\":\"No data rows found.\"}\n\n    rp={int(iy):{int(cy):v for cy,v in yd.items() if v is not None}\n        for iy,yd in assum.get(\"reins_pct\",{}).items()}\n    cr=apply_rp(recs,rp,by)\n    periods=sorted(set().union(*[set(r[\"values\"].keys()) for r in recs]))\n    if not periods:return{\"error\":\"No periods.\"}\n\n    sp=bld(recs,assum,by,periods)\n    sc=bld(cr,assum,by,periods)\n\n    # Net = predeal - ceded element-wise for non-ceding-comm lines\n    sn={}\n    for k in sp:\n        if isinstance(sp[k],dict) and all(isinstance(kk,int) for kk in sp[k]):\n            sn[k]={p:sp[k].get(p,0)-sc[k].get(p,0) for p in periods}\n        else:sn[k]=sp[k]\n    sn=add_cc(sn,sp,assum,by,periods)\n\n    disc=float(assum.get(\"discount_rate\",0.08))\n    mp=mtr(sp,disc,periods);mc=mtr(sc,disc,periods);mn=mtr(sn,disc,periods)\n    ap=ann(sp,by,periods);ac=ann(sc,by,periods);aN=ann(sn,by,periods)\n\n    iys=sorted(set(r[\"ck_IssYear\"] for r in recs if r[\"ck_IssYear\"]>0))\n\n    # Issue year diagnostic with ACTUAL DOLLAR AMOUNTS\n    iyd={}\n    for iy in iys:\n        d_r=[r for r in recs if r[\"ck_IssYear\"]==iy]\n        c_r=[r for r in cr if r[\"ck_IssYear\"]==iy]\n        sd=ann(bld(d_r,assum,by,periods),by,periods)\n        sc2=ann(bld(c_r,assum,by,periods),by,periods)\n        cal_yrs=ap.get(\"periods\",[]);rows=[]\n        for cy in cal_yrs:\n            exp=rp.get(iy,{}).get(cy)\n            lr=[]\n            for lbl,key in DIAG_LINES:\n                dp=sd.get(key,{}).get(cy,0)\n                cp=sc2.get(key,{}).get(cy,0)\n                ar=(cp/dp) if dp!=0 else None\n                ok=True\n                if exp and exp>0:ok=(ar is not None and abs(ar-exp)<0.005)\n                elif not exp or exp==0:ok=(ar is None or abs(ar or 0)<0.005)\n                lr.append({\"line\":lbl,\"direct\":dp,\"ceded\":cp,\n                           \"expected_rate\":exp,\"actual_rate\":ar,\"ok\":ok})\n            rows.append({\"cal_year\":cy,\"expected_rate\":exp,\"lines\":lr})\n        iyd[iy]=rows\n\n    # EV raw records for browsing (limit to 5000 rows for perf)\n    ev_browse=[]\n    all_varnames=sorted(set(r[\"VarName\"] for r in recs))\n    all_iys=sorted(set(r[\"ck_IssYear\"] for r in recs))\n    for rec in recs[:5000]:\n        row={\"iy\":rec[\"ck_IssYear\"],\"im\":rec[\"ck_IssMon\"],\"nb\":rec[\"ck_NewBus\"],\n             \"pr\":rec[\"Product\"],\"vn\":rec[\"VarName\"],\"vals\":{}}\n        for p in sorted(rec[\"values\"].keys())[:24]:\n            row[\"vals\"][str(p)]=rec[\"values\"][p]\n        ev_browse.append(row)\n\n    # EV Ceded browse\n    evc_browse=[]\n    for rec in cr[:5000]:\n        row={\"iy\":rec[\"ck_IssYear\"],\"im\":rec[\"ck_IssMon\"],\"nb\":rec[\"ck_NewBus\"],\n             \"pr\":rec[\"Product\"],\"vn\":rec[\"VarName\"],\"vals\":{}}\n        for p in sorted(rec[\"values\"].keys())[:24]:\n            row[\"vals\"][str(p)]=rec[\"values\"][p]\n        evc_browse.append(row)\n\n    rbc={};bp={}\n    if rbc_rows:rbc=parse_rbc(rbc_rows)\n    if bp_rows:bp=parse_bp(bp_rows)\n\n    return{\n        \"stmt_predeal\":ser(sp),\"stmt_ceded\":ser(sc),\"stmt_net\":ser(sn),\n        \"annual_predeal\":ser(ap),\"annual_ceded\":ser(ac),\"annual_net\":ser(aN),\n        \"metrics_predeal\":mp,\"metrics_ceded\":mc,\"metrics_net\":mn,\n        \"iss_years\":iys,\"iy_diagnostic\":{str(k):v for k,v in iyd.items()},\n        \"rbc_data\":ser(rbc),\"bp_data\":ser(bp),\n        \"max_period\":max_p,\"ev_records_count\":len(recs),\n        \"ev_browse\":ev_browse,\"evc_browse\":evc_browse,\n        \"all_varnames\":all_varnames,\"all_iys\":all_iys,\n    }\n\nprint(\"Engine v3 ready - no scale factor, correct formulas\")\n";
 
-// ─── STATE ───────────────────────────────────────────────
+function b64ToBytes(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+
 const S={py:null,files:{ev:null,rbc:null,bp:null},out:null,assumptions:null,
   scenarios:JSON.parse(localStorage.getItem('bb_sc')||'[]'),
   auditLog:JSON.parse(localStorage.getItem('bb_al')||'[]'),
   runId:null,charts:{},viewMode:{predeal:'annual',ceded:'annual',net:'annual'}};
 
-// ─── PYTHON ENGINE ────────────────────────────────────────
-const PY=`
-import json,re,datetime
-from collections import defaultdict
-PREM={"EarnedPrem","AEGTakenPremium","GrossPrem","PremIF"}
-CLMS={"IncClaims","IncurredClaims","Claims"}
-RESV={"TabRes","CLRes","UPRes","TotalReserve","StatRes","NetAdvPrem"}
-COMM={"Comm","Commission","AcqComm","AcqExp"}
-PTAX={"PremTax"}
-MEXP={"MaintExpUnit","MaintExpQ","OverheadExp"}
-ISSU={"AEGapplications","Issues","UnitsIssued","LivesIssued"}
-TSRV={"TS"}
-EV_REQ={"ScenId","SensId","ck.IssYear","ck.IssMon","ck.NewBus","Product","ProjPer","ProjMode","VarName","Scale"}
-
-def val_ev(hdr):
-    hs=set(h for h in hdr if h);errs=[]
-    miss=EV_REQ-hs
-    if miss:errs.append("Missing columns: "+", ".join(sorted(miss)))
-    if not[h for h in hdr if h and re.match(r"Value[0-9]+$",h)]:errs.append("No Value### columns found")
-    return errs
-
-def parse_ev(hdr_row,data_rows):
-    hdr=[str(c) if c is not None else None for c in hdr_row]
-    errs=val_ev(hdr)
-    if errs:return {"error":"; ".join(errs)}
-    vc={i:int(h[5:]) for i,h in enumerate(hdr) if h and re.match(r"Value[0-9]+$",h)}
-    meta={h:i for i,h in enumerate(hdr) if h and not re.match(r"Value[0-9]+$",h)}
-    recs=[]
-    for raw in data_rows:
-        row=list(raw)
-        if not any(v is not None and str(v).strip()!="" for v in row):continue
-        vi=meta.get("VarName",-1);var=row[vi] if 0<=vi<len(row) else None
-        if var is None or str(var).strip()=="":continue
-        def g(k,d=None):
-            i=meta.get(k,-1);v=row[i] if 0<=i<len(row) else None
-            return v if v is not None else d
-        sc=str(g("Scale","No"));sf=1000000.0 if sc=="Yes" else 1.0
-        rec={"ScenId":g("ScenId"),"SensId":g("SensId"),
-             "ck_IssYear":int(float(g("ck.IssYear",0) or 0)),
-             "ck_IssMon":int(float(g("ck.IssMon",0) or 0)),
-             "ck_NewBus":g("ck.NewBus"),"Product":g("Product"),
-             "ProjPer":int(float(g("ProjPer",360) or 360)),
-             "VarName":str(var).strip(),"Scale":sc,"values":{}}
-        for ci,p in vc.items():
-            v=row[ci] if ci<len(row) else None
-            rec["values"][p]=(float(v)*sf) if isinstance(v,(int,float)) else 0.0
-        recs.append(rec)
-    return {"records":recs,"max_period":max(vc.values()) if vc else 0,"errors":[]}
-
-def parse_rbc(rows):
-    yrc={}
-    for row in rows:
-        dts=[c for c in row if isinstance(c,datetime.datetime) and 2020<=c.year<=2040]
-        yis=[c for c in row if isinstance(c,(int,float)) and 2020<=c<=2040]
-        if dts:
-            for j,c in enumerate(row):
-                if isinstance(c,datetime.datetime) and 2020<=c.year<=2040:yrc[j]=c.year
-            break
-        if len(yis)>=3:
-            for j,c in enumerate(row):
-                if isinstance(c,(int,float)) and 2020<=c<=2040:yrc[j]=int(c)
-            break
-    if not yrc:return {}
-    m={}
-    for row in rows:
-        if not row or all(c is None for c in row):continue
-        lbl=next((str(c).strip() for c in row if isinstance(c,str) and c.strip()),"")
-        if not lbl:continue
-        vals={yr:float(row[j]) for j,yr in yrc.items() if j<len(row) and isinstance(row[j],(int,float))}
-        if vals:m[lbl]=vals
-    return m
-
-def parse_bp(rows):
-    yrc={}
-    for row in rows:
-        yv=[(j,c) for j,c in enumerate(row) if isinstance(c,(int,float)) and 2020<=c<=2060]
-        if len(yv)>=3:yrc={j:int(c) for j,c in yv};break
-    if not yrc:return {}
-    bp={}
-    for row in rows:
-        if not row or all(c is None for c in row):continue
-        lbl=next((str(c).strip() for c in row if isinstance(c,str) and c.strip()),"")
-        if not lbl:continue
-        vals={yr:float(row[j]) for j,yr in yrc.items() if j<len(row) and isinstance(row[j],(int,float))}
-        if vals:bp[lbl]=vals
-    return {k:{str(yr):v for yr,v in vd.items()} for k,vd in bp.items()}
-
-def agg(recs,vs):
-    t=defaultdict(float)
-    for r in recs:
-        if r["VarName"] in vs:
-            for p,v in r["values"].items():t[p]+=v
-    return dict(t)
-
-def apply_rp(recs,rp,by):
-    out=[]
-    for rec in recs:
-        iy=rec["ck_IssYear"];nv={}
-        for p,v in rec["values"].items():
-            cy=by+1+(p//12);rate=float(rp.get(iy,{}).get(cy) or 0)
-            nv[p]=v*rate
-        nr=dict(rec);nr["values"]=nv;out.append(nr)
-    return out
-
-def bld(recs,assum,by,periods):
-    pr=float(assum.get("premium_tax",0.021))
-    nier={int(k):float(v) for k,v in assum.get("nier",{}).items()}
-    acqy={int(k):float(v) for k,v in assum.get("acq_exp",{}).items()}
-    mnty={int(k):float(v) for k,v in assum.get("maint_exp",{}).items()}
-    prem=agg(recs,PREM);clms=agg(recs,CLMS);cev=agg(recs,COMM)
-    ptev=agg(recs,PTAX);mev=agg(recs,MEXP);iss=agg(recs,ISSU);ts=agg(recs,TSRV)
-    tr=defaultdict(float)
-    for rec in recs:
-        if rec["VarName"] in RESV:
-            for p,v in rec["values"].items():tr[p]+=v
-    nii={}
-    for p in periods:
-        cy=by+1+(p//12);ni=nier.get(cy,0.04)
-        nii[p]=((tr.get(p,0)+tr.get(p-1,tr.get(p,0)))/2)*ni/12
-    rev={p:prem.get(p,0)+nii.get(p,0) for p in periods}
-    com={p:(-abs(cev[p]) if cev.get(p) else -abs(acqy.get(by+1+(p//12),0))/12) for p in periods}
-    ptx={p:(-abs(ptev[p]) if ptev.get(p) else -abs(prem.get(p,0))*pr) for p in periods}
-    mxp={p:(-abs(mev[p]) if mev.get(p) else -abs(mnty.get(by+1+(p//12),0))/12) for p in periods}
-    sll={p:com.get(p,0)+ptx.get(p,0) for p in periods}
-    opx={p:sll.get(p,0)+mxp.get(p,0) for p in periods}
-    dr={p:tr.get(p,0)-tr.get(p-1,0) for p in periods}
-    ben={p:clms.get(p,0)+dr.get(p,0) for p in periods}
-    dts={p:ts.get(p,0)-ts.get(p-1,0) for p in periods}
-    pre={p:rev.get(p,0)+ben.get(p,0)+opx.get(p,0) for p in periods}
-    de={p:pre.get(p,0)-dts.get(p,0) for p in periods}
-    return {"periods":periods,"premium":prem,"nii":nii,"revenue":rev,"claims":clms,
-            "delta_reserves":dr,"benefits":ben,"commissions":com,"prem_tax":ptx,
-            "selling_expense":sll,"maint_expense":mxp,"op_expense":opx,
-            "pretax_income":pre,"distributable_earnings":de,
-            "reserves":dict(tr),"issues":iss,"target_surplus":dict(ts),"base_year":by}
-
-def add_cc(sn,sp,assum,by,periods):
-    ccf={int(k):float(v) for k,v in assum.get("ceding_comm_front",{}).items()}
-    cco=float(assum.get("ceding_comm_ongoing",200))
-    iss=sp.get("issues",{})
-    c1={};c2={}
-    for p in periods:
-        cy=by+1+(p//12)
-        c1[p]=float(ccf.get(cy,0)) if p%12==11 else 0.0
-        c2[p]=sum(iss.get(pp,0) for pp in range(p-12,p) if pp>=0)*cco/12
-    sn["comm1"]=c1;sn["comm2"]=c2
-    for p in periods:
-        sn["revenue"][p]=sn["revenue"].get(p,0)+c1.get(p,0)+c2.get(p,0)
-        sn["pretax_income"][p]=sn["revenue"].get(p,0)+sn["benefits"].get(p,0)+sn["op_expense"].get(p,0)
-    return sn
-
-def mtr(stmt,disc,periods):
-    de=stmt.get("distributable_earnings",stmt["pretax_income"])
-    mr=disc/12;pvde=sum(de.get(p,0)/((1+mr)**i) for i,p in enumerate(periods))
-    dl=[de.get(p,0) for p in periods];irr=None
-    try:
-        def npv(r):return sum(v/((1+r)**i) for i,v in enumerate(dl))
-        if npv(-0.5)*npv(5.0)<0:
-            lo,hi=-0.5,5.0
-            for _ in range(100):
-                mid=(lo+hi)/2
-                try:
-                    if npv(mid)>0:lo=mid
-                    else:hi=mid
-                except:break
-            irr=(1+(lo+hi)/2)**12-1
-    except:pass
-    cum=mn=0
-    for p in periods:
-        cum+=de.get(p,0)
-        if cum<mn:mn=cum
-    return {"pvde":pvde,"irr":irr,"max_neg_cum_de":mn}
-
-def ann(stmt,by,periods):
-    out={}
-    for k,v in stmt.items():
-        if isinstance(v,dict) and v and all(isinstance(kk,int) for kk in v):
-            a=defaultdict(float)
-            for p,vv in v.items():a[by+1+(p//12)]+=vv
-            out[k]=dict(a)
-        else:out[k]=v
-    out["periods"]=sorted(set(by+1+(p//12) for p in periods))
-    return out
-
-def ser(d):
-    if isinstance(d,dict):return {str(k):ser(v) for k,v in d.items()}
-    if isinstance(d,list):return [ser(i) for i in d]
-    return d
-
-DLINES=[("Premium","premium"),("Claims","claims"),("Benefits","benefits"),
-        ("Commissions","commissions"),("Prem Tax","prem_tax"),
-        ("Op Expense","op_expense"),("Pretax Income","pretax_income")]
-
-def run_model(ev_hdr,ev_rows,assum,by,rbc_rows=None,bp_rows=None):
-    ev=parse_ev(ev_hdr,ev_rows)
-    if "error" in ev:return {"error":ev["error"]}
-    recs=ev["records"];max_p=ev["max_period"]
-    if not recs:return {"error":"No data rows found."}
-    rp={int(iy):{int(cy):v for cy,v in yd.items() if v is not None}
-        for iy,yd in assum.get("reins_pct",{}).items()}
-    cr=apply_rp(recs,rp,by)
-    periods=sorted(set().union(*[set(r["values"].keys()) for r in recs]))
-    if not periods:return {"error":"No periods."}
-    sp=bld(recs,assum,by,periods);sc=bld(cr,assum,by,periods)
-    sn={}
-    for k in sp:
-        if isinstance(sp[k],dict) and all(isinstance(kk,int) for kk in sp[k]):
-            sn[k]={p:sp[k].get(p,0)-sc[k].get(p,0) for p in periods}
-        else:sn[k]=sp[k]
-    sn=add_cc(sn,sp,assum,by,periods)
-    disc=float(assum.get("discount_rate",0.08))
-    mp=mtr(sp,disc,periods);mc=mtr(sc,disc,periods);mn=mtr(sn,disc,periods)
-    ap=ann(sp,by,periods);ac=ann(sc,by,periods);aN=ann(sn,by,periods)
-    iys=sorted(set(r["ck_IssYear"] for r in recs if r["ck_IssYear"]>0))
-    # Issue year diagnostic
-    iyd={}
-    for iy in iys:
-        dr=[r for r in recs if r["ck_IssYear"]==iy]
-        cr2=[r for r in cr if r["ck_IssYear"]==iy]
-        sd=ann(bld(dr,assum,by,periods),by,periods)
-        sc2=ann(bld(cr2,assum,by,periods),by,periods)
-        cal_yrs=ap.get("periods",[]);rows=[]
-        for cy in cal_yrs:
-            exp=rp.get(iy,{}).get(cy)
-            lr=[]
-            for lbl,key in DLINES:
-                dp=sd.get(key,{}).get(cy,0);cp=sc2.get(key,{}).get(cy,0)
-                ar=(cp/dp) if dp!=0 else None
-                ok=True
-                if exp and exp>0:ok=(ar is not None and abs(ar-exp)<0.005)
-                elif not exp:ok=(ar is None or abs(ar or 0)<0.001)
-                lr.append({"line":lbl,"direct":dp,"ceded":cp,"expected_rate":exp,"actual_rate":ar,"ok":ok})
-            rows.append({"cal_year":cy,"expected_rate":exp,"lines":lr})
-        iyd[iy]=rows
-    rbc={};bp={}
-    if rbc_rows:rbc=parse_rbc(rbc_rows)
-    if bp_rows:bp=parse_bp(bp_rows)
-    return {
-        "stmt_predeal":ser(sp),"stmt_ceded":ser(sc),"stmt_net":ser(sn),
-        "annual_predeal":ser(ap),"annual_ceded":ser(ac),"annual_net":ser(aN),
-        "metrics_predeal":mp,"metrics_ceded":mc,"metrics_net":mn,
-        "iss_years":iys,"iy_diagnostic":{str(k):v for k,v in iyd.items()},
-        "rbc_data":ser(rbc),"bp_data":ser(bp),
-        "max_period":max_p,"ev_records_count":len(recs),
-    }
-print("Engine ready")
-`;
-
-// ─── PYODIDE INIT ────────────────────────────────────────
+// ── PYODIDE ──────────────────────────────────────────────
 async function initPy(){
-  const st=document.getElementById('pystatus');
-  const bar=document.getElementById('ldb');
-  const msg=document.getElementById('ldmsg');
-  const steps=[['Loading Pyodide...',15],['Fetching packages...',35],['Installing openpyxl...',60],['Loading actuarial engine...',80],['Finalizing...',95]];
+  const st=document.getElementById('pyst'),bar=document.getElementById('ldb'),msg=document.getElementById('ldm');
   try{
-    msg.textContent=steps[0][0];bar.style.width=steps[0][1]+'%';
+    msg.textContent='Loading Pyodide...';bar.style.width='15%';
     S.py=await loadPyodide();
-    msg.textContent=steps[1][0];bar.style.width=steps[1][1]+'%';
+    msg.textContent='Installing openpyxl...';bar.style.width='40%';
     await S.py.loadPackage(['micropip']);
     const mp=S.py.pyimport('micropip');
-    msg.textContent=steps[2][0];bar.style.width=steps[2][1]+'%';
     await mp.install('openpyxl');
-    msg.textContent=steps[3][0];bar.style.width=steps[3][1]+'%';
-    await S.py.runPythonAsync(PY);
-    msg.textContent=steps[4][0];bar.style.width=steps[4][1]+'%';
-    // Load default RBC and BP
+    msg.textContent='Loading actuarial engine...';bar.style.width='70%';
+    await S.py.runPythonAsync(PY_ENGINE);
+    msg.textContent='Loading default files...';bar.style.width='85%';
     S.files.rbc=b64ToBytes(DEFAULT_RBC_B64);
-    S.files.bp =b64ToBytes(DEFAULT_BP_B64);
+    S.files.bp=b64ToBytes(DEFAULT_BP_B64);
     await parseDefaultFiles();
     bar.style.width='100%';
-    await new Promise(r=>setTimeout(r,400));
+    await new Promise(r=>setTimeout(r,350));
     st.textContent='✓ Ready';st.className='ready';
     ['runbtn','runbtn2'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
     document.getElementById('loading').classList.add('hidden');
     initAssumptions();renderScenarios();renderAuditLog();
   }catch(e){
     st.textContent='✗ Error';st.className='error';
-    msg.textContent='Error: '+e.message;console.error(e);
+    document.getElementById('ldm').textContent='Error: '+e.message;
+    console.error(e);
   }
 }
 
 async function parseDefaultFiles(){
-  // Parse RBC and BP defaults via Python
   S.py.globals.set('_rbc',S.files.rbc);
   S.py.globals.set('_bp',S.files.bp);
   await S.py.runPythonAsync(`
-import io,openpyxl,json
-def _parse_xl(b,sheet=None):
+import io,openpyxl
+def _pxl(b,sheet=None):
     wb=openpyxl.load_workbook(io.BytesIO(bytes(b)),data_only=True,read_only=True)
     ws=wb[sheet] if sheet and sheet in wb.sheetnames else wb.worksheets[0]
     rows=[list(r) for r in ws.iter_rows(values_only=True)]
-    wb.close()
-    return rows
-_rbc_rows=_parse_xl(_rbc)
-_bp_rows=_parse_xl(_bp)
-print("Defaults parsed OK")
+    wb.close();return rows
+_rbc_rows=_pxl(_rbc)
+_bp_rows=_pxl(_bp)
+print("Default files parsed")
 `);
 }
 
-// ─── NAVIGATION ──────────────────────────────────────────
+// ── NAVIGATION ───────────────────────────────────────────
 function showTab(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
 }
+
 function showSub(name){
-  ['predeal','ceded','net','balance','rbc','issyr'].forEach(n=>{
+  const all=['predeal','ceded','net','ev','evc','balance','rbc','issyr'];
+  all.forEach(n=>{
     const sp=document.getElementById('sp-'+n);if(sp)sp.style.display=n===name?'':'none';
-    const st=document.getElementById('st-'+n);if(st)st.classList.toggle('active',n===name);
+    const st=document.getElementById('mst-'+n);if(st)st.classList.toggle('active',n===name);
   });
+  if(name==='ev')renderEVTable('direct');
+  if(name==='evc')renderEVTable('ceded');
+  if(name==='issyr')renderIYDiag();
 }
 
-// ─── FILE HANDLING ────────────────────────────────────────
+// ── FILE HANDLING ─────────────────────────────────────────
 async function handleUpload(evt,key){
   const file=evt.target.files[0];if(!file)return;
   const st=document.getElementById('st-'+key);
-  st.style.display='inline-block';
-  st.className='upstat';st.textContent='⏳ Parsing...';
+  st.style.display='inline-block';st.className='upstat';st.textContent='⏳ Parsing...';
   try{
     const arr=await file.arrayBuffer();
     const bytes=new Uint8Array(arr);
-    // Validate format
     const errs=await validateFile(bytes,key);
-    if(errs.length){
-      st.className='upstat err';
-      st.textContent='✗ '+errs.join(' | ');
-      return;
-    }
+    if(errs.length){st.className='upstat err';st.textContent='✗ '+errs.join(' | ');return;}
     S.files[key]=bytes;
-    if(key==='ev'){
-      await extractAssumptions(bytes);
-      showSummaryCard();
-      enableRun();
-    }
-    st.className='upstat ok';
-    st.textContent='✓ '+file.name+' ('+Math.round(file.size/1024)+' KB)';
-    // Re-parse defaults if RBC/BP replaced
+    if(key==='ev'){await extractAssumptions(bytes);showSummaryCard();enableRun();}
     if(key==='rbc'||key==='bp'){
-      S.py.globals.set('_new_file',bytes);
+      S.py.globals.set('_nf',bytes);
       await S.py.runPythonAsync(`
 import io,openpyxl
-wb=openpyxl.load_workbook(io.BytesIO(bytes(_new_file)),data_only=True,read_only=True)
-ws=wb.worksheets[0]
-rows=[list(r) for r in ws.iter_rows(values_only=True)]
-wb.close()
+wb=openpyxl.load_workbook(io.BytesIO(bytes(_nf)),data_only=True,read_only=True)
+ws=wb.worksheets[0];rows=[list(r) for r in ws.iter_rows(values_only=True)];wb.close()
 ${key==='rbc'?'_rbc_rows=rows':'_bp_rows=rows'}
 `);
     }
-  }catch(e){
-    st.className='upstat err';st.textContent='✗ Error: '+e.message;
-    console.error(e);
-  }
+    st.className='upstat ok';st.textContent='✓ '+file.name+' ('+Math.round(file.size/1024)+' KB)';
+  }catch(e){st.className='upstat err';st.textContent='✗ '+e.message;console.error(e);}
 }
 
 async function validateFile(bytes,key){
   if(!S.py)return[];
   S.py.globals.set('_vf',bytes);
-  const result=await S.py.runPythonAsync(`
+  const r=await S.py.runPythonAsync(`
 import io,openpyxl,json,re
 wb=openpyxl.load_workbook(io.BytesIO(bytes(_vf)),data_only=True,read_only=True)
-ws=wb.worksheets[0]
-rows=[list(r) for r in ws.iter_rows(values_only=True,max_row=5)]
-wb.close()
-errs=[]
-key="${key}"
-if key=="ev":
+ws=wb.worksheets[0];rows=[list(r) for r in ws.iter_rows(values_only=True,max_row=5)];wb.close()
+errs=[];flat=[c for r in rows for c in r if c is not None]
+if "${key}"=="ev":
     hdr=[str(c) if c is not None else None for c in rows[0]] if rows else []
     errs=val_ev(hdr)
-elif key=="rbc":
-    flat=[c for r in rows for c in r if c is not None]
+elif "${key}"=="rbc":
     if not any("RBC" in str(c) or "TSC" in str(c) for c in flat):
         errs=["File does not appear to be an RBC file (missing RBC/TSC labels)"]
-elif key=="bp":
-    flat=[c for r in rows for c in r if c is not None]
+elif "${key}"=="bp":
     if not any("Plan" in str(c) or "Premium" in str(c) for c in flat):
         errs=["File does not appear to be a Balance Plan (missing Plan/Premium labels)"]
 json.dumps(errs)
 `);
-  return JSON.parse(result);
+  return JSON.parse(r);
 }
 
 function enableRun(){
@@ -905,14 +566,11 @@ function enableRun(){
 function showSummaryCard(){
   document.getElementById('summary-card').style.display='';
   document.getElementById('summary-grid').innerHTML=[
-    {l:'EV File',v:S.files.ev?'Loaded ✓':'Not uploaded',ok:!!S.files.ev},
-    {l:'RBC Data',v:S.files.rbc?'Loaded ✓':'Not loaded',ok:!!S.files.rbc},
-    {l:'Balance Plan',v:S.files.bp?'Loaded ✓':'Not loaded',ok:!!S.files.bp},
-    {l:'Python Engine',v:S.py?'Ready ✓':'Loading',ok:!!S.py},
-  ].map(it=>`<div style="padding:10px;border:1px solid var(--bb-border);border-radius:var(--r);border-left:3px solid ${it.ok?'var(--bb-success)':'var(--bb-danger)'}"><div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--bb-muted)">${it.l}</div><div style="font-family:var(--fm);font-size:.74rem;margin-top:2px;color:${it.ok?'var(--bb-success)':'var(--bb-danger)'}">${it.v}</div></div>`).join('');
+    {l:'EV File',v:'Loaded ✓',ok:true},{l:'RBC Data',v:'Loaded ✓',ok:true},
+    {l:'Balance Plan',v:'Loaded ✓',ok:true},{l:'Engine',v:'Ready ✓',ok:true},
+  ].map(it=>`<div style="padding:9px;border:1px solid var(--bdr);border-radius:var(--r);border-left:3px solid var(--ok)"><div style="font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)">${it.l}</div><div style="font-family:var(--fm);font-size:.72rem;margin-top:2px;color:var(--ok)">${it.v}</div></div>`).join('');
 }
 
-// Drag-drop setup
 ['ev','rbc','bp'].forEach(k=>{
   const z=document.getElementById('dz-'+k);if(!z)return;
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag-over');});
@@ -926,13 +584,12 @@ function showSummaryCard(){
   });
 });
 
-// ─── ASSUMPTIONS ─────────────────────────────────────────
+// ── ASSUMPTIONS ──────────────────────────────────────────
 function defAssumptions(){
   return{
     premium_tax:0.021,discount_rate:0.08,ceding_comm_ongoing:200,base_year:2025,
     ceding_comm_front:{2026:10,2027:5,2028:5},
-    acq_exp:{2026:243.46,2027:287.88,2028:333.72,2029:373.42,2030:423.09,2031:479.36,2032:533.24,2033:593.17,2034:659.84,2035:679.64},
-    maint_exp:{2026:94.45,2027:89.54,2028:88.38,2029:89.38,2030:91.83,2031:95.60,2032:100.26,2033:105.47,2034:111.51,2035:114.86},
+    acq_exp:{},maint_exp:{},
     nier:{2026:0.039141,2027:0.041943,2028:0.044937,2029:0.047993,2030:0.050973,2031:0.052677,2032:0.053747,2033:0.055135,2034:0.056706,2035:0.049504},
     reins_pct:{
       2019:{2026:10,2027:10,2028:10,2029:10,2030:10,2031:10},
@@ -974,15 +631,11 @@ if "Assumptions" in wb.sheetnames:
         if "Ceding Comm ongoing" in rs:
             for c in row:
                 if isinstance(c,(int,float)):a["ceding_comm_ongoing"]=float(c);break
-        for lbl,k in [("Acq Exp","acq_exp"),("Maint Exp","maint_exp"),("NIER","nier")]:
+        for lbl,k in [("NIER","nier")]:
             if lbl in rs and i>0:
                 yr=data[i-1];yrs=[c for c in yr if isinstance(c,(int,float)) and 2020<=c<=2060]
                 vs=[c for c in row if isinstance(c,(int,float))]
                 if yrs and vs:a[k]={int(y):v for y,v in zip(yrs,vs)}
-        if "Ceding Comm Front" in rs and i>0:
-            dr=data[i-1];dts=[c for c in dr if isinstance(c,datetime.datetime)]
-            vs=[c for c in row if isinstance(c,(int,float))]
-            if dts and vs:a["ceding_comm_front"]={d.year:v for d,v in zip(dts,vs)}
         if "Reins %" in rs:
             ccy=[];ccc=[]
             for j,c in enumerate(row):
@@ -1006,7 +659,7 @@ json.dumps(a)
     if(!S.assumptions)S.assumptions=defAssumptions();
     Object.assign(S.assumptions,parsed);
     renderAssumUI();
-  }catch(e){console.warn('Assumption extraction failed:',e);}
+  }catch(e){console.warn('Assumption extraction:',e);}
 }
 
 function renderAssumUI(){
@@ -1021,9 +674,9 @@ function renderAssumUI(){
 
 function renderCCFront(cf){
   document.getElementById('ccfront-tbody').innerHTML=Object.entries(cf).map(([y,v])=>`
-    <tr><td class="rhdr">${y}</td>
-    <td><input type="number" value="${v}" step="1" style="width:100px" onchange="updCCF(${y},this.value)"></td>
-    <td><button style="color:var(--bb-danger);background:none;border:none;cursor:pointer;padding:4px" onclick="delCCF(${y})">✕</button></td></tr>`).join('');
+    <tr><td class="rh">${y}</td>
+    <td><input type="number" value="${v}" step="1" style="width:110px" onchange="updCCF(${y},this.value)"></td>
+    <td><button style="color:var(--err);background:none;border:none;cursor:pointer;padding:3px" onclick="delCCF(${y})">✕</button></td></tr>`).join('');
 }
 function addCCFrontRow(){const a=S.assumptions;const yrs=Object.keys(a.ceding_comm_front||{}).map(Number);const ny=yrs.length?Math.max(...yrs)+1:2026;if(!a.ceding_comm_front)a.ceding_comm_front={};a.ceding_comm_front[ny]=0;renderCCFront(a.ceding_comm_front);}
 function delCCF(y){delete S.assumptions.ceding_comm_front[y];renderCCFront(S.assumptions.ceding_comm_front);}
@@ -1031,38 +684,32 @@ function updCCF(y,v){S.assumptions.ceding_comm_front[y]=parseFloat(v)||0;markDir
 
 function renderAnnual(a){
   const yrs=[2026,2027,2028,2029,2030,2031,2032,2033,2034,2035];
-  const rows=[{k:'acq_exp',l:'Acq Exp ($/yr)',step:'0.01'},{k:'maint_exp',l:'Maint Exp ($/yr)',step:'0.01'},{k:'nier',l:'NIER (rate)',step:'0.001'}];
+  const rows=[{k:'nier',l:'NIER (rate)',step:'0.001',dec:6}];
   document.getElementById('ann-hd').innerHTML=`<tr><th style="text-align:left">Assumption</th>${yrs.map(y=>`<th>${y}</th>`).join('')}</tr>`;
   document.getElementById('ann-bd').innerHTML=rows.map(r=>`
-    <tr><td class="rhdr">${r.l}</td>
+    <tr><td class="rh">${r.l}</td>
     ${yrs.map(y=>{const v=(a[r.k]||{})[y]||(a[r.k]||{})[String(y)]||'';
-      return`<td><input type="number" value="${v!==''?Number(v).toFixed(r.k==='nier'?6:2):''}" step="${r.step}" style="width:80px" onchange="updAnn('${r.k}',${y},this.value)"></td>`;
+      return`<td><input type="number" value="${v!==''?Number(v).toFixed(r.dec||2):''}" step="${r.step||'0.01'}" style="width:78px" onchange="updAnn('${r.k}',${y},this.value)"></td>`;
     }).join('')}</tr>`).join('');
 }
 function updAnn(k,y,v){if(!S.assumptions[k])S.assumptions[k]={};S.assumptions[k][y]=parseFloat(v)||0;markDirty();}
 
 function renderReinsMatrix(rp){
-  // rp values stored as percentages (10 = 10%)
   const iys=Object.keys(rp).map(Number).sort();
   let calYrs=[...new Set(Object.values(rp).flatMap(o=>Object.keys(o).map(Number)))].sort();
   if(!iys.length){for(let y=2019;y<=2030;y++)iys.push(y);}
   if(!calYrs.length){for(let y=2026;y<=2031;y++)calYrs.push(y);}
   document.getElementById('reins-hd').innerHTML=`<tr><th>Iss Yr \\ Cal Yr</th>${calYrs.map(cy=>`<th>${cy}</th>`).join('')}</tr>`;
   document.getElementById('reins-bd').innerHTML=iys.map(iy=>`
-    <tr><td class="rhdr">${iy}</td>
+    <tr><td class="rh">${iy}</td>
     ${calYrs.map(cy=>{
       const isNull=iy>=cy;
-      if(isNull)return`<td class="nc" title="Pre-issue: ${iy} business not yet issued in ${cy}"></td>`;
+      if(isNull)return`<td class="nc" title="Pre-issue"></td>`;
       const v=(rp[iy]||{})[cy];
-      return`<td><input type="number" value="${v!==null&&v!==undefined?v:''}" step="0.1" min="0" max="100" placeholder="0" style="width:65px" onchange="updReins(${iy},${cy},this.value)" title="${iy}→${cy}: % ceded"></td>`;
+      return`<td><input type="number" value="${v!==null&&v!==undefined?v:''}" step="0.1" min="0" max="100" placeholder="0" style="width:62px" onchange="updReins(${iy},${cy},this.value)"></td>`;
     }).join('')}</tr>`).join('');
 }
-function updReins(iy,cy,v){
-  if(!S.assumptions.reins_pct)S.assumptions.reins_pct={};
-  if(!S.assumptions.reins_pct[iy])S.assumptions.reins_pct[iy]={};
-  S.assumptions.reins_pct[iy][cy]=v===''?null:parseFloat(v);
-  markDirty();
-}
+function updReins(iy,cy,v){if(!S.assumptions.reins_pct)S.assumptions.reins_pct={};if(!S.assumptions.reins_pct[iy])S.assumptions.reins_pct[iy]={};S.assumptions.reins_pct[iy][cy]=v===''?null:parseFloat(v);markDirty();}
 function addReinsRow(){const a=S.assumptions;const yrs=Object.keys(a.reins_pct||{}).map(Number);const ny=yrs.length?Math.max(...yrs)+1:2031;if(!a.reins_pct)a.reins_pct={};a.reins_pct[ny]={};renderReinsMatrix(a.reins_pct);}
 function addReinsCol(){const rp=S.assumptions.reins_pct||{};const all=[...new Set(Object.values(rp).flatMap(o=>Object.keys(o).map(Number)))].sort();const nc=all.length?Math.max(...all)+1:2032;Object.keys(rp).forEach(iy=>{if(Number(iy)<nc)rp[iy][nc]=10;});renderReinsMatrix(rp);}
 
@@ -1072,7 +719,7 @@ function collectAssumptions(){
   a.discount_rate=parseFloat(document.getElementById('a-disc').value)||0.08;
   a.ceding_comm_ongoing=parseFloat(document.getElementById('a-ccong').value)||200;
   a.base_year=parseInt(document.getElementById('a-base').value)||2025;
-  // Convert reins % from percentage to decimal for Python
+  // Convert reins % to decimal for Python
   const rpRaw=a.reins_pct||{};
   a.reins_pct_decimal={};
   Object.entries(rpRaw).forEach(([iy,yrs])=>{
@@ -1084,19 +731,15 @@ function collectAssumptions(){
 function resetAssumptions(){if(!confirm('Reset to defaults?'))return;S.assumptions=defAssumptions();renderAssumUI();}
 function markDirty(){S.isDirty=true;}
 
-// ─── MODEL RUN ────────────────────────────────────────────
+// ── MODEL RUN ─────────────────────────────────────────────
 async function runModel(){
   if(!S.py||!S.files.ev){alert('Load Python and upload EV file first.');return;}
-  const prog=document.getElementById('runprog');
-  const bar=document.getElementById('runbar');
-  const msg=document.getElementById('runmsg');
-  const stat=document.getElementById('runstat');
+  const prog=document.getElementById('runprog'),bar=document.getElementById('runbar'),
+        msg=document.getElementById('runmsg'),stat=document.getElementById('runstat');
   prog.style.display='';
   try{
     collectAssumptions();
-    const a=S.assumptions;
-    const by=a.base_year||2025;
-    // Use decimal reins_pct for Python
+    const a=S.assumptions,by=a.base_year||2025;
     const apython={...a,reins_pct:a.reins_pct_decimal||{}};
 
     msg.textContent='Parsing EV workbook...';bar.style.width='15%';
@@ -1116,18 +759,15 @@ hdr=None
 for row in rows_iter:
     if row and any(str(c)=="VarName" for c in row if c is not None):
         hdr=list(row);break
-if hdr is None:
-    wb.close();result=json.dumps({"error":"No VarName header found"})
+if hdr is None:wb.close();result=json.dumps({"error":"No VarName header"})
 else:
-    data=[list(r) for r in rows_iter]
-    wb.close()
-    result=json.dumps({"header":[str(c) if c is not None else None for c in hdr],
-                       "rows":[[v for v in r] for r in data]})
+    data=[list(r) for r in rows_iter];wb.close()
+    result=json.dumps({"header":[str(c) if c is not None else None for c in hdr],"rows":data})
 result`);
     const parsed=JSON.parse(parseRes);
     if(parsed.error)throw new Error(parsed.error);
 
-    msg.textContent='Running actuarial engine...';bar.style.width='40%';
+    msg.textContent='Running actuarial engine...';bar.style.width='45%';
     S.py.globals.set('_eh',parsed.header);
     S.py.globals.set('_er',parsed.rows);
     S.py.globals.set('_asj',JSON.stringify(apython));
@@ -1142,42 +782,42 @@ for k in ['acq_exp','maint_exp','nier','ceding_comm_front']:
 result=run_model(_eh,_er,assum,int(_by),_rbc_rows,_bp_rows)
 json.dumps(result)`);
 
-    msg.textContent='Rendering...';bar.style.width='80%';
+    msg.textContent='Rendering results...';bar.style.width='82%';
     const out=JSON.parse(resultJson);
     if(out.error)throw new Error(out.error);
-    S.out=out;
-    S.runId='run_'+Date.now();
+    S.out=out;S.runId='run_'+Date.now();
     renderResults(out);
     createAuditEntry(out);
     updateReviewPanel(out);
     bar.style.width='100%';
     stat.textContent='✓ Done — '+new Date().toLocaleTimeString();
-    // Populate issue year selector
+    // Populate IY selector
     const sel=document.getElementById('iy-select');
     if(sel){sel.innerHTML='<option value="">— select —</option>'+(out.iss_years||[]).map(y=>`<option value="${y}">${y}</option>`).join('');}
+    // Populate EV filters
+    populateEVFilters(out);
     showTab('results');
-    setTimeout(()=>{prog.style.display='none';bar.style.width='0%';},2500);
+    setTimeout(()=>{prog.style.display='none';bar.style.width='0%';},2000);
   }catch(e){
     bar.style.width='0%';msg.textContent='';
-    stat.textContent='✗ Error: '+e.message;
-    console.error(e);alert('Model error: '+e.message);
+    stat.textContent='✗ Error: '+e.message;console.error(e);alert('Model error: '+e.message);
   }
 }
 
-// ─── RESULTS RENDERING ───────────────────────────────────
+// ── RESULTS RENDERING ────────────────────────────────────
 const LINES=[
-  {k:'premium',l:'Premium',cls:''},
-  {k:'nii',l:'Net Investment Income',cls:''},
-  {k:'comm1',l:'Ceding Comm (Front-End)',cls:'',netOnly:true},
-  {k:'comm2',l:'Ceding Comm (Ongoing)',cls:'',netOnly:true},
+  {k:'premium',l:'Premium'},
+  {k:'nii',l:'Net Investment Income'},
+  {k:'comm1',l:'Ceding Comm (Front-End)',netOnly:true},
+  {k:'comm2',l:'Ceding Comm (Ongoing)',netOnly:true},
   {k:'revenue',l:'Total Revenue',cls:'sub'},
-  {k:'claims',l:'Claims',cls:''},
-  {k:'delta_reserves',l:'Change in Reserves',cls:''},
+  {k:'claims',l:'Claims'},
+  {k:'delta_reserves',l:'Change in Reserves'},
   {k:'benefits',l:'Total Benefits',cls:'sub'},
-  {k:'commissions',l:'Commissions',cls:''},
-  {k:'prem_tax',l:'Premium Tax',cls:''},
+  {k:'commissions',l:'Commissions'},
+  {k:'prem_tax',l:'Premium Tax'},
   {k:'selling_expense',l:'Selling Expense',cls:'sub'},
-  {k:'maint_expense',l:'Maintenance Expense',cls:''},
+  {k:'maint_expense',l:'Maintenance Expense'},
   {k:'op_expense',l:'Operating Expense',cls:'sub'},
   {k:'pretax_income',l:'Pre-Tax Income',cls:'tot'},
   {k:'distributable_earnings',l:'Distributable Earnings',cls:'de'},
@@ -1185,29 +825,43 @@ const LINES=[
 
 function fmtM(v){if(v===null||v===undefined||isNaN(v))return'—';const n=Number(v)/1e6;return(n<0?'('+Math.abs(n).toFixed(2)+')':n.toFixed(2));}
 function fmtPct(v){if(v===null||v===undefined||isNaN(v))return'—';return(Number(v)*100).toFixed(2)+'%';}
-function fmtNum(v,scale=1e6){if(v===null||v===undefined)return'—';const n=Number(v)/scale;if(isNaN(n))return'—';const cls=n<-0.0001?'neg':n>0.0001?'pos':'';const s=n<0?`(${Math.abs(n).toFixed(2)})`:n.toFixed(2);return cls?`<span class="${cls}">${s}</span>`:s;}
+function fmtNum(v){
+  if(v===null||v===undefined)return'—';
+  const n=Number(v)/1e6;if(isNaN(n))return'—';
+  const cls=n<-0.0001?'neg':n>0.0001?'pos':'';
+  const s=n<0?`(${Math.abs(n).toFixed(2)})`:n.toFixed(2);
+  return cls?`<span class="${cls}">${s}</span>`:s;
+}
+function fmtDol(v){
+  if(v===null||v===undefined)return'—';
+  const n=Number(v);if(isNaN(n))return'—';
+  const cls=n<-0.01?'neg':n>0.01?'pos':'';
+  const fmt=Math.abs(n)>=1e6?(Math.abs(n)/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(Math.abs(n)/1e3).toFixed(0)+'K':Math.abs(n).toFixed(0);
+  const s=n<0?`(${fmt})`:fmt;
+  return cls?`<span class="${cls}">${s}</span>`:s;
+}
 
 function renderResults(out){
   document.getElementById('res-empty').style.display='none';
   document.getElementById('res-content').style.display='';
   const mp=out.metrics_predeal||{},mc=out.metrics_ceded||{},mn=out.metrics_net||{};
   const tiles=[
-    {l:'Wellabe Initial EV',v:fmtM(mp.pvde)+'M',s:'Predeal PVDE @ '+fmtPct(S.assumptions?.discount_rate)},
+    {l:'Wellabe Initial EV',v:fmtM(mp.pvde)+'M',s:'Predeal PVDE'},
     {l:'Wellabe Initial IRR',v:fmtPct(mp.irr),s:'Predeal DE-based'},
     {l:'Ceded EV to Gen Re',v:fmtM(mc.pvde)+'M',s:'PVDE of ceded flows'},
-    {l:'Gen Re IRR',v:fmtPct(mc.irr),s:'Ceded DE-based'},
-    {l:'Wellabe Final EV',v:fmtM(mn.pvde)+'M',s:'Net PVDE (deal accretive?)'},
+    {l:'Wellabe Final EV',v:fmtM(mn.pvde)+'M',s:'Net PVDE'},
     {l:'Wellabe Final IRR',v:fmtPct(mn.irr),s:'Net DE-based'},
     {l:'Max Neg Cum DE (Net)',v:fmtM(mn.max_neg_cum_de)+'M',s:'Peak statutory strain'},
-    {l:'EV Records',v:(out.ev_records_count||0).toLocaleString(),s:'VarName×IssYr rows loaded'},
+    {l:'EV Records',v:(out.ev_records_count||0).toLocaleString(),s:'VarName×IssYr rows'},
+    {l:'Max Projection Period',v:out.max_period+'',s:'months (Value index)'},
   ];
   document.getElementById('metric-tiles').innerHTML=tiles.map(t=>`<div class="mtile"><div class="ml">${t.l}</div><div class="mv">${t.v}</div><div class="ms">${t.s}</div></div>`).join('');
-  renderStmt('predeal-table',out.annual_predeal,out.annual_predeal?.periods,false);
-  renderStmt('ceded-table',  out.annual_ceded,  out.annual_ceded?.periods,  false);
-  renderStmt('net-table',    out.annual_net,     out.annual_net?.periods,    true);
+  renderStmt('tbl-predeal',out.annual_predeal,out.annual_predeal?.periods,false);
+  renderStmt('tbl-ceded',out.annual_ceded,out.annual_ceded?.periods,false);
+  renderStmt('tbl-net',out.annual_net,out.annual_net?.periods,true);
   renderChart('ch-predeal',out.annual_predeal);
-  renderChart('ch-ceded',  out.annual_ceded);
-  renderChart('ch-net',    out.annual_net);
+  renderChart('ch-ceded',out.annual_ceded);
+  renderChart('ch-net',out.annual_net);
   renderBalancePlan(out.bp_data);
   renderRBC(out.rbc_data);
 }
@@ -1219,8 +873,8 @@ function renderStmt(tid,stmt,periods,isNet){
   for(const li of LINES){
     if(li.netOnly&&!isNet)continue;
     const d=stmt[li.key]||{};
-    h+=`<tr${li.cls?` class="${li.cls}"`:''}>
-      <td>${li.l}</td>${cols.map(p=>`<td>${fmtNum(d[p]!==undefined?d[p]:d[String(p)])}</td>`).join('')}</tr>`;
+    const cls=li.cls?' class="'+li.cls+'"':'';
+    h+=`<tr${cls}><td>${li.l}</td>${cols.map(p=>`<td>${fmtNum(d[p]!==undefined?d[p]:d[String(p)])}</td>`).join('')}</tr>`;
   }
   h+='</tbody>';t.innerHTML=h;
 }
@@ -1231,101 +885,215 @@ function setView(view,mode,btn){
   btn.classList.add('active');
   if(!S.out)return;
   const stmt=mode==='annual'?S.out['annual_'+view]:S.out['stmt_'+view];
-  const periods=mode==='annual'?(stmt?.periods||[]):Object.keys((stmt?.premium)||{}).map(Number).sort();
+  // For monthly, get integer period keys
+  let periods;
+  if(mode==='annual'){periods=stmt?.periods||[];}
+  else{
+    const raw=S.out['stmt_'+view];
+    periods=Object.keys((raw?.premium)||{}).map(Number).sort().slice(0,48);
+  }
   renderStmt(view+'-table',stmt,periods,view==='net');
+  // Fix table ID
+  const t=document.getElementById('tbl-'+view);
+  if(t&&stmt)renderStmt('tbl-'+view,stmt,periods,view==='net');
 }
 
 function renderChart(cid,stmt){
-  const c=document.getElementById(cid);if(!c||!stmt||!stmt.periods)return;
+  const c=document.getElementById(cid);if(!c||!stmt?.periods)return;
   if(S.charts[cid])S.charts[cid].destroy();
   const ps=stmt.periods.slice(0,20);
   const g=k=>ps.map(p=>(stmt[k]||{})[p]||(stmt[k]||{})[String(p)]||0);
   S.charts[cid]=new Chart(c,{type:'bar',data:{labels:ps,datasets:[
-    {label:'Revenue',data:g('revenue'),backgroundColor:'rgba(28,43,107,.75)',yAxisID:'y'},
-    {label:'Benefits',data:g('benefits').map(Math.abs),backgroundColor:'rgba(255,215,0,.75)',yAxisID:'y'},
-    {label:'Pre-Tax Income',data:g('pretax_income'),type:'line',borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:2,pointRadius:2,yAxisID:'y'},
-  ]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'}}}}});
+    {label:'Revenue ($M)',data:g('revenue').map(v=>v/1e6),backgroundColor:'rgba(28,43,107,.75)',yAxisID:'y'},
+    {label:'Benefits ($M)',data:g('benefits').map(v=>Math.abs(v)/1e6),backgroundColor:'rgba(255,215,0,.75)',yAxisID:'y'},
+    {label:'Pre-Tax Income ($M)',data:g('pretax_income').map(v=>v/1e6),type:'line',borderColor:'#C0392B',backgroundColor:'transparent',borderWidth:2,pointRadius:2,yAxisID:'y'},
+  ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v.toFixed(1)+'M',font:{size:10}}}}}});
 }
 
+// ── EV DATA BROWSER ──────────────────────────────────────
+function populateEVFilters(out){
+  const varnames=out.all_varnames||[];
+  const iys=out.all_iys||[];
+  ['ev','evc'].forEach(prefix=>{
+    const vsel=document.getElementById(prefix+'-varname-filter');
+    const isel=document.getElementById(prefix+'-issyr-filter');
+    if(vsel)vsel.innerHTML='<option value="">All VarNames</option>'+varnames.map(v=>`<option>${v}</option>`).join('');
+    if(isel)isel.innerHTML='<option value="">All Years</option>'+iys.map(y=>`<option>${y}</option>`).join('');
+  });
+}
+
+function renderEVTable(which){
+  const prefix=which==='direct'?'ev':'evc';
+  const tid=which==='direct'?'tbl-ev':'tbl-evc';
+  const t=document.getElementById(tid);if(!t||!S.out)return;
+  const vf=document.getElementById(prefix+'-varname-filter')?.value||'';
+  const iyf=document.getElementById(prefix+'-issyr-filter')?.value||'';
+  const data=which==='direct'?S.out.ev_browse:S.out.evc_browse;
+  if(!data){t.innerHTML='<thead><tr><th>No data</th></tr></thead>';return;}
+  let rows=data;
+  if(vf)rows=rows.filter(r=>r.vn===vf);
+  if(iyf)rows=rows.filter(r=>r.iy===parseInt(iyf));
+  const show=rows.slice(0,200);
+  // Get period columns (up to first row's vals)
+  const periods=show.length?Object.keys(show[0].vals).map(Number).sort():[];
+  let h=`<thead><tr><th>IssYr</th><th>IssMon</th><th>NewBus</th><th>Product</th><th>VarName</th>${periods.map(p=>`<th>Val${String(p).padStart(3,'0')}</th>`).join('')}</tr></thead><tbody>`;
+  for(const r of show){
+    h+=`<tr><td>${r.iy}</td><td>${r.im}</td><td>${r.nb}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.pr}</td><td style="font-weight:600">${r.vn}</td>${periods.map(p=>{const v=r.vals[String(p)];return`<td>${v!==undefined?v.toFixed(2):'—'}</td>`;}).join('')}</tr>`;
+  }
+  h+=`</tbody>`;
+  if(rows.length>200)h+=`<caption style="caption-side:bottom;font-size:.65rem;color:var(--mu);padding:4px">Showing 200 of ${rows.length} rows. Use filters to narrow.</caption>`;
+  t.innerHTML=h;
+}
+
+// ── BALANCE PLAN ──────────────────────────────────────────
 function renderBalancePlan(bp){
   const t=document.getElementById('tbl-balance');if(!t)return;
-  if(!bp||!Object.keys(bp).length){t.innerHTML='<thead><tr><th>No balance plan data loaded.</th></tr></thead>';return;}
+  if(!bp||!Object.keys(bp).length){t.innerHTML='<thead><tr><th>No balance plan data.</th></tr></thead>';return;}
   const years=Object.keys(Object.values(bp)[0]||{}).sort();
   let h=`<thead><tr><th>Line Item ($M)</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`;
-  Object.entries(bp).forEach(([lbl,vals])=>{
-    const isTotal=lbl==='Revenue'||lbl==='Benefits'||lbl==='Pretax Income'||lbl==='Selling Expense'||lbl==='Operating Expense';
-    h+=`<tr${isTotal?' class="sub"':''}>
-      <td>${lbl}</td>${years.map(y=>`<td>${fmtNum(vals[y],1)}</td>`).join('')}</tr>`;
-  });
+  const sections={Revenue:['Premium','NII','Revenue'],Benefits:['Claims','Reserves','Benefits'],'Expenses':['Commissions','Prem Tax','Selling Expense','Acquisition','Maintenance','Operating Expense'],'Income':['Pretax Income']};
+  let added=new Set();
+  for(const[sec,lines] of Object.entries(sections)){
+    h+=`<tr class="hdr"><td colspan="${years.length+1}">${sec}</td></tr>`;
+    for(const lbl of lines){
+      const vals=bp[lbl];if(!vals)continue;added.add(lbl);
+      const isSub=lbl==='Revenue'||lbl==='Benefits'||lbl.includes('Expense')||lbl==='Pretax Income';
+      h+=`<tr${isSub?' class="sub"':''}><td>${lbl}</td>${years.map(y=>`<td>${fmtNum((vals[y]||0)*1e6)}</td>`).join('')}</tr>`;
+    }
+  }
+  // any remaining
+  for(const[lbl,vals] of Object.entries(bp)){if(added.has(lbl))continue;h+=`<tr><td>${lbl}</td>${years.map(y=>`<td>${fmtNum((vals[y]||0)*1e6)}</td>`).join('')}</tr>`;}
   h+='</tbody>';t.innerHTML=h;
 }
 
+// ── RBC & SURPLUS ─────────────────────────────────────────
 function renderRBC(rbc){
   const div=document.getElementById('rbc-content');if(!div)return;
-  if(!rbc||!Object.keys(rbc).length){div.innerHTML='<p style="color:var(--bb-muted);font-size:.74rem">No RBC data loaded.</p>';return;}
+  if(!rbc||!Object.keys(rbc).length){div.innerHTML='<p style="color:var(--mu);font-size:.72rem">No RBC data loaded.</p>';return;}
+
   const years=Object.keys(Object.values(rbc)[0]||{}).sort();
-  const keyRows=['TSC0','TSC1','TSC1CS','TSC2','TSC3','TSC4a','TSC4b','Total (Pre Covariance)','Post Covariance','Total (Post Covariance)','Total Surplus','TAC (C&S + AVR)','RBC Ratio post-covariance w margin','RBC Ratio post-covariance w/o margin'];
-  const hiRows=new Set(['Total (Pre Covariance)','Total (Post Covariance)','RBC Ratio post-covariance w margin']);
-  const subRows=new Set(['Post Covariance','Total Surplus','TAC (C&S + AVR)']);
-  let html=`<div class="tblwrap"><table class="rbc-table"><thead><tr><th>Metric</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`;
-  for(const k of keyRows){
-    if(!rbc[k])continue;
-    const isRatio=k.includes('Ratio');
-    const cls=hiRows.has(k)?'rbc-hi':subRows.has(k)?'rbc-sub':'';
-    html+=`<tr${cls?' class="'+cls+'"':''}><td>${k}</td>${years.map(y=>{
-      const v=rbc[k][y];
-      if(v===undefined||v===null)return'<td>—</td>';
-      return`<td>${isRatio?Number(v).toFixed(2)+'x':Number(v).toFixed(2)}</td>`;
-    }).join('')}</tr>`;
+  const fmt=v=>v===null||v===undefined?'—':Number(v).toFixed(3);
+  const fmtR=v=>v===null||v===undefined?'—':Number(v).toFixed(2)+'x';
+
+  // RBC Charges section
+  const chargeRows=['TSC0','TSC1','TSLR016','TSC1CS','TSC2','TSC3','TSC4a','TSC4b','Total (Pre Covariance)','Post Covariance','Conservatism factor','Adding 1% conservatism','Adding 3% loss of covariance','Total (Post Covariance)','Covariance'];
+  const surplusRows=['Total Surplus','In LOBs','Portion in non-ins cos','Portion in ins co Corp','AVR','TAC (C&S + AVR)'];
+  const ratioRows=['RBC Ratio pre-covariance','RBC Ratio post-covariance w margin','RBC Ratio post-covariance w/o margin'];
+  const hiRows=new Set(['Total (Pre Covariance)','Total (Post Covariance)','TAC (C&S + AVR)','RBC Ratio post-covariance w margin']);
+
+  function makeSection(title,rows,isRatio=false){
+    let h=`<div style="margin-bottom:14px">
+      <div style="font-family:var(--ft);font-size:.82rem;color:var(--navy);font-weight:bold;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--yel)">${title}</div>
+      <div class="tw"><table class="bbt"><thead><tr><th>Metric</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`;
+    for(const k of rows){
+      if(!rbc[k])continue;
+      const cls=hiRows.has(k)?'tot':'';
+      h+=`<tr${cls?' class="'+cls+'"':''}><td>${k}</td>${years.map(y=>{
+        const v=rbc[k][y];if(v===undefined||v===null)return'<td>—</td>';
+        return`<td>${isRatio?fmtR(v):fmt(v)}</td>`;
+      }).join('')}</tr>`;
+    }
+    h+=`</tbody></table></div></div>`;
+    return h;
   }
-  html+='</tbody></table></div>';
-  div.innerHTML=html;
+
+  div.innerHTML=`
+    <p style="font-size:.72rem;color:var(--mu);margin-bottom:12px;">
+      "Original" view shows the uploaded RBC file as-is. "Updated" view would reflect reinsurance adjustments (requires manual overlay or updated RBC file).
+    </p>
+    <div class="stabs" style="margin-bottom:12px;">
+      <div class="stab active" onclick="showRBCSub('original',this)">Original (Pre-Deal)</div>
+      <div class="stab" onclick="showRBCSub('lift',this)">RBC Ratio Lift Analysis</div>
+    </div>
+    <div id="rbc-original">
+      ${makeSection('RBC Charges ($M)',chargeRows)}
+      ${makeSection('Surplus ($M)',surplusRows)}
+      ${makeSection('RBC Ratios',ratioRows,true)}
+    </div>
+    <div id="rbc-lift" style="display:none">
+      <div class="card">
+        <div class="ch">📈 RBC Ratio Lift Analysis</div>
+        <div class="cb">
+          <p style="font-size:.72rem;color:var(--mu);margin-bottom:10px;">
+            The reinsurance deal cedes a portion of the statutory reserves and claims to Gen Re. 
+            This reduces the C2 (morbidity/mortality) component of RBC charges, improving the RBC ratio.
+            To quantify the exact lift, an updated RBC file reflecting the ceding structure should be uploaded.
+          </p>
+          ${makeSection('Original RBC Ratios (Pre-Deal)',ratioRows,true)}
+          <div style="margin-top:12px;padding:10px 14px;background:var(--ly);border-radius:var(--r);border-left:3px solid var(--navy);">
+            <div style="font-size:.72rem;font-weight:bold;margin-bottom:4px;">How RBC Lift Works</div>
+            <div style="font-size:.7rem;color:var(--mu);line-height:1.6;">
+              Ceding ${fmtPct(Object.values(S.assumptions?.reins_pct_decimal||{})[0]?Object.values(Object.values(S.assumptions?.reins_pct_decimal||{})[0])[0]:0)} of incurred claims and statutory reserves reduces the C2 charge proportionally. 
+              TAC (Total Adjusted Capital) may also change depending on whether ceding commissions improve surplus. 
+              Upload an updated RBC.xlsx reflecting the post-deal structure to see the exact RBC ratio improvement.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
-// ─── ISSUE YEAR DIAGNOSTIC ───────────────────────────────
+function fmtPct(v){if(!v||isNaN(v))return'—';return(Number(v)*100).toFixed(1)+'%';}
+
+function showRBCSub(which,btn){
+  document.getElementById('rbc-original').style.display=which==='original'?'':'none';
+  document.getElementById('rbc-lift').style.display=which==='lift'?'':'none';
+  btn.closest('.stabs').querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── ISSUE YEAR DIAGNOSTIC ─────────────────────────────────
 function renderIYDiag(){
   const sel=document.getElementById('iy-select');
   const iy=parseInt(sel.value);if(!iy||!S.out)return;
   const diag=(S.out.iy_diagnostic||{})[String(iy)];
   const div=document.getElementById('iy-diag-content');
-  if(!diag||!diag.length){div.innerHTML='<p style="color:var(--bb-muted)">No diagnostic data for this issue year.</p>';return;}
+  if(!diag||!diag.length){div.innerHTML='<p style="color:var(--mu)">No diagnostic data for this issue year.</p>';return;}
 
   const activeYears=diag.filter(d=>d.expected_rate&&d.expected_rate>0);
   const passAll=activeYears.every(cy=>cy.lines.every(l=>l.ok));
-  let html=`<div style="margin-bottom:10px;padding:8px 12px;border-radius:var(--r);background:${passAll?'#D4EDDA':'#FEF0EE'};border:1px solid ${passAll?'#A8D5B5':'#FACACA'};font-size:.78rem;font-weight:bold;color:${passAll?'#155724':'#721c24'}">
-    ${passAll?'✓ All checks pass for Issue Year '+iy:'✗ Some checks failed for Issue Year '+iy} — ${activeYears.length} active calendar years</div>`;
+  let html=`<div style="margin-bottom:10px;padding:7px 12px;border-radius:var(--r);background:${passAll?'#D4EDDA':'#FEF0EE'};border:1px solid ${passAll?'#A8D5B5':'#FACACA'};font-size:.76rem;font-weight:bold;color:${passAll?'#155724':'#721c24'}">
+    ${passAll?'✓ All checks pass':'✗ Some checks failed'} — Issue Year ${iy} — ${activeYears.length} active calendar years</div>`;
 
-  // Summary table: one row per calendar year, columns = line items
+  // For each calendar year: show a mini table with predeal/$, ceded/$, ratio, expected, pass/fail
   const lineNames=diag[0]?.lines?.map(l=>l.line)||[];
-  html+=`<div class="tblwrap"><table class="bbt" style="font-size:.68rem"><thead><tr>
-    <th>Calendar Year</th><th>Expected Reins%</th>
-    ${lineNames.map(l=>`<th>${l}</th>`).join('')}
-    <th>Status</th></tr></thead><tbody>`;
 
   for(const cyData of diag){
     const exp=cyData.expected_rate;
     const expPct=exp!==null&&exp!==undefined?(exp*100).toFixed(1)+'%':'—';
     const relevant=exp&&exp>0;
     const rowOk=cyData.lines.every(l=>l.ok);
-    html+=`<tr${relevant?'':' style="opacity:.5"'}>
-      <td style="font-weight:bold">${cyData.cal_year}</td>
-      <td style="text-align:right">${expPct}</td>
-      ${cyData.lines.map(l=>{
-        const ar=l.actual_rate;
-        const arPct=ar!==null&&ar!==undefined?(ar*100).toFixed(1)+'%':'—';
-        const ok=l.ok;
-        if(!relevant)return`<td class="diag-na">${arPct}</td>`;
-        return`<td class="${ok?'diag-ok':'diag-fail'}">${arPct}</td>`;
-      }).join('')}
-      <td>${relevant?(rowOk?'<span class="tag tgy">✓ Pass</span>':'<span class="tag" style="background:#C0392B;color:#fff">✗ Fail</span>'):'<span class="tag tgg">N/A</span>'}</td>
-    </tr>`;
+
+    html+=`<div style="margin-bottom:12px;">
+      <div style="font-size:.7rem;font-weight:bold;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
+        <span>Calendar Year ${cyData.cal_year}</span>
+        <span style="font-weight:normal;color:var(--mu)">Expected Reins%: <strong>${expPct}</strong></span>
+        ${relevant?(rowOk?'<span class="tag tgy">✓ Pass</span>':'<span class="tag" style="background:#C0392B;color:#fff">✗ Fail</span>'):'<span class="tag tgg">Pre-issue N/A</span>'}
+      </div>
+      <div class="tw"><table class="bbt" style="font-size:.65rem;">
+        <thead><tr><th>Line Item</th><th>Predeal ($)</th><th>Ceded ($)</th><th>Actual %</th><th>Expected %</th><th>Status</th></tr></thead>
+        <tbody>`;
+
+    for(const l of cyData.lines){
+      const ar=l.actual_rate;
+      const arPct=ar!==null&&ar!==undefined?(ar*100).toFixed(1)+'%':'—';
+      const statusCell=!relevant?'<span class="tag tgg">N/A</span>'
+        :l.ok?'<span class="tag tgy">✓</span>':'<span class="tag" style="background:#C0392B;color:#fff;font-size:.58rem">✗</span>';
+      html+=`<tr${!relevant?' style="opacity:.45"':''}>
+        <td style="font-weight:600">${l.line}</td>
+        <td>${fmtDol(l.direct)}</td>
+        <td>${fmtDol(l.ceded)}</td>
+        <td style="font-weight:bold">${arPct}</td>
+        <td>${expPct}</td>
+        <td style="text-align:center">${statusCell}</td>
+      </tr>`;
+    }
+    html+=`</tbody></table></div></div>`;
   }
-  html+='</tbody></table></div>';
-  html+=`<p style="font-size:.68rem;color:var(--bb-muted);margin-top:8px;">Values shown as % of direct. Expected = Reins% from assumptions. Direct and ceded amounts must match expected rate ±0.5% for each line item.</p>`;
   div.innerHTML=html;
 }
 
-// ─── SCENARIOS ───────────────────────────────────────────
+// ── SCENARIOS ────────────────────────────────────────────
 function saveScenario(){
   if(!S.out){alert('Run the model first.');return;}
   const name=prompt('Scenario name:','Scenario '+(S.scenarios.length+1));if(!name)return;
@@ -1342,29 +1110,30 @@ function renderScenarios(){
   if(emp)emp.style.display='none';
   list.innerHTML=S.scenarios.map((s,i)=>`
     <div class="scard">
-      <div class="sch">${s.name}<span style="opacity:.55;font-weight:normal;font-size:.68rem;margin-left:auto">${new Date(s.ts).toLocaleString()}</span>
+      <div class="sch">${s.name}<span style="opacity:.55;font-weight:normal;font-size:.65rem;margin-left:auto">${new Date(s.ts).toLocaleString()}</span>
         <button class="btn btn-y btn-sm" onclick="loadSc(${i})">Load</button>
-        <button class="btn btn-sm" style="background:rgba(192,57,43,.15);color:var(--bb-danger)" onclick="delSc(${i})">✕</button></div>
+        <button class="btn btn-sm" style="background:rgba(192,57,43,.15);color:var(--err)" onclick="delSc(${i})">✕</button></div>
       <div class="scb">
         <div class="sm"><div class="sml">Predeal EV</div><div class="smv">${fmtM(s.metrics?.predeal?.pvde)}M</div></div>
         <div class="sm"><div class="sml">Net EV</div><div class="smv">${fmtM(s.metrics?.net?.pvde)}M</div></div>
-        <div class="sm"><div class="sml">Net IRR</div><div class="smv">${fmtPct(s.metrics?.net?.irr)}</div></div>
+        <div class="sm"><div class="sml">Net IRR</div><div class="smv">${fmtPct2(s.metrics?.net?.irr)}</div></div>
         <div class="sm"><div class="sml">Ceded EV</div><div class="smv">${fmtM(s.metrics?.ceded?.pvde)}M</div></div>
-        <div class="sm"><div class="sml">Discount</div><div class="smv">${fmtPct(s.assumptions?.discount_rate)}</div></div>
+        <div class="sm"><div class="sml">Discount</div><div class="smv">${fmtPct2(s.assumptions?.discount_rate)}</div></div>
         <div class="sm"><div class="sml">Max Neg DE</div><div class="smv">${fmtM(s.metrics?.net?.max_neg_cum_de)}M</div></div>
       </div></div>`).join('');
 }
+function fmtPct2(v){if(v===null||v===undefined||isNaN(v))return'—';return(Number(v)*100).toFixed(2)+'%';}
 function loadSc(i){const s=S.scenarios[i];S.assumptions=JSON.parse(JSON.stringify(s.assumptions));renderAssumUI();document.getElementById('scenname').textContent='▶ '+s.name;showTab('assumptions');}
 function delSc(i){if(!confirm('Delete?'))return;S.scenarios.splice(i,1);localStorage.setItem('bb_sc',JSON.stringify(S.scenarios));renderScenarios();}
 function clearScenarios(){if(!confirm('Clear all?'))return;S.scenarios=[];localStorage.removeItem('bb_sc');renderScenarios();}
 function exportScenariosJSON(){const b=new Blob([JSON.stringify(S.scenarios,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='bb_scenarios_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 
-// ─── AUDIT LOG ───────────────────────────────────────────
+// ── AUDIT ─────────────────────────────────────────────────
 function createAuditEntry(out){
   const entry={run_id:S.runId,ts:new Date().toISOString(),
     assumptions:JSON.parse(JSON.stringify(S.assumptions)),
     metrics:{predeal:{pvde:out.metrics_predeal?.pvde,irr:out.metrics_predeal?.irr},
-             ceded:{pvde:out.metrics_ceded?.pvde,irr:out.metrics_ceded?.irr},
+             ceded:{pvde:out.metrics_ceded?.pvde},
              net:{pvde:out.metrics_net?.pvde,irr:out.metrics_net?.irr,max_neg_cum_de:out.metrics_net?.max_neg_cum_de}},
     ev_records:out.ev_records_count,max_period:out.max_period,
     status:'draft',reviewer:null,comment:null,diffs:diffAssum()};
@@ -1381,104 +1150,81 @@ function diffAssum(){
   return diffs;
 }
 function renderAuditLog(){
-  const list=document.getElementById('al-list');const emp=document.getElementById('al-empty');
+  const list=document.getElementById('al-list'),emp=document.getElementById('al-empty');
   if(!S.auditLog.length){if(emp)emp.style.display='';list.innerHTML='';return;}
   if(emp)emp.style.display='none';
   const bmap={draft:'bd',review:'br',approved:'ba',rejected:'bd'};
   const lmap={draft:'Draft',review:'Under Review',approved:'Approved',rejected:'Rejected'};
   list.innerHTML=S.auditLog.map((e,i)=>`
-    <div class="aentry">
+    <div class="ae">
       <div class="aeh">
-        <span class="abadge ${bmap[e.status]||'bd'}">${lmap[e.status]||'Draft'}</span>
-        <span style="font-family:var(--fm);font-size:.66rem">${e.run_id}</span>
-        <span style="color:var(--bb-muted);font-size:.68rem">${new Date(e.ts).toLocaleString()}</span>
-        ${e.reviewer?`<span style="margin-left:auto;font-size:.68rem">Reviewer: <strong>${e.reviewer}</strong></span>`:''}
+        <span class="abd ${bmap[e.status]||'bd'}">${lmap[e.status]||'Draft'}</span>
+        <span style="font-family:var(--fm);font-size:.64rem">${e.run_id}</span>
+        <span style="color:var(--mu);font-size:.66rem">${new Date(e.ts).toLocaleString()}</span>
+        ${e.reviewer?`<span style="margin-left:auto;font-size:.66rem">Reviewer: <strong>${e.reviewer}</strong></span>`:''}
       </div>
       <div class="aeb">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
-          ${[['Predeal EV',fmtM(e.metrics?.predeal?.pvde)+'M'],['Net EV',fmtM(e.metrics?.net?.pvde)+'M'],['Net IRR',fmtPct(e.metrics?.net?.irr)],['EV Records',(e.ev_records||0).toLocaleString()]].map(([l,v])=>`<div><div style="font-size:.58rem;color:var(--bb-muted);text-transform:uppercase">${l}</div><div style="font-family:var(--fm);font-weight:bold;font-size:.8rem">${v}</div></div>`).join('')}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:9px">
+          ${[['Predeal EV',fmtM(e.metrics?.predeal?.pvde)+'M'],['Net EV',fmtM(e.metrics?.net?.pvde)+'M'],['Net IRR',fmtPct2(e.metrics?.net?.irr)],['EV Records',(e.ev_records||0).toLocaleString()]].map(([l,v])=>`<div><div style="font-size:.58rem;color:var(--mu);text-transform:uppercase">${l}</div><div style="font-family:var(--fm);font-weight:bold;font-size:.76rem">${v}</div></div>`).join('')}
         </div>
-        ${e.diffs?.length?`<div style="font-size:.66rem;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Changes vs prior run</div>
-          ${e.diffs.map(d=>`<div style="display:flex;gap:10px;font-size:.7rem;margin-bottom:2px"><span style="font-family:var(--fm);font-weight:bold;min-width:140px">${d.key}</span><span style="color:var(--bb-danger);font-family:var(--fm)">← ${d.old}</span><span style="color:var(--bb-mid)">→</span><span style="color:var(--bb-success);font-family:var(--fm)">${d.new}</span></div>`).join('')}`
-          :'<div style="font-size:.68rem;color:var(--bb-muted)">No assumption changes vs prior run.</div>'}
-        ${e.comment?`<div style="margin-top:8px;padding:7px 10px;background:var(--bb-offwhite);border-left:3px solid var(--bb-navy);font-size:.72rem"><strong>${e.reviewer}</strong>: ${e.comment}</div>`:''}
-        <div style="margin-top:8px;display:flex;gap:8px">
+        ${e.diffs?.length?`<div style="font-size:.64rem;font-weight:bold;text-transform:uppercase;margin-bottom:3px">Changes vs prior</div>
+          ${e.diffs.map(d=>`<div style="display:flex;gap:8px;font-size:.68rem;margin-bottom:2px"><span style="font-family:var(--fm);font-weight:bold;min-width:130px">${d.key}</span><span style="color:var(--err);font-family:var(--fm)">← ${d.old}</span><span>→</span><span style="color:var(--ok);font-family:var(--fm)">${d.new}</span></div>`).join('')}`
+          :'<div style="font-size:.66rem;color:var(--mu)">No assumption changes vs prior run.</div>'}
+        ${e.comment?`<div style="margin-top:7px;padding:6px 10px;background:var(--off);border-left:3px solid var(--navy);font-size:.7rem"><strong>${e.reviewer}</strong>: ${e.comment}</div>`:''}
+        <div style="margin-top:7px;display:flex;gap:7px">
           <button class="btn btn-o btn-sm" onclick="toggleDetail(${i})">Details</button>
-          <button class="btn btn-o btn-sm" onclick="exportAuditTxt()">⬇ Export</button>
         </div>
-        <div id="ad-${i}" style="display:none;margin-top:8px;font-size:.66rem;font-family:var(--fm);background:var(--bb-offwhite);padding:8px;border-radius:var(--r);max-height:160px;overflow-y:auto">
-          Discount: ${fmtPct(e.assumptions?.discount_rate)} | Prem Tax: ${fmtPct(e.assumptions?.premium_tax)} | CC Ongoing: $${e.assumptions?.ceding_comm_ongoing||'—'}/policy/yr | Max Period: ${e.max_period||'—'}
+        <div id="ad-${i}" style="display:none;margin-top:7px;font-size:.64rem;font-family:var(--fm);background:var(--off);padding:7px;border-radius:var(--r)">
+          Discount: ${fmtPct2(e.assumptions?.discount_rate)} | Prem Tax: ${fmtPct2(e.assumptions?.premium_tax)} | CC Ongoing: $${e.assumptions?.ceding_comm_ongoing||'—'}/policy/yr | Max Period: ${e.max_period||'—'}
         </div>
       </div>
     </div>`).join('');
 }
 function toggleDetail(i){const d=document.getElementById('ad-'+i);d.style.display=d.style.display==='none'?'':'none';}
-function exportAuditTxt(){
-  const lines=S.auditLog.map(e=>`Run: ${e.run_id}\nTimestamp: ${e.ts}\nStatus: ${e.status}\nReviewer: ${e.reviewer||'—'}\nPredeal EV: ${fmtM(e.metrics?.predeal?.pvde)}M\nNet EV: ${fmtM(e.metrics?.net?.pvde)}M\nNet IRR: ${fmtPct(e.metrics?.net?.irr)}\nComment: ${e.comment||'—'}\n${'─'.repeat(50)}`).join('\n');
-  const b=new Blob([lines],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='bb_audit_'+new Date().toISOString().slice(0,10)+'.txt';a.click();
-}
 
-// ─── PEER REVIEW PANEL ───────────────────────────────────
+// ── PEER REVIEW ──────────────────────────────────────────
 function updateReviewPanel(out){
   document.getElementById('rev-norun').style.display='none';
   document.getElementById('rev-content').style.display='';
   const a=S.assumptions||{};
-  // Auto-populate evidence fields
   const ev=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
-  ev('re1',`${out.ev_records_count?.toLocaleString()||'?'} rows parsed OK`);
-  ev('re2',(out.iss_years||[]).join(', ')||'—');
-  ev('re3',`Max period: ${out.max_period||'?'} (${out.max_period===360?'✓ Full 30yr':'⚠ Check'} )`);
-
+  ev('re1',`${out.ev_records_count?.toLocaleString()||'?'} rows OK`);
+  const iys=out.iss_years||[];
+  // Truncate the issue years list so it wraps
+  const iyStr=iys.length>10?iys.slice(0,10).join(', ')+' ...+more':iys.join(', ');
+  ev('re2',iyStr||'—');
+  ev('re3',`Max: ${out.max_period||'?'} ${out.max_period===360?'✓':'⚠'}`);
   const rp=a.reins_pct||{};
-  const matrixOk=Object.keys(rp).length>0;
-  const lowerTriOk=Object.entries(rp).every(([iy,yrs])=>Object.keys(yrs).every(cy=>Number(cy)>Number(iy)||yrs[cy]===null));
-  ev('re4',`${Object.keys(rp).length} issue yrs × ${Object.keys(Object.values(rp)[0]||{}).length} cal yrs; Lower triangle: ${lowerTriOk?'✓ clean':'⚠ check'}`);
-
-  // IY diagnostic pass/fail
+  const lowerOk=Object.entries(rp).every(([iy,yrs])=>Object.keys(yrs).every(cy=>Number(cy)>Number(iy)||yrs[cy]===null));
+  ev('re4',`${Object.keys(rp).length} IssYrs; triangle: ${lowerOk?'✓':'⚠'}`);
   const iyd=out.iy_diagnostic||{};
-  const totalChecks=Object.values(iyd).flatMap(rows=>rows.flatMap(r=>r.lines.filter(l=>r.expected_rate&&r.expected_rate>0))).length;
-  const passChecks=Object.values(iyd).flatMap(rows=>rows.flatMap(r=>r.lines.filter(l=>r.expected_rate&&r.expected_rate>0&&l.ok))).length;
-  ev('re5',`${passChecks}/${totalChecks} checks pass`);
-  ev('re6',`Front: ${JSON.stringify(a.ceding_comm_front||{})} | Ongoing: $${a.ceding_comm_ongoing||'—'}/policy/yr`);
-
-  // Loss ratio for predeal
-  const ap=out.annual_predeal||{};const firstYr=(ap.periods||[])[0];
-  const prem=(ap.premium||{})[firstYr]||(ap.premium||{})[String(firstYr)]||0;
-  const clms=Math.abs((ap.claims||{})[firstYr]||(ap.claims||{})[String(firstYr)]||0);
+  const totalC=Object.values(iyd).flatMap(rows=>rows.flatMap(r=>r.lines.filter(l=>r.expected_rate&&r.expected_rate>0))).length;
+  const passC=Object.values(iyd).flatMap(rows=>rows.flatMap(r=>r.lines.filter(l=>r.expected_rate&&r.expected_rate>0&&l.ok))).length;
+  ev('re5',`${passC}/${totalC} ✓`);
+  const ccf=JSON.stringify(a.ceding_comm_front||{}).replace(/"/g,'').replace(/\{|\}/g,'');
+  ev('re6',`Ongoing: $${a.ceding_comm_ongoing||'—'}/pol/yr`);
+  const ap=out.annual_predeal||{};const fy=(ap.periods||[])[0];
+  const prem=(ap.premium||{})[fy]||(ap.premium||{})[String(fy)]||0;
+  const clms=Math.abs((ap.claims||{})[fy]||(ap.claims||{})[String(fy)]||0);
   const lr=prem?clms/prem:null;
-  ev('re7',lr?`${(lr*100).toFixed(1)}% (yr ${firstYr})`:'—');
-
-  const netAccretive=(out.metrics_net?.pvde||0)>(out.metrics_predeal?.pvde||0);
-  ev('re8',`Net EV: ${fmtM(out.metrics_net?.pvde)}M vs Predeal: ${fmtM(out.metrics_predeal?.pvde)}M → ${netAccretive?'✓ Accretive':'⚠ Check'}`);
-
-  // Balance plan check
-  const bp=out.bp_data||{};const bpPrem=(bp['Premium']||{})[String(firstYr)];
-  const modelPremM=(prem/1e6).toFixed(2);const planPremM=bpPrem?Number(bpPrem).toFixed(2):'—';
-  ev('re9',`Model: $${modelPremM}M vs Plan: $${planPremM}M (yr ${firstYr})`);
-
-  ev('re10',fmtPct(a.discount_rate));
-  const netIrrGt=((out.metrics_net?.irr||0)>(out.metrics_predeal?.irr||0));
-  ev('re11',`Net: ${fmtPct(out.metrics_net?.irr)} vs Predeal: ${fmtPct(out.metrics_predeal?.irr)} → ${netIrrGt?'✓':'⚠ check'}`);
-  ev('re12',`${fmtM(out.metrics_net?.max_neg_cum_de)}M peak strain`);
-
-  // Run summary
+  ev('re7',lr?`${(lr*100).toFixed(1)}% yr ${fy}`:'—');
+  const netOk=(out.metrics_net?.pvde||0)>(out.metrics_predeal?.pvde||0);
+  ev('re8',`Net: ${fmtM(out.metrics_net?.pvde)}M vs Pre: ${fmtM(out.metrics_predeal?.pvde)}M ${netOk?'✓':'⚠'}`);
+  const bp=out.bp_data||{};const bpP=(bp['Premium']||{})[String(fy)];
+  ev('re9',bpP?`Model: ${(prem/1e6).toFixed(1)}M vs Plan: ${Number(bpP).toFixed(1)}M`:'No plan data');
+  ev('re10',fmtPct2(a.discount_rate));
+  const irrOk=(out.metrics_net?.irr||0)>(out.metrics_predeal?.irr||0);
+  ev('re11',`Net: ${fmtPct2(out.metrics_net?.irr)} vs Pre: ${fmtPct2(out.metrics_predeal?.irr)} ${irrOk?'✓':'⚠'}`);
+  ev('re12',`${fmtM(out.metrics_net?.max_neg_cum_de)}M`);
   document.getElementById('rev-runsummary').innerHTML=`
-    <table style="width:100%;font-size:.72rem;border-collapse:collapse">
-      ${[['Run ID',S.runId||'—'],['Timestamp',new Date().toLocaleString()],
-         ['EV Records',(out.ev_records_count||0).toLocaleString()],
-         ['Max Projection Period',out.max_period+''],
-         ['Predeal EV',fmtM(out.metrics_predeal?.pvde)+'M'],
-         ['Predeal IRR',fmtPct(out.metrics_predeal?.irr)],
-         ['Ceded EV',fmtM(out.metrics_ceded?.pvde)+'M'],
-         ['Net EV',fmtM(out.metrics_net?.pvde)+'M'],
-         ['Net IRR',fmtPct(out.metrics_net?.irr)],
-         ['Max Neg Cum DE',fmtM(out.metrics_net?.max_neg_cum_de)+'M'],
-         ['Discount Rate',fmtPct(a.discount_rate)],
-         ['Reins% (2026 IssYr)',fmtPct(((a.reins_pct_decimal||{})[2026]||{})[2027])],
-      ].map(([l,v])=>`<tr style="border-bottom:1px solid var(--bb-border)"><td style="padding:4px 0;color:var(--bb-muted);width:55%">${l}</td><td style="font-family:var(--fm);font-weight:bold">${v}</td></tr>`).join('')}
+    <table style="width:100%;font-size:.7rem;border-collapse:collapse">
+      ${[['Run ID',S.runId||'—'],['Time',new Date().toLocaleString()],['EV Records',(out.ev_records_count||0).toLocaleString()],
+         ['Max Period',out.max_period+''],['Predeal EV',fmtM(out.metrics_predeal?.pvde)+'M'],
+         ['Predeal IRR',fmtPct2(out.metrics_predeal?.irr)],['Ceded EV',fmtM(out.metrics_ceded?.pvde)+'M'],
+         ['Net EV',fmtM(out.metrics_net?.pvde)+'M'],['Net IRR',fmtPct2(out.metrics_net?.irr)],
+         ['Max Neg Cum DE',fmtM(out.metrics_net?.max_neg_cum_de)+'M'],['Discount Rate',fmtPct2(a.discount_rate)],
+      ].map(([l,v])=>`<tr style="border-bottom:1px solid var(--bdr)"><td style="padding:3px 0;color:var(--mu);width:50%">${l}</td><td style="font-family:var(--fm);font-weight:bold">${v}</td></tr>`).join('')}
     </table>`;
-
-  // Set today's date
   const rd=document.getElementById('rev-date');if(rd&&!rd.value)rd.value=new Date().toISOString().slice(0,10);
 }
 
@@ -1487,26 +1233,27 @@ function signOff(status){
   const comment=document.getElementById('rev-comment')?.value?.trim();
   if(!name){alert('Enter reviewer name.');return;}
   if(!S.auditLog.length){alert('Run the model first.');return;}
-  const checked=document.querySelectorAll('.rcheck-row input[type=checkbox]:checked').length;
-  const total=document.querySelectorAll('.rcheck-row input[type=checkbox]').length;
-  if(status==='approved'&&checked<total){if(!confirm(`Only ${checked}/${total} checklist items are ticked. Approve anyway?`))return;}
+  const checked=document.querySelectorAll('.rck input[type=checkbox]:checked').length;
+  const total=document.querySelectorAll('.rck input[type=checkbox]').length;
+  if(status==='approved'&&checked<total){if(!confirm(`Only ${checked}/${total} items checked. Approve anyway?`))return;}
   S.auditLog[0].status=status;S.auditLog[0].reviewer=name;S.auditLog[0].comment=comment;
-  S.auditLog[0].review_ts=new Date().toISOString();S.auditLog[0].checklist_progress=`${checked}/${total}`;
+  S.auditLog[0].review_ts=new Date().toISOString();S.auditLog[0].checklist=`${checked}/${total}`;
   localStorage.setItem('bb_al',JSON.stringify(S.auditLog));renderAuditLog();
-  const msgs={approved:'✓ Approved by '+name,review:'📋 Marked Under Review by '+name,rejected:'✗ Rejected by '+name};
+  const msgs={approved:'✓ Approved by '+name,review:'📋 Under Review by '+name,rejected:'✗ Rejected by '+name};
   document.getElementById('rev-progress').textContent=msgs[status]||'';
   showTab('audit');
 }
 
-// ─── EXPORT CSV ──────────────────────────────────────────
+// ── EXPORT ────────────────────────────────────────────────
 function exportCSV(view){
   const t=document.getElementById('tbl-'+view);if(!t)return;
   const rows=Array.from(t.querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('th,td')).map(td=>'"'+td.textContent.trim()+'"').join(',')).join('\n');
   const b=new Blob([rows],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='bb_'+view+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
 
-// ─── INIT ─────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────
 initPy();
+
 </script>
 </body>
 </html>
