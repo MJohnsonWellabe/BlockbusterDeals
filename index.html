@@ -192,8 +192,8 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
         <div class="fg"><label class="fl">Premium Tax Rate</label><input class="fi" type="number" id="a-ptax" step="0.001" value="0.021"></div>
         <div class="fg"><label class="fl">Discount Rate (PVDE)</label><input class="fi" type="number" id="a-disc" step="0.001" value="0.08"></div>
         <div class="fg"><label class="fl">Ceding Comm Ongoing ($/pol/yr)</label><input class="fi" type="number" id="a-ccong" step="1" value="200"></div>
-      <div class="fg"><label class="fl">Claim Scalar</label><input class="fi" type="number" id="a-clm" value="1.0" step="0.01" min="0.1" max="5" title="Scales IncClaims and ReinsClaims. Default=1.0"></div>
-      <div class="fg"><label class="fl">Lapse Scalar</label><input class="fi" type="number" id="a-lps" value="1.0" step="0.01" min="0.1" max="5" title="Scales lapse rates. Default=1.0"></div>
+      <div class="fg"><label class="fl">Claim Scalar</label><input class="fi" type="number" id="a-clm" value="1.0" step="0.01" min="0.1" max="5" title="Default 1.0. Scales IncClaims and ReinsClaims."></div>
+      <div class="fg"><label class="fl">Lapse Scalar</label><input class="fi" type="number" id="a-lps" value="1.0" step="0.01" min="0.1" max="5" title="Default 1.0. Scales lapse rates."></div>
         <div class="fg"><label class="fl">Base Calendar Year</label><input class="fi" type="number" id="a-base" step="1" value="2025"></div>
       </div>
       <hr class="bbdiv">
@@ -202,7 +202,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
       <button class="btn btn-o btn-sm" style="margin-top:6px;" onclick="addCCFrontRow()">+ Add Year</button>
     </div></div>
     <div class="card"><div class="ch">Annual Assumptions</div><div class="cb" style="overflow-x:auto;">
-      <p style="font-size:.65rem;color:var(--mu);margin-bottom:5px">Tip: Copy from Excel and paste into any cell to fill the grid.</p><table class="mtx" id="ann-tbl" onpaste="handleAnnPaste(event)"><thead id="ann-hd"></thead><tbody id="ann-bd"></tbody></table>
+      <p style="font-size:.65rem;color:var(--mu);margin-bottom:5px">Tip: Copy from Excel and paste into any cell.</p><table class="mtx" id="ann-tbl" onpaste="handleAnnPaste(event)"><thead id="ann-hd"></thead><tbody id="ann-bd"></tbody></table>
     </div></div>
   </div>
   <div class="card"><div class="ch">Reinsurance % Matrix<span class="cbadge">LOWER TRIANGLE = PRE-ISSUE</span></div><div class="cb">
@@ -255,20 +255,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
     <div id="sp-balance" style="display:none"><div class="tw"><table class="bbt" id="tbl-balance"></table></div></div>
     <div id="sp-rbc" style="display:none"><div id="rbc-content"></div></div>
     <div id="sp-summary" style="display:none"><div id="summary-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div></div></div>
-    <div id="sp-testlog" style="display:none"><div style="padding:8px">
-      <div style="font-size:.85rem;font-weight:bold;color:var(--navy);margin-bottom:8px">Test Log</div>
-      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
-        <button id="run-tests-btn" class="btn" onclick="runAllTests()">&#9654; Run Tests</button>
-        <div style="flex:1;min-width:240px">
-          <div id="test-cases-list" style="margin-bottom:6px"></div>
-          <div style="display:flex;gap:6px">
-            <input id="nl-test-input" type="text" placeholder="e.g. claim scalar 1.1 should increase claims by 10%" style="flex:1;padding:5px 8px;border:1px solid var(--bdr);border-radius:var(--r);font-size:.72rem;background:var(--wh);color:var(--dk)">
-            <button class="btn btn-o btn-sm" onclick="addNLTestCase()">Add Test</button>
-          </div>
-        </div>
-      </div>
-      <div id="test-log-output"></div>
-    </div></div>
+    <div id="sp-testlog" style="display:none"><div style="padding:8px"><div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:8px">Test Log</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button id="run-tests-btn" class="btn" onclick="runAllTests()">&#9654; Run Tests</button><div style="flex:1;min-width:220px"><div id="test-cases-list" style="margin-bottom:5px"></div><div style="display:flex;gap:5px"><input id="nl-test-input" type="text" placeholder="e.g. claim scalar 1.1 increases claims 10%" style="flex:1;padding:4px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:.71rem;background:var(--wh);color:var(--dk)"><button class="btn btn-o btn-sm" onclick="addNLTestCase()">Add</button></div></div></div><div id="test-log-output"></div></div></div>
     <div id="sp-issyr" style="display:none">
       <div class="card"><div class="ch">Issue Year Diagnostic</div><div class="cb">
         <p style="font-size:.7rem;color:var(--mu);margin-bottom:10px;">Predeal and Ceded dollar amounts, with ratio validation against the Reins% matrix.</p>
@@ -842,95 +829,6 @@ function renderDocs(){
   if(inSec)html+='</div>';html+='</div>';div.innerHTML=html;
 }
 
-function renderSummary(){
-  const div=document.getElementById('summary-content');
-  if(!div)return;
-  if(!S.out){div.innerHTML='<div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div>';return;}
-  const out=S.out,ap=out.annual_predeal||{},ac=out.annual_ceded||{},an=out.annual_net||{};
-  const mp=out.metrics_predeal||{},mc=out.metrics_ceded||{},mn=out.metrics_net||{};
-  const a=S.assumptions||{};
-  const by=out.first_yr||2026;
-  const yrs=(ap.periods||[]).filter(y=>y>=by).slice(0,5);
-  const rbn=out.rbc_net||{},rbco=out.rbc_data||{};
-  const fy=yrs[0]||by;
-  function rr(src,yr){const v=src['RBC Ratio post-covariance w margin']||{};return v[yr]||v[String(yr)]||null;}
-  const rpIys=Object.keys(a.reins_pct||{}).map(Number).sort((a,b)=>a-b);
-  const rpPct=rpIys.length?(Object.values((a.reins_pct||{})[rpIys[0]]||{})[0]||0)+'%':'–';
-  const rpRange=rpIys.length?((rpIys[0]<=2019?'2019 & Prior':rpIys[0])+' – '+rpIys[rpIys.length-1]):'–';
-  // Front-end comm vector
-  const ccf=a.ceding_comm_front||{};
-  const ccfStr=Object.entries(ccf).sort(([a],[b])=>a-b).filter(([,v])=>v).map(([y,v])=>y+': $'+(v/1e6).toFixed(0)+'M').join(' | ')||'None';
-  const strain=(mn.max_neg_cum_de||0)-(mp.max_neg_cum_de||0);
-  const rbcOrig=rr(rbco,fy); const rbcNet=rr(rbn,fy);
-  const rbcLiftVec=yrs.map(y=>{const o=rr(rbco,y),n=rr(rbn,y);return o&&n?(n-o>=0?'+':'')+((n-o).toFixed(2))+'x':'-';});
-  const today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const disc=(a.discount_rate||0.08)*100;
-
-  function incomeTbl(stmt,label){
-    const rows=[['Total Revenue','revenue'],['Total Benefits','benefits'],
-      ['Selling Expense','selling_expense'],['Op Expense','op_expense'],
-      ['Pre-Tax Income','pretax_income'],['Distrib. Earnings','distributable_earnings']];
-    const sub=new Set(['Total Revenue','Pre-Tax Income']);
-    return `<div style="margin-bottom:12px">
-      <div style="font-size:.78rem;font-weight:bold;color:var(--navy);margin-bottom:4px;padding:3px 8px;background:var(--off);border-radius:3px">${label}</div>
-      <div class="tw"><table class="bbt" style="font-size:.7rem">
-        <thead><tr><th>Line</th>${yrs.map(y=>'<th>'+y+'</th>').join('')}</tr></thead>
-        <tbody>${rows.map(([lbl,key])=>`<tr${sub.has(lbl)?' class="sub"':''}><td>${lbl}</td>${yrs.map(y=>`<td>${fmtNum(gv(stmt[key]||{},y))}</td>`).join('')}</tr>`).join('')}
-        </tbody></table></div></div>`;
-  }
-
-  div.innerHTML=`
-<div style="max-width:880px;font-family:var(--ft);color:var(--dk);line-height:1.55">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:10px;border-bottom:3px solid var(--navy)">
-  <div><div style="font-size:1.25rem;font-weight:bold;color:var(--navy)">REINSURANCE QUOTA-SHARE DEAL SUMMARY</div>
-  <div style="font-size:.73rem;color:var(--mu);margin-top:2px">EXECUTIVE BRIEFING — CONFIDENTIAL | Generated ${today}</div></div>
-  <div style="font-size:.72rem;color:var(--mu);text-align:right"><div>Discount rate: ${disc.toFixed(1)}%</div><div>Base year: ${by-1}</div></div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-  <div style="background:var(--off);border-radius:var(--r);padding:10px 14px;font-size:.75rem">
-    <div style="font-weight:bold;color:var(--navy);margin-bottom:6px;font-size:.82rem">Deal Structure</div>
-    <div><span style="color:var(--mu)">Treaty:</span> <b>Quota-Share Reinsurance</b></div>
-    <div><span style="color:var(--mu)">Line:</span> <b>Medicare Supplement</b></div>
-    <div><span style="color:var(--mu)">Issue Year Scope:</span> <b>${rpRange}</b></div>
-    <div><span style="color:var(--mu)">Ceding %:</span> <b>${rpPct}</b></div>
-    <div><span style="color:var(--mu)">Front-End Comm:</span> <b>${ccfStr}</b></div>
-    <div><span style="color:var(--mu)">Ongoing Comm:</span> <b>$${(a.ceding_comm_ongoing||200).toLocaleString()}/policy/yr</b></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    ${[{l:'Predeal EV',v:fmtM(mp.pvde)+'M',s:'Before deal'},{l:'Net EV',v:fmtM(mn.pvde)+'M',s:'After deal'},
-       {l:'Predeal IRR',v:fmtPct(mp.irr),s:'Before deal'},{l:'Net IRR',v:fmtPct(mn.irr),s:'After deal'},
-       {l:'Ceded EV',v:fmtM(mc.pvde)+'M',s:'To reinsurer'},{l:'Strain Relief',v:fmtM(strain)+'M',s:'Max neg DE change'},
-    ].map(c=>`<div class="mtile" style="margin:0"><div class="ml">${c.l}</div><div class="mv" style="font-size:.95rem">${c.v}</div><div class="ms">${c.s}</div></div>`).join('')}
-  </div>
-</div>
-<div style="margin-bottom:14px">
-  <div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:6px">5-Year Income Statement ($M)</div>
-  ${incomeTbl(ap,'Direct Carrier — Predeal')}
-  ${incomeTbl(ac,'Direct Carrier — Ceded')}
-  ${incomeTbl(an,'Direct Carrier — Net')}
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;font-size:.75rem">
-  <div style="background:var(--off);border-radius:var(--r);padding:10px 14px">
-    <div style="font-weight:bold;color:var(--navy);margin-bottom:5px">Original RBC</div>
-    <div>Post-Cov Ratio: <b>${rbcOrig?rbcOrig.toFixed(2)+'x':'-'}</b></div>
-    <div>Surplus (${fy}): <b>${fmtM((rbco['Total Surplus']||{})[fy]||(rbco['Total Surplus']||{})[String(fy)])+'M'}</b></div>
-    <div>TAC (${fy}): <b>${fmtM((rbco['TAC (C&S + AVR)']||{})[fy]||(rbco['TAC (C&S + AVR)']||{})[String(fy)])+'M'}</b></div>
-  </div>
-  <div style="background:var(--off);border-radius:var(--r);padding:10px 14px">
-    <div style="font-weight:bold;color:var(--navy);margin-bottom:5px">Post-Deal RBC (${fy})</div>
-    <div>Post-Cov Ratio: <b>${rbcNet?rbcNet.toFixed(2)+'x':'-'}</b></div>
-    <div style="font-size:.7rem;color:var(--mu);margin-top:4px">RBC Ratio lift by year:</div>
-    <div style="font-size:.7rem">${yrs.map((y,i)=>y+': '+rbcLiftVec[i]).join(' &nbsp;|&nbsp; ')}</div>
-    <div>Surplus (${fy}): <b>${fmtM((rbn['Total Surplus']||{})[fy]||(rbn['Total Surplus']||{})[String(fy)])+'M'}</b></div>
-    <div>TAC (${fy}): <b>${fmtM((rbn['TAC (C&S + AVR)']||{})[fy]||(rbn['TAC (C&S + AVR)']||{})[String(fy)])+'M'}</b></div>
-  </div>
-</div>
-<div style="font-size:.62rem;color:var(--mu);border-top:1px solid var(--bdr);padding-top:6px">
-  Source: MGALFA Integrate (EVData60.xlsx) | Discount: ${disc.toFixed(1)}% | Updates automatically on model run
-</div>
-</div>`;
-}
-
 // ── SCENARIOS ──
 function saveScenario(){
   if(!S.out){alert('Run model first.');return;}
@@ -945,20 +843,18 @@ function renderScenarios(){
   const div=document.getElementById('scenarios-content');if(!div)return;
   const scenarios=S.scenarios||[];
   if(!scenarios.length){
-    div.innerHTML='<div class="empty"><div class="ei">&#x1F4CB;</div><h3>No saved scenarios</h3><p>Run the model and click Save Scenario</p></div>';return;
+    div.innerHTML='<div class="empty"><div class="ei">&#x1F4CB;</div><h3>No saved scenarios</h3><p>Run the model and click Save Scenario to compare runs</p></div>';return;
   }
-  const metrics=[{k:'pvde_pre',l:'Predeal EV ($M)'},{k:'pvde_net',l:'Net EV ($M)'},
-    {k:'irr_pre',l:'Predeal IRR'},{k:'irr_net',l:'Net IRR'},
-    {k:'pvde_ced',l:'Ceded EV ($M)'},{k:'max_neg',l:'Max Neg DE ($M)'}];
   let h='<div style="overflow-x:auto"><table class="bbt"><thead><tr><th>Scenario</th><th>Date</th>'+
-    metrics.map(m=>'<th>'+m.l+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>';
-  scenarios.forEach((sc,i)=>{
-    const mp=sc.metrics_predeal||{},mc_=sc.metrics_ceded||{},mn=sc.metrics_net||{};
-    h+='<tr><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis">'+sc.name+'</td>'+
+    '<th>Predeal EV ($M)</th><th>Net EV ($M)</th><th>Predeal IRR</th><th>Net IRR</th>'+
+    '<th>Ceded EV ($M)</th><th>Max Neg DE ($M)</th><th>Actions</th></tr></thead><tbody>';
+  (scenarios||[]).forEach(function(sc,i){
+    var mp=sc.metrics_predeal||{},mc2=sc.metrics_ceded||{},mn=sc.metrics_net||{};
+    h+='<tr><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sc.name+'</td>'+
       '<td style="font-size:.68rem;color:var(--mu)">'+new Date(sc.saved_at).toLocaleDateString()+'</td>'+
       '<td>'+fmtM(mp.pvde)+'M</td><td>'+fmtM(mn.pvde)+'M</td>'+
       '<td>'+fmtPct(mp.irr)+'</td><td>'+fmtPct(mn.irr)+'</td>'+
-      '<td>'+fmtM(mc_.pvde)+'M</td><td>'+fmtM(mn.max_neg_cum_de)+'M</td>'+
+      '<td>'+fmtM(mc2.pvde)+'M</td><td>'+fmtM(mn.max_neg_cum_de)+'M</td>'+
       '<td><button class="btn btn-o btn-sm" onclick="loadScenario('+i+')" style="margin-right:4px">Load</button>'+
       '<button onclick="deleteScenario('+i+')" style="color:var(--err);background:none;border:none;cursor:pointer;font-size:.75rem">&#10005;</button></td></tr>';
   });
@@ -1056,154 +952,187 @@ function exportCSV(view){
 // ── INIT ──
 initPy();
 
-// ── TEST LOG ──
+function renderSummary(){
+  var div=document.getElementById('summary-content');
+  if(!div)return;
+  if(!S.out){div.innerHTML='<div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div>';return;}
+  var out=S.out,ap=out.annual_predeal||{},ac=out.annual_ceded||{},an=out.annual_net||{};
+  var mp=out.metrics_predeal||{},mc=out.metrics_ceded||{},mn=out.metrics_net||{};
+  var a=S.assumptions||{};
+  var by=out.first_yr||2026;
+  var yrs=(ap.periods||[]).filter(function(y){return y>=by;}).slice(0,5);
+  var rbn=out.rbc_net||{},rbco=out.rbc_data||{};
+  var fy=yrs[0]||by;
+  function rr(src,yr){var v=src['RBC Ratio post-covariance w margin']||{};return v[yr]||v[String(yr)]||null;}
+  var rpIys=Object.keys(a.reins_pct||{}).map(Number).sort(function(a,b){return a-b;});
+  var rpPct=rpIys.length?(Object.values((a.reins_pct||{})[rpIys[0]]||{})[0]||0)+'%':'--';
+  var rpRange=rpIys.length?((rpIys[0]<=2019?'2019 & Prior':String(rpIys[0]))+' to '+rpIys[rpIys.length-1]):'--';
+  var ccf=a.ceding_comm_front||{};
+  var ccfStr=Object.entries(ccf).sort(function(a,b){return a[0]-b[0];}).filter(function(e){return e[1];}).map(function(e){return e[0]+': $'+(e[1]/1e6).toFixed(0)+'M';}).join(' | ')||'None';
+  var strain=(mn.max_neg_cum_de||0)-(mp.max_neg_cum_de||0);
+  var rbcLiftVec=yrs.map(function(y){var o=rr(rbco,y),n=rr(rbn,y);return o&&n?((n-o>=0?'+':'')+((n-o).toFixed(2))+'x'):'-';});
+  var today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  var disc=((a.discount_rate||0.08)*100).toFixed(1);
+  function mkRow(stmt,key,lbl,isSub){
+    return '<tr'+(isSub?' class="sub"':'')+'><td>'+lbl+'</td>'+yrs.map(function(y){return '<td>'+fmtNum(gv(stmt[key]||{},y))+'</td>';}).join('')+'</tr>';
+  }
+  function incomeTbl(stmt,label){
+    var pairs=[['Total Revenue','revenue'],['Total Benefits','benefits'],
+      ['Selling Expense','selling_expense'],['Op Expense','op_expense'],
+      ['Pre-Tax Income','pretax_income'],['Distrib. Earnings','distributable_earnings']];
+    var subs=new Set(['Total Revenue','Pre-Tax Income']);
+    return '<div style="margin-bottom:10px"><div style="font-size:.76rem;font-weight:bold;color:var(--navy);padding:3px 8px;background:var(--off);border-radius:3px;margin-bottom:3px">'+label+'</div>'+
+      '<div class="tw"><table class="bbt" style="font-size:.69rem"><thead><tr><th>Line</th>'+yrs.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr></thead><tbody>'+
+      pairs.map(function(p){return mkRow(stmt,p[1],p[0],subs.has(p[0]));}).join('')+
+      '</tbody></table></div></div>';
+  }
+  var rbcOrigSurp=(rbco['Total Surplus']||{})[fy]||(rbco['Total Surplus']||{})[String(fy)]||null;
+  var rbcNetSurp=(rbn['Total Surplus']||{})[fy]||(rbn['Total Surplus']||{})[String(fy)]||null;
+  var rbcOrigTAC=(rbco['TAC (C&S + AVR)']||{})[fy]||(rbco['TAC (C&S + AVR)']||{})[String(fy)]||null;
+  var rbcNetTAC=(rbn['TAC (C&S + AVR)']||{})[fy]||(rbn['TAC (C&S + AVR)']||{})[String(fy)]||null;
+  div.innerHTML=
+    '<div style="max-width:880px;font-family:var(--ft);color:var(--dk)">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:8px;border-bottom:3px solid var(--navy)">'+
+      '<div><div style="font-size:1.2rem;font-weight:bold;color:var(--navy)">REINSURANCE QUOTA-SHARE DEAL SUMMARY</div>'+
+      '<div style="font-size:.72rem;color:var(--mu);margin-top:2px">EXECUTIVE BRIEFING — '+today+'</div></div>'+
+      '<div style="font-size:.7rem;color:var(--mu);text-align:right"><div>Discount: '+disc+'%</div><div>Base year: '+(by-1)+'</div></div></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+      '<div style="background:var(--off);border-radius:var(--r);padding:10px 14px;font-size:.74rem">'+
+        '<div style="font-weight:bold;color:var(--navy);margin-bottom:5px">Deal Structure</div>'+
+        '<div><span style="color:var(--mu)">Treaty:</span> <b>Quota-Share</b></div>'+
+        '<div><span style="color:var(--mu)">LOB:</span> <b>Medicare Supplement</b></div>'+
+        '<div><span style="color:var(--mu)">Issue Year Scope:</span> <b>'+rpRange+'</b></div>'+
+        '<div><span style="color:var(--mu)">Ceding %:</span> <b>'+rpPct+'</b></div>'+
+        '<div><span style="color:var(--mu)">Front-End Comm:</span> <b>'+ccfStr+'</b></div>'+
+        '<div><span style="color:var(--mu)">Ongoing Comm:</span> <b>$'+(a.ceding_comm_ongoing||200).toLocaleString()+'/policy/yr</b></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'+
+        [['Predeal EV',fmtM(mp.pvde)+'M','Before deal'],['Net EV',fmtM(mn.pvde)+'M','After deal'],
+         ['Predeal IRR',fmtPct(mp.irr),'Before deal'],['Net IRR',fmtPct(mn.irr),'After deal'],
+         ['Ceded EV',fmtM(mc.pvde)+'M','To reinsurer'],['Strain Relief',fmtM(strain)+'M','Max neg DE change']
+        ].map(function(c){return '<div class="mtile" style="margin:0"><div class="ml">'+c[0]+'</div><div class="mv" style="font-size:.9rem">'+c[1]+'</div><div class="ms">'+c[2]+'</div></div>';}).join('')+
+      '</div>'+
+    '</div>'+
+    '<div style="margin-bottom:12px">'+
+      '<div style="font-size:.8rem;font-weight:bold;color:var(--navy);margin-bottom:5px">5-Year Income Statement ($M)</div>'+
+      incomeTbl(ap,'Direct Carrier — Predeal')+
+      incomeTbl(ac,'Direct Carrier — Ceded')+
+      incomeTbl(an,'Direct Carrier — Net')+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;font-size:.73rem">'+
+      '<div style="background:var(--off);border-radius:var(--r);padding:8px 12px">'+
+        '<div style="font-weight:bold;color:var(--navy);margin-bottom:4px">Original RBC ('+fy+')</div>'+
+        '<div>Post-Cov Ratio: <b>'+(rr(rbco,fy)?rr(rbco,fy).toFixed(2)+'x':'-')+'</b></div>'+
+        '<div>Surplus: <b>'+(rbcOrigSurp!=null?fmtM(rbcOrigSurp)+'M':'-')+'</b></div>'+
+        '<div>TAC: <b>'+(rbcOrigTAC!=null?fmtM(rbcOrigTAC)+'M':'-')+'</b></div>'+
+      '</div>'+
+      '<div style="background:var(--off);border-radius:var(--r);padding:8px 12px">'+
+        '<div style="font-weight:bold;color:var(--navy);margin-bottom:4px">Post-Deal RBC ('+fy+')</div>'+
+        '<div>Post-Cov Ratio: <b>'+(rr(rbn,fy)?rr(rbn,fy).toFixed(2)+'x':'-')+'</b></div>'+
+        '<div style="font-size:.68rem;color:var(--mu)">Lift by year: '+yrs.map(function(y,i){return y+': '+rbcLiftVec[i];}).join(' | ')+'</div>'+
+        '<div>Surplus: <b>'+(rbcNetSurp!=null?fmtM(rbcNetSurp)+'M':'-')+'</b></div>'+
+        '<div>TAC: <b>'+(rbcNetTAC!=null?fmtM(rbcNetTAC)+'M':'-')+'</b></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:.61rem;color:var(--mu);border-top:1px solid var(--bdr);padding-top:5px">'+
+      'Source: MGALFA Integrate (EVData60.xlsx) | Discount: '+disc+'% | Updates on each model run'+
+    '</div></div>';
+}
+
+// ── TEST LOG MODULE ──
 function getDefaultTestCases(){
   return [
-    {id:'t001',name:'Claim scalar 1.1 → only claims change by 10%',
-     description:'Set claim_scalar=1.1, run model. Claims line should increase ~10%, all other lines unchanged.',
-     type:'scalar',param:'claim_scalar',value:1.1,target_line:'claims',expected_change:0.10,tolerance:0.005,
-     check_unchanged:['premium','nii','commissions','prem_tax','acq_expense','maint_expense'],
-     enabled:true},
-    {id:'t002',name:'Claim scalar 0.9 → claims decrease by 10%',
-     description:'Set claim_scalar=0.9. Claims line should decrease ~10%.',
-     type:'scalar',param:'claim_scalar',value:0.9,target_line:'claims',expected_change:-0.10,tolerance:0.005,
-     check_unchanged:['premium','nii','commissions','prem_tax'],enabled:true},
-    {id:'t003',name:'Acq expense +20% → only acq expense changes',
-     description:'Double acquisition expense (e.g., 243.46 → 292.15). Only acq expense line should change; claims, premium, NII unchanged.',
-     type:'expense',param:'acq_exp',multiplier:1.2,target_line:'acq_expense',expected_change:0.20,tolerance:0.005,
-     check_unchanged:['premium','nii','claims','commissions','prem_tax'],enabled:true},
-    {id:'t004',name:'Maint expense +15% → only maint expense changes',
-     description:'Increase maintenance expense by 15%. Only maint_expense line changes.',
-     type:'expense',param:'maint_exp',multiplier:1.15,target_line:'maint_expense',expected_change:0.15,tolerance:0.005,
-     check_unchanged:['premium','nii','claims','commissions','prem_tax','acq_expense'],enabled:true},
-    {id:'t005',name:'Zero ceding → ceded amounts all zero',
-     description:'Set all reinsurance percentages to 0. All ceded lines should be 0.',
-     type:'reins_zero',target_line:'premium',expected_ceded:0,tolerance:1000,enabled:true},
-    {id:'t006',name:'Reins 10% → ceded premium = 10% of predeal',
-     description:'With 10% quota-share, ceded premium should be ~10% of predeal premium for in-scope IssYrs.',
-     type:'reins_check',expected_rate:0.10,target_line:'premium',tolerance:0.02,enabled:true},
-    {id:'t007',name:'PVDE increases with lower discount rate',
-     description:'Reduce discount rate from 8% to 6%. Predeal PVDE magnitude should decrease (less negative).',
-     type:'direction',param:'discount_rate',from_val:0.08,to_val:0.06,metric:'pvde',direction:'increase',enabled:true},
-    {id:'t008',name:'Higher acq allowance → less ceded cost',
-     description:'Increase acq_exp_allowance by 50%. Ceded op expense should become less negative.',
-     type:'direction',param:'acq_exp_allowance',multiplier:1.5,target:'annual_ceded',metric:'acq_expense',direction:'increase',enabled:true},
+    {id:'t001',name:'Claim scalar 1.1 increases claims ~10%',type:'scalar',param:'claim_scalar',value:1.1,target_line:'claims',expected_change:-0.10,tolerance:0.005,check_unchanged:['premium','nii','commissions','prem_tax'],enabled:true},
+    {id:'t002',name:'Claim scalar 0.9 decreases claims ~10%',type:'scalar',param:'claim_scalar',value:0.9,target_line:'claims',expected_change:0.10,tolerance:0.005,check_unchanged:['premium','nii'],enabled:true},
+    {id:'t003',name:'Acq expense +20% only changes acq expense',type:'expense',param:'acq_exp',multiplier:1.2,target_line:'acq_expense',expected_change:-0.20,tolerance:0.005,check_unchanged:['premium','claims','nii'],enabled:true},
+    {id:'t004',name:'Maint expense +15% only changes maint expense',type:'expense',param:'maint_exp',multiplier:1.15,target_line:'maint_expense',expected_change:-0.15,tolerance:0.005,check_unchanged:['premium','claims','nii'],enabled:true},
+    {id:'t005',name:'Zero ceding gives zero ceded premium',type:'reins_zero',target_line:'premium',expected_ceded:0,tolerance:1000,enabled:true},
+    {id:'t006',name:'10% reins: ceded premium ~10% of predeal',type:'reins_check',expected_rate:0.10,target_line:'premium',tolerance:0.02,enabled:true},
+    {id:'t007',name:'Lower discount rate increases predeal PVDE magnitude',type:'direction',param:'discount_rate',to_val:0.06,metric:'pvde',direction:'decrease',target_stmt:'predeal',enabled:true},
+    {id:'t008',name:'Higher acq allowance reduces ceded op expense',type:'direction',param:'acq_exp_allowance',multiplier:1.5,metric:'acq_expense',direction:'increase',target_stmt:'ceded',enabled:true},
   ];
 }
 
 async function runAllTests(){
-  if(!S.py||!S.evData){alert('Run the model at least once first.');return;}
-  const btn=document.getElementById('run-tests-btn');
+  if(!S.py||!S.evData){alert('Load the model first.');return;}
+  var btn=document.getElementById('run-tests-btn');
   btn.disabled=true;btn.textContent='Running...';
   S.testResults=[];
-  const cases=(S.testCases||[]).filter(t=>t.enabled);
-  const logDiv=document.getElementById('test-log-output');
-  logDiv.innerHTML='<div style="color:var(--mu);font-size:.75rem">Running '+cases.length+' tests...</div>';
-  
-  for(const tc of cases){
-    const result=await runOneTest(tc);
-    S.testResults.push(result);
+  var cases=(S.testCases||[]).filter(function(t){return t.enabled;});
+  document.getElementById('test-log-output').innerHTML='<div style="color:var(--mu);font-size:.75rem">Running '+cases.length+' tests...</div>';
+  for(var i=0;i<cases.length;i++){
+    var r=await runOneTest(cases[i]);
+    S.testResults.push(r);
   }
   renderTestLog();
   btn.disabled=false;btn.textContent='Run Tests';
 }
 
 async function runOneTest(tc){
-  const baseAssum=JSON.parse(JSON.stringify(S.assumptions||{}));
-  const modAssum=JSON.parse(JSON.stringify(baseAssum));
-  
   try{
-    // Apply test modification
-    if(tc.type==='scalar'||tc.type==='direction'&&tc.param){
-      if(tc.param==='claim_scalar'||tc.param==='lapse_scalar'){
-        modAssum[tc.param]=tc.value||tc.to_val||1.0;
-      } else if(tc.param==='discount_rate'){
-        modAssum.discount_rate=tc.to_val||0.08;
-      } else if(tc.param==='acq_exp_allowance'){
-        const mult=tc.multiplier||1.0;
-        const ann=modAssum.annual||{};
-        Object.keys(ann).forEach(y=>{if(ann[y]?.acq_exp_allowance!=null)ann[y].acq_exp_allowance*=mult;});
-      }
+    var baseOut=S.out;
+    if(!baseOut)return{id:tc.id,name:tc.name,pass:false,error:'No baseline',evidence:{}};
+    var modAssum=JSON.parse(JSON.stringify(S.assumptions||{}));
+    if(tc.type==='scalar'&&(tc.param==='claim_scalar'||tc.param==='lapse_scalar')){
+      modAssum[tc.param]=tc.value||1.1;
     } else if(tc.type==='expense'){
-      const mult=tc.multiplier||1.0;const param=tc.param;
-      const ann=modAssum.annual||{};
-      Object.keys(ann).forEach(y=>{if(ann[y]?.[param]!=null)ann[y][param]*=mult;});
+      var ann=modAssum.annual||{};
+      Object.keys(ann).forEach(function(y){if(ann[y]&&ann[y][tc.param]!=null)ann[y][tc.param]*=(tc.multiplier||1.2);});
+    } else if(tc.type==='direction'){
+      if(tc.param==='discount_rate'){modAssum.discount_rate=tc.to_val||0.06;}
+      else if(tc.param==='acq_exp_allowance'){
+        var ann2=modAssum.annual||{};
+        Object.keys(ann2).forEach(function(y){if(ann2[y]&&ann2[y].acq_exp_allowance!=null)ann2[y].acq_exp_allowance*=(tc.multiplier||1.5);});
+      }
     } else if(tc.type==='reins_zero'){
       modAssum.reins_pct_decimal={};
     }
-    
-    // Run baseline and modified
-    const baseOut=S.out;
-    if(!baseOut){return{id:tc.id,name:tc.name,pass:false,error:'No baseline run',evidence:{}};}
-    
-    const modOut=await runModelWith(modAssum);
-    
-    // Evaluate
-    const evidence={};let pass=true;let detail='';
-    
+    var modOut=await runModelWith(modAssum);
+    var by=baseOut.first_yr||2026;
+    var evidence={};var pass=true;var detail='';
     if(tc.type==='scalar'||tc.type==='expense'){
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const mv=gv(modOut.annual_predeal[tc.target_line]||{},by);
-      const actualChange=bv!==0?(mv-bv)/Math.abs(bv):null;
-      evidence.base_value=bv; evidence.mod_value=mv;
-      evidence.actual_pct_change=actualChange;
-      evidence.expected_pct_change=tc.expected_change;
-      if(actualChange==null||(tc.expected_change&&Math.abs(actualChange-tc.expected_change)>tc.tolerance)){
-        pass=false;detail='Change was '+(actualChange!=null?(actualChange*100).toFixed(2)+'%':'null')+', expected '+(tc.expected_change*100).toFixed(1)+'%';
-      }
-      // Check unchanged lines
-      (tc.check_unchanged||[]).forEach(line=>{
-        const bvl=gv(baseOut.annual_predeal[line]||{},by);
-        const mvl=gv(modOut.annual_predeal[line]||{},by);
-        const ch=bvl!==0?Math.abs((mvl-bvl)/bvl):null;
-        evidence['unchanged_'+line]={base:bvl,mod:mvl,pct_change:ch};
-        if(ch!=null&&ch>0.001){pass=false;detail=(detail?detail+'; ':'')+line+' changed by '+(ch*100).toFixed(2)+'%';}
+      var bv=gv(baseOut.annual_predeal[tc.target_line]||{},by);
+      var mv=gv(modOut.annual_predeal[tc.target_line]||{},by);
+      var ch=bv!==0?(mv-bv)/Math.abs(bv):null;
+      evidence.base=bv;evidence.mod=mv;evidence.actual_pct=ch;evidence.expected_pct=tc.expected_change;
+      if(ch==null||Math.abs(ch-tc.expected_change)>tc.tolerance){pass=false;detail='Change '+(ch!=null?(ch*100).toFixed(2)+'%':'null')+' expected '+(tc.expected_change*100).toFixed(1)+'%';}
+      (tc.check_unchanged||[]).forEach(function(line){
+        var bvl=gv(baseOut.annual_predeal[line]||{},by);var mvl=gv(modOut.annual_predeal[line]||{},by);
+        var c2=bvl!==0?Math.abs((mvl-bvl)/bvl):0;evidence['unchanged_'+line]=c2;
+        if(c2>0.001){pass=false;detail=(detail?detail+'; ':'')+line+' changed '+((c2*100).toFixed(2))+'%';}
       });
     } else if(tc.type==='reins_zero'){
-      const by=S.out.first_yr||2026;
-      const ced_prem=Math.abs(gv(modOut.annual_ceded[tc.target_line]||{},by));
-      evidence.ceded_value=ced_prem;
-      if(ced_prem>tc.tolerance){pass=false;detail='Ceded value='+ced_prem.toFixed(0)+' expected ~0';}
+      var cv=Math.abs(gv(modOut.annual_ceded[tc.target_line]||{},by));
+      evidence.ceded_value=cv;if(cv>tc.tolerance){pass=false;detail='Ceded='+cv.toFixed(0)+' expected ~0';}
     } else if(tc.type==='reins_check'){
-      const by=S.out.first_yr||2026;
-      const pred=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const ced=gv(baseOut.annual_ceded[tc.target_line]||{},by);
-      const actualRate=pred!==0?Math.abs(ced)/Math.abs(pred):null;
-      evidence.pred=pred;evidence.ced=ced;evidence.actual_rate=actualRate;evidence.expected_rate=tc.expected_rate;
-      if(actualRate==null||Math.abs(actualRate-tc.expected_rate)>tc.tolerance){
-        pass=false;detail='Rate='+(actualRate!=null?(actualRate*100).toFixed(1)+'%':'null')+' expected ~'+(tc.expected_rate*100).toFixed(0)+'%';
-      }
+      var pred=gv(baseOut.annual_predeal[tc.target_line]||{},by);
+      var ced=gv(baseOut.annual_ceded[tc.target_line]||{},by);
+      var ar=pred!==0?Math.abs(ced)/Math.abs(pred):null;
+      evidence.pred=pred;evidence.ced=ced;evidence.rate=ar;
+      if(ar==null||Math.abs(ar-tc.expected_rate)>tc.tolerance){pass=false;detail='Rate '+(ar!=null?(ar*100).toFixed(1)+'%':'null')+' expected '+(tc.expected_rate*100).toFixed(0)+'%';}
     } else if(tc.type==='direction'){
-      const src=tc.target||'annual_predeal';
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut[src]?.[tc.metric]||{},by)||baseOut.metrics_predeal?.[tc.metric]||0;
-      const mv=gv(modOut[src]?.[tc.metric]||{},by)||modOut.metrics_predeal?.[tc.metric]||0;
-      evidence.base_value=bv;evidence.mod_value=mv;
-      const increased=mv>bv;
-      if(tc.direction==='increase'&&!increased){pass=false;detail='Value did not increase ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
-      if(tc.direction==='decrease'&&increased){pass=false;detail='Value did not decrease ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
+      var stmt=tc.target_stmt==='ceded'?'annual_ceded':'annual_predeal';
+      var bv2=gv(baseOut[stmt][tc.metric]||{},by);var mv2=gv(modOut[stmt][tc.metric]||{},by);
+      evidence.base=bv2;evidence.mod=mv2;
+      var inc=mv2>bv2;
+      if(tc.direction==='increase'&&!inc){pass=false;detail='Did not increase: '+bv2.toFixed(0)+' -> '+mv2.toFixed(0);}
+      if(tc.direction==='decrease'&&inc){pass=false;detail='Did not decrease: '+bv2.toFixed(0)+' -> '+mv2.toFixed(0);}
     }
-    
-    return{id:tc.id,name:tc.name,pass,detail,evidence,timestamp:new Date().toISOString()};
-  }catch(e){
-    return{id:tc.id,name:tc.name,pass:false,error:e.message,evidence:{},timestamp:new Date().toISOString()};
-  }
+    return{id:tc.id,name:tc.name,pass:pass,detail:detail,evidence:evidence,ts:new Date().toISOString()};
+  }catch(e){return{id:tc.id,name:tc.name,pass:false,error:e.message,evidence:{}};}
 }
 
 async function runModelWith(assum){
-  const a={...assum};
-  const apython={...a,
+  var a=Object.assign({},assum);
+  var apython=Object.assign({},a,{
     reins_pct:a.reins_pct_decimal||{},
-    ceding_comm_front:a.ceding_comm_front_dollars||{}};
-  ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance'].forEach(k=>{
-    if(!(k in apython)&&k in a)apython[k]=a[k];
+    ceding_comm_front:a.ceding_comm_front_dollars||{}
   });
-  const ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
+  var ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
   S.py.globals.set('_evj',JSON.stringify(ev_for_py));
   S.py.globals.set('_asj',JSON.stringify(apython));
   S.py.globals.set('_by',a.base_year||2025);
-  const code=[
+  var code=[
     "import json","ev_agg=json.loads(_evj)","assum=json.loads(_asj)",
     "for k in ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance']:",
     "    if k in assum and isinstance(assum[k],dict):",
@@ -1216,381 +1145,66 @@ async function runModelWith(assum){
     "result=run_model(ev_agg,assum,int(_by),_rbc_rows,_bp_rows,_surplus_rows if '_surplus_rows' in dir() else None)",
     "json.dumps(result)"
   ].join("\n");
-  const rj=await S.py.runPythonAsync(code);
-  const out=JSON.parse(rj);
-  out.first_yr=(out.annual_predeal?.periods||[2026])[0]||2026;
-  return out;
-}
-
-function runAllTests(){
-  if(!S.py||!S.evData){alert('Run the model at least once first.');return;}
-  const btn=document.getElementById('run-tests-btn');
-  btn.disabled=true;btn.textContent='Running...';
-  S.testResults=[];
-  const cases=(S.testCases||[]).filter(t=>t.enabled);
-  const logDiv=document.getElementById('test-log-output');
-  logDiv.innerHTML='<div style="color:var(--mu);font-size:.75rem">Running '+cases.length+' tests...</div>';
-  
-  for(const tc of cases){
-    const result=await runOneTest(tc);
-    S.testResults.push(result);
-  }
-  renderTestLog();
-  btn.disabled=false;btn.textContent='Run Tests';
-}
-
-async function runOneTest(tc){
-  const baseAssum=JSON.parse(JSON.stringify(S.assumptions||{}));
-  const modAssum=JSON.parse(JSON.stringify(baseAssum));
-  
-  try{
-    // Apply test modification
-    if(tc.type==='scalar'||tc.type==='direction'&&tc.param){
-      if(tc.param==='claim_scalar'||tc.param==='lapse_scalar'){
-        modAssum[tc.param]=tc.value||tc.to_val||1.0;
-      } else if(tc.param==='discount_rate'){
-        modAssum.discount_rate=tc.to_val||0.08;
-      } else if(tc.param==='acq_exp_allowance'){
-        const mult=tc.multiplier||1.0;
-        const ann=modAssum.annual||{};
-        Object.keys(ann).forEach(y=>{if(ann[y]?.acq_exp_allowance!=null)ann[y].acq_exp_allowance*=mult;});
-      }
-    } else if(tc.type==='expense'){
-      const mult=tc.multiplier||1.0;const param=tc.param;
-      const ann=modAssum.annual||{};
-      Object.keys(ann).forEach(y=>{if(ann[y]?.[param]!=null)ann[y][param]*=mult;});
-    } else if(tc.type==='reins_zero'){
-      modAssum.reins_pct_decimal={};
-    }
-    
-    // Run baseline and modified
-    const baseOut=S.out;
-    if(!baseOut){return{id:tc.id,name:tc.name,pass:false,error:'No baseline run',evidence:{}};}
-    
-    const modOut=await runModelWith(modAssum);
-    
-    // Evaluate
-    const evidence={};let pass=true;let detail='';
-    
-    if(tc.type==='scalar'||tc.type==='expense'){
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const mv=gv(modOut.annual_predeal[tc.target_line]||{},by);
-      const actualChange=bv!==0?(mv-bv)/Math.abs(bv):null;
-      evidence.base_value=bv; evidence.mod_value=mv;
-      evidence.actual_pct_change=actualChange;
-      evidence.expected_pct_change=tc.expected_change;
-      if(actualChange==null||(tc.expected_change&&Math.abs(actualChange-tc.expected_change)>tc.tolerance)){
-        pass=false;detail='Change was '+(actualChange!=null?(actualChange*100).toFixed(2)+'%':'null')+', expected '+(tc.expected_change*100).toFixed(1)+'%';
-      }
-      // Check unchanged lines
-      (tc.check_unchanged||[]).forEach(line=>{
-        const bvl=gv(baseOut.annual_predeal[line]||{},by);
-        const mvl=gv(modOut.annual_predeal[line]||{},by);
-        const ch=bvl!==0?Math.abs((mvl-bvl)/bvl):null;
-        evidence['unchanged_'+line]={base:bvl,mod:mvl,pct_change:ch};
-        if(ch!=null&&ch>0.001){pass=false;detail=(detail?detail+'; ':'')+line+' changed by '+(ch*100).toFixed(2)+'%';}
-      });
-    } else if(tc.type==='reins_zero'){
-      const by=S.out.first_yr||2026;
-      const ced_prem=Math.abs(gv(modOut.annual_ceded[tc.target_line]||{},by));
-      evidence.ceded_value=ced_prem;
-      if(ced_prem>tc.tolerance){pass=false;detail='Ceded value='+ced_prem.toFixed(0)+' expected ~0';}
-    } else if(tc.type==='reins_check'){
-      const by=S.out.first_yr||2026;
-      const pred=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const ced=gv(baseOut.annual_ceded[tc.target_line]||{},by);
-      const actualRate=pred!==0?Math.abs(ced)/Math.abs(pred):null;
-      evidence.pred=pred;evidence.ced=ced;evidence.actual_rate=actualRate;evidence.expected_rate=tc.expected_rate;
-      if(actualRate==null||Math.abs(actualRate-tc.expected_rate)>tc.tolerance){
-        pass=false;detail='Rate='+(actualRate!=null?(actualRate*100).toFixed(1)+'%':'null')+' expected ~'+(tc.expected_rate*100).toFixed(0)+'%';
-      }
-    } else if(tc.type==='direction'){
-      const src=tc.target||'annual_predeal';
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut[src]?.[tc.metric]||{},by)||baseOut.metrics_predeal?.[tc.metric]||0;
-      const mv=gv(modOut[src]?.[tc.metric]||{},by)||modOut.metrics_predeal?.[tc.metric]||0;
-      evidence.base_value=bv;evidence.mod_value=mv;
-      const increased=mv>bv;
-      if(tc.direction==='increase'&&!increased){pass=false;detail='Value did not increase ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
-      if(tc.direction==='decrease'&&increased){pass=false;detail='Value did not decrease ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
-    }
-    
-    return{id:tc.id,name:tc.name,pass,detail,evidence,timestamp:new Date().toISOString()};
-  }catch(e){
-    return{id:tc.id,name:tc.name,pass:false,error:e.message,evidence:{},timestamp:new Date().toISOString()};
-  }
-}
-
-async function runModelWith(assum){
-  const a={...assum};
-  const apython={...a,
-    reins_pct:a.reins_pct_decimal||{},
-    ceding_comm_front:a.ceding_comm_front_dollars||{}};
-  ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance'].forEach(k=>{
-    if(!(k in apython)&&k in a)apython[k]=a[k];
-  });
-  const ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
-  S.py.globals.set('_evj',JSON.stringify(ev_for_py));
-  S.py.globals.set('_asj',JSON.stringify(apython));
-  S.py.globals.set('_by',a.base_year||2025);
-  const code=[
-    "import json","ev_agg=json.loads(_evj)","assum=json.loads(_asj)",
-    "for k in ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance']:",
-    "    if k in assum and isinstance(assum[k],dict):",
-    "        assum[k]={int(kk):vv for kk,vv in assum[k].items()}",
-    "if 'reins_pct' in assum:",
-    "    assum['reins_pct']={int(iy):{int(cy):v for cy,v in yd.items()} for iy,yd in assum['reins_pct'].items()}",
-    "ev_agg['agg']={k:{int(p):v for p,v in pv.items()} for k,pv in ev_agg['agg'].items()}",
-    "ev_agg['agg_iy']={str(iy):{k:{int(p):v for p,v in pv.items()} for k,pv in vm.items()} for iy,vm in ev_agg['agg_iy'].items()}",
-    "ev_agg['periods']=[int(p) for p in ev_agg['periods']]",
-    "result=run_model(ev_agg,assum,int(_by),_rbc_rows,_bp_rows,_surplus_rows if '_surplus_rows' in dir() else None)",
-    "json.dumps(result)"
-  ].join("\n");
-  const rj=await S.py.runPythonAsync(code);
-  const out=JSON.parse(rj);
-  out.first_yr=(out.annual_predeal?.periods||[2026])[0]||2026;
-  return out;
-}
-
-function runOneTest(tc){
-  const baseAssum=JSON.parse(JSON.stringify(S.assumptions||{}));
-  const modAssum=JSON.parse(JSON.stringify(baseAssum));
-  
-  try{
-    // Apply test modification
-    if(tc.type==='scalar'||tc.type==='direction'&&tc.param){
-      if(tc.param==='claim_scalar'||tc.param==='lapse_scalar'){
-        modAssum[tc.param]=tc.value||tc.to_val||1.0;
-      } else if(tc.param==='discount_rate'){
-        modAssum.discount_rate=tc.to_val||0.08;
-      } else if(tc.param==='acq_exp_allowance'){
-        const mult=tc.multiplier||1.0;
-        const ann=modAssum.annual||{};
-        Object.keys(ann).forEach(y=>{if(ann[y]?.acq_exp_allowance!=null)ann[y].acq_exp_allowance*=mult;});
-      }
-    } else if(tc.type==='expense'){
-      const mult=tc.multiplier||1.0;const param=tc.param;
-      const ann=modAssum.annual||{};
-      Object.keys(ann).forEach(y=>{if(ann[y]?.[param]!=null)ann[y][param]*=mult;});
-    } else if(tc.type==='reins_zero'){
-      modAssum.reins_pct_decimal={};
-    }
-    
-    // Run baseline and modified
-    const baseOut=S.out;
-    if(!baseOut){return{id:tc.id,name:tc.name,pass:false,error:'No baseline run',evidence:{}};}
-    
-    const modOut=await runModelWith(modAssum);
-    
-    // Evaluate
-    const evidence={};let pass=true;let detail='';
-    
-    if(tc.type==='scalar'||tc.type==='expense'){
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const mv=gv(modOut.annual_predeal[tc.target_line]||{},by);
-      const actualChange=bv!==0?(mv-bv)/Math.abs(bv):null;
-      evidence.base_value=bv; evidence.mod_value=mv;
-      evidence.actual_pct_change=actualChange;
-      evidence.expected_pct_change=tc.expected_change;
-      if(actualChange==null||(tc.expected_change&&Math.abs(actualChange-tc.expected_change)>tc.tolerance)){
-        pass=false;detail='Change was '+(actualChange!=null?(actualChange*100).toFixed(2)+'%':'null')+', expected '+(tc.expected_change*100).toFixed(1)+'%';
-      }
-      // Check unchanged lines
-      (tc.check_unchanged||[]).forEach(line=>{
-        const bvl=gv(baseOut.annual_predeal[line]||{},by);
-        const mvl=gv(modOut.annual_predeal[line]||{},by);
-        const ch=bvl!==0?Math.abs((mvl-bvl)/bvl):null;
-        evidence['unchanged_'+line]={base:bvl,mod:mvl,pct_change:ch};
-        if(ch!=null&&ch>0.001){pass=false;detail=(detail?detail+'; ':'')+line+' changed by '+(ch*100).toFixed(2)+'%';}
-      });
-    } else if(tc.type==='reins_zero'){
-      const by=S.out.first_yr||2026;
-      const ced_prem=Math.abs(gv(modOut.annual_ceded[tc.target_line]||{},by));
-      evidence.ceded_value=ced_prem;
-      if(ced_prem>tc.tolerance){pass=false;detail='Ceded value='+ced_prem.toFixed(0)+' expected ~0';}
-    } else if(tc.type==='reins_check'){
-      const by=S.out.first_yr||2026;
-      const pred=gv(baseOut.annual_predeal[tc.target_line]||{},by);
-      const ced=gv(baseOut.annual_ceded[tc.target_line]||{},by);
-      const actualRate=pred!==0?Math.abs(ced)/Math.abs(pred):null;
-      evidence.pred=pred;evidence.ced=ced;evidence.actual_rate=actualRate;evidence.expected_rate=tc.expected_rate;
-      if(actualRate==null||Math.abs(actualRate-tc.expected_rate)>tc.tolerance){
-        pass=false;detail='Rate='+(actualRate!=null?(actualRate*100).toFixed(1)+'%':'null')+' expected ~'+(tc.expected_rate*100).toFixed(0)+'%';
-      }
-    } else if(tc.type==='direction'){
-      const src=tc.target||'annual_predeal';
-      const by=S.out.first_yr||2026;
-      const bv=gv(baseOut[src]?.[tc.metric]||{},by)||baseOut.metrics_predeal?.[tc.metric]||0;
-      const mv=gv(modOut[src]?.[tc.metric]||{},by)||modOut.metrics_predeal?.[tc.metric]||0;
-      evidence.base_value=bv;evidence.mod_value=mv;
-      const increased=mv>bv;
-      if(tc.direction==='increase'&&!increased){pass=false;detail='Value did not increase ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
-      if(tc.direction==='decrease'&&increased){pass=false;detail='Value did not decrease ('+bv.toFixed(2)+' -> '+mv.toFixed(2)+')';}
-    }
-    
-    return{id:tc.id,name:tc.name,pass,detail,evidence,timestamp:new Date().toISOString()};
-  }catch(e){
-    return{id:tc.id,name:tc.name,pass:false,error:e.message,evidence:{},timestamp:new Date().toISOString()};
-  }
-}
-
-async function runModelWith(assum){
-  const a={...assum};
-  const apython={...a,
-    reins_pct:a.reins_pct_decimal||{},
-    ceding_comm_front:a.ceding_comm_front_dollars||{}};
-  ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance'].forEach(k=>{
-    if(!(k in apython)&&k in a)apython[k]=a[k];
-  });
-  const ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
-  S.py.globals.set('_evj',JSON.stringify(ev_for_py));
-  S.py.globals.set('_asj',JSON.stringify(apython));
-  S.py.globals.set('_by',a.base_year||2025);
-  const code=[
-    "import json","ev_agg=json.loads(_evj)","assum=json.loads(_asj)",
-    "for k in ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance']:",
-    "    if k in assum and isinstance(assum[k],dict):",
-    "        assum[k]={int(kk):vv for kk,vv in assum[k].items()}",
-    "if 'reins_pct' in assum:",
-    "    assum['reins_pct']={int(iy):{int(cy):v for cy,v in yd.items()} for iy,yd in assum['reins_pct'].items()}",
-    "ev_agg['agg']={k:{int(p):v for p,v in pv.items()} for k,pv in ev_agg['agg'].items()}",
-    "ev_agg['agg_iy']={str(iy):{k:{int(p):v for p,v in pv.items()} for k,pv in vm.items()} for iy,vm in ev_agg['agg_iy'].items()}",
-    "ev_agg['periods']=[int(p) for p in ev_agg['periods']]",
-    "result=run_model(ev_agg,assum,int(_by),_rbc_rows,_bp_rows,_surplus_rows if '_surplus_rows' in dir() else None)",
-    "json.dumps(result)"
-  ].join("\n");
-  const rj=await S.py.runPythonAsync(code);
-  const out=JSON.parse(rj);
-  out.first_yr=(out.annual_predeal?.periods||[2026])[0]||2026;
-  return out;
-}
-
-function runModelWith(assum){
-  const a={...assum};
-  const apython={...a,
-    reins_pct:a.reins_pct_decimal||{},
-    ceding_comm_front:a.ceding_comm_front_dollars||{}};
-  ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance'].forEach(k=>{
-    if(!(k in apython)&&k in a)apython[k]=a[k];
-  });
-  const ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
-  S.py.globals.set('_evj',JSON.stringify(ev_for_py));
-  S.py.globals.set('_asj',JSON.stringify(apython));
-  S.py.globals.set('_by',a.base_year||2025);
-  const code=[
-    "import json","ev_agg=json.loads(_evj)","assum=json.loads(_asj)",
-    "for k in ['acq_exp','maint_exp','nier','ceding_comm_front','acq_exp_allowance','maint_exp_allowance']:",
-    "    if k in assum and isinstance(assum[k],dict):",
-    "        assum[k]={int(kk):vv for kk,vv in assum[k].items()}",
-    "if 'reins_pct' in assum:",
-    "    assum['reins_pct']={int(iy):{int(cy):v for cy,v in yd.items()} for iy,yd in assum['reins_pct'].items()}",
-    "ev_agg['agg']={k:{int(p):v for p,v in pv.items()} for k,pv in ev_agg['agg'].items()}",
-    "ev_agg['agg_iy']={str(iy):{k:{int(p):v for p,v in pv.items()} for k,pv in vm.items()} for iy,vm in ev_agg['agg_iy'].items()}",
-    "ev_agg['periods']=[int(p) for p in ev_agg['periods']]",
-    "result=run_model(ev_agg,assum,int(_by),_rbc_rows,_bp_rows,_surplus_rows if '_surplus_rows' in dir() else None)",
-    "json.dumps(result)"
-  ].join("\n");
-  const rj=await S.py.runPythonAsync(code);
-  const out=JSON.parse(rj);
-  out.first_yr=(out.annual_predeal?.periods||[2026])[0]||2026;
+  var rj=await S.py.runPythonAsync(code);
+  var out=JSON.parse(rj);
+  out.first_yr=(out.annual_predeal&&out.annual_predeal.periods&&out.annual_predeal.periods[0])||2026;
   return out;
 }
 
 function renderTestCases(){
-  const div=document.getElementById('test-cases-list');if(!div)return;
-  const cases=S.testCases||[];
-  div.innerHTML=cases.map((tc,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;background:var(--off);margin-bottom:4px">
-      <input type="checkbox" ${tc.enabled?'checked':''} onchange="S.testCases[${i}].enabled=this.checked" style="cursor:pointer">
-      <span style="flex:1;font-size:.74rem">${tc.name}</span>
-      <span style="font-size:.65rem;color:var(--mu)">${tc.type}</span>
-      <button onclick="removeTestCase(${i})" style="color:var(--err);background:none;border:none;cursor:pointer;font-size:.7rem">✕</button>
-    </div>`).join('');
+  var div=document.getElementById('test-cases-list');if(!div)return;
+  var cases=S.testCases||[];
+  div.innerHTML=cases.map(function(tc,i){
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:3px;background:var(--off);margin-bottom:3px">'+
+      '<input type="checkbox"'+(tc.enabled?' checked':'')+' onchange="S.testCases['+i+'].enabled=this.checked" style="cursor:pointer">'+
+      '<span style="flex:1;font-size:.72rem">'+tc.name+'</span>'+
+      '<span style="font-size:.63rem;color:var(--mu)">'+tc.type+'</span>'+
+      '<button onclick="removeTestCase('+i+')" style="color:var(--err);background:none;border:none;cursor:pointer;font-size:.68rem">x</button></div>';
+  }).join('');
 }
 
-function removeTestCase(i){S.testCases.splice(i,1);renderTestCases();localStorage.setItem('bb_tc',JSON.stringify(S.testCases));}
+function removeTestCase(i){S.testCases.splice(i,1);renderTestCases();}
 
 function addNLTestCase(){
-  const input=document.getElementById('nl-test-input');
-  const text=input.value.trim();if(!text)return;
-  const tc=parseNLTest(text);
-  if(!tc){alert('Could not interpret test case. Try: "If I increase acq expense by 20%, only acq expense should change" or "Claims scalar 1.1 should increase claims by 10%"');return;}
+  var inp=document.getElementById('nl-test-input');
+  var text=inp.value.trim();if(!text)return;
+  var tc=parseNLTest(text);
+  if(!tc){alert('Could not interpret. Try: "claim scalar 1.1 increases claims by 10%" or "acq expense +20% only changes acq expense"');return;}
+  if(!S.testCases)S.testCases=[];
   S.testCases.push(tc);renderTestCases();
-  localStorage.setItem('bb_tc',JSON.stringify(S.testCases));
-  input.value='';
+  localStorage.setItem('bb_tc',JSON.stringify(S.testCases));inp.value='';
 }
 
 function parseNLTest(text){
-  const t=text.toLowerCase();
-  const id='tc_'+Date.now();
-  // Claim scalar pattern
-  let m=t.match(/claim.*?scalar.*?([\d.]+)|claims.*?change.*?([\d.]+)%/);
-  if(m){
-    const v=parseFloat(m[1]||m[2]/100+1)||1.1;
-    return{id,name:text,description:text,type:'scalar',param:'claim_scalar',value:v,
-           target_line:'claims',expected_change:v-1,tolerance:0.01,check_unchanged:['premium','nii','commissions'],enabled:true};
-  }
-  // Acq expense pattern
-  m=t.match(/acq.*?expense.*?(increase|decrease|change).*?by.*?([\d.]+)%|acq.*?([\d.]+)%/);
-  if(m){
-    const pct=parseFloat(m[2]||m[3]||'20')/100;
-    const mult=t.includes('decrease')?1-pct:1+pct;
-    return{id,name:text,description:text,type:'expense',param:'acq_exp',multiplier:mult,
-           target_line:'acq_expense',expected_change:t.includes('decrease')?-pct:pct,tolerance:0.01,
-           check_unchanged:['premium','claims','nii'],enabled:true};
-  }
-  // Maint expense pattern  
-  m=t.match(/maint.*?expense.*?(increase|decrease).*?([\d.]+)%/);
-  if(m){
-    const pct=parseFloat(m[2])/100;const mult=t.includes('decrease')?1-pct:1+pct;
-    return{id,name:text,description:text,type:'expense',param:'maint_exp',multiplier:mult,
-           target_line:'maint_expense',expected_change:t.includes('decrease')?-pct:pct,tolerance:0.01,
-           check_unchanged:['premium','claims','nii'],enabled:true};
-  }
-  // Discount rate
-  m=t.match(/discount.*?([\d.]+)%/);
-  if(m){
-    const v=parseFloat(m[1])/100;
-    return{id,name:text,description:text,type:'direction',param:'discount_rate',to_val:v,
-           metric:'pvde',direction:v<0.08?'increase':'decrease',enabled:true};
-  }
-  // Zero ceding
-  if(t.includes('zero ceding')||t.includes('no reinsurance')||t.includes('0% ceding')){
-    return{id,name:text,description:text,type:'reins_zero',target_line:'premium',expected_ceded:0,tolerance:1000,enabled:true};
-  }
+  var t=text.toLowerCase();var id='tc_'+Date.now();
+  var m;
+  m=t.match(/claim.*scalar.*?([\d.]+)/);
+  if(m){var v=parseFloat(m[1])||1.1;return{id:id,name:text,type:'scalar',param:'claim_scalar',value:v,target_line:'claims',expected_change:v-1,tolerance:0.01,check_unchanged:['premium','nii','commissions'],enabled:true};}
+  m=t.match(/acq.*?(increase|decrease|[+\-]).*?([\d.]+)%/);
+  if(m){var pct=parseFloat(m[2])/100;var mult=t.includes('decrease')||t.includes('-')?1-pct:1+pct;return{id:id,name:text,type:'expense',param:'acq_exp',multiplier:mult,target_line:'acq_expense',expected_change:t.includes('decrease')?-pct:pct,tolerance:0.01,check_unchanged:['premium','claims','nii'],enabled:true};}
+  m=t.match(/maint.*?(increase|decrease|[+\-]).*?([\d.]+)%/);
+  if(m){var pct2=parseFloat(m[2])/100;var mult2=t.includes('decrease')||t.includes('-')?1-pct2:1+pct2;return{id:id,name:text,type:'expense',param:'maint_exp',multiplier:mult2,target_line:'maint_expense',expected_change:t.includes('decrease')?-pct2:pct2,tolerance:0.01,check_unchanged:['premium','claims','nii'],enabled:true};}
+  if(t.includes('zero ceding')||t.includes('no reinsurance')){return{id:id,name:text,type:'reins_zero',target_line:'premium',expected_ceded:0,tolerance:1000,enabled:true};}
   return null;
 }
 
 function renderTestLog(){
-  const div=document.getElementById('test-log-output');if(!div)return;
-  const results=S.testResults||[];
-  if(!results.length){div.innerHTML='<div style="color:var(--mu);font-size:.75rem">No test results yet. Click Run Tests.</div>';return;}
-  const pass=results.filter(r=>r.pass).length;
-  const fail=results.filter(r=>!r.pass).length;
-  let h=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;padding:8px 12px;border-radius:var(--r);background:${fail?'#FEF0EE':'#D4EDDA'};border:1px solid ${fail?'#FACACA':'#A8D5B5'}">
-    <span style="font-weight:bold;font-size:.82rem;color:${fail?'#721c24':'#155724'}">${pass} passed, ${fail} failed</span>
-    <span style="font-size:.72rem;color:var(--mu)">Run: ${new Date().toLocaleString()}</span>
-  </div>`;
-  h+=results.map(r=>`
-    <div style="margin-bottom:8px;padding:8px 12px;border-radius:var(--r);background:var(--off);border-left:3px solid ${r.pass?'#28a745':'#C0392B'}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <span style="font-weight:bold;font-size:.76rem">${r.pass?'✓':'✗'} ${r.name}</span>
-        ${r.pass?'':'<span style="color:#C0392B;font-size:.7rem">'+r.detail+'</span>'}
-      </div>
-      ${Object.keys(r.evidence).length?`
-        <details style="font-size:.67rem;color:var(--mu)">
-          <summary style="cursor:pointer">Evidence</summary>
-          <div style="font-family:var(--fm);background:var(--wh);padding:6px;border-radius:3px;margin-top:4px;white-space:pre">${JSON.stringify(r.evidence,null,2).split('\n').slice(0,20).join('\n')}</div>
-        </details>`:''}
-    </div>`).join('');
+  var div=document.getElementById('test-log-output');if(!div)return;
+  var results=S.testResults||[];
+  if(!results.length){div.innerHTML='<div style="color:var(--mu);font-size:.75rem">No results yet. Click Run Tests.</div>';return;}
+  var pass=results.filter(function(r){return r.pass;}).length;
+  var fail=results.length-pass;
+  var h='<div style="margin-bottom:10px;padding:6px 10px;border-radius:var(--r);background:'+(fail?'#FEF0EE':'#D4EDDA')+';border:1px solid '+(fail?'#FACACA':'#A8D5B5')+';font-size:.76rem;font-weight:bold;color:'+(fail?'#721c24':'#155724')+'">'+pass+' passed, '+fail+' failed &nbsp; '+new Date().toLocaleTimeString()+'</div>';
+  h+=results.map(function(r){
+    return '<div style="margin-bottom:6px;padding:6px 10px;border-radius:var(--r);background:var(--off);border-left:3px solid '+(r.pass?'#28a745':'#C0392B')+'">'+
+      '<div style="display:flex;align-items:center;gap:6px"><span style="font-weight:bold;font-size:.74rem">'+(r.pass?'&#10003;':'&#10007;')+' '+r.name+'</span>'+
+      (r.pass?'':'<span style="color:#C0392B;font-size:.68rem">'+r.detail+'</span>')+
+      '</div>'+
+      (Object.keys(r.evidence||{}).length?'<details style="font-size:.65rem;color:var(--mu);margin-top:2px"><summary style="cursor:pointer">Evidence</summary><pre style="background:var(--wh);padding:4px;border-radius:2px;margin-top:3px;font-size:.62rem;overflow-x:auto">'+JSON.stringify(r.evidence,null,2).split('\n').slice(0,15).join('\n')+'</pre></details>':'')+
+      '</div>';
+  }).join('');
   div.innerHTML=h;
 }
-
-// ════════════════════════════════════════════
-//  SCENARIOS (grid view)
-// ════════════════════════════════════════════
 
 </script>
 </body>
