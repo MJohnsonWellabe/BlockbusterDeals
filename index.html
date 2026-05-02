@@ -354,11 +354,14 @@ async function initPy(){
     S.files.rbc=b64ToBytes(DEFAULT_RBC_B64);S.files.bp=b64ToBytes(DEFAULT_BP_B64);
     S.py.globals.set('_tmpb',S.files.rbc);
     S.py.globals.set('_surplus_js',DEFAULT_SURPLUS_ROWS);
-    await S.py.runPythonAsync("import io,openpyxl as _x\n_wb=_x.load_workbook(io.BytesIO(bytes(_tmpb)),data_only=True,read_only=True)\n_rbc_rows=[list(r) for r in _wb.worksheets[0].iter_rows(values_only=True)]
-_surplus_rows=[list(r) for r in _wb['Surplus'].iter_rows(values_only=True)] if 'Surplus' in _wb.sheetnames else None
-_wb.close()
-_surplus_rows=[[None if c is None else c for c in row] for row in _surplus_js] if '_surplus_js' in dir() else None
-");
+    await S.py.runPythonAsync(
+      "import io,openpyxl as _x\n"+
+      "_wb=_x.load_workbook(io.BytesIO(bytes(_tmpb)),data_only=True,read_only=True)\n"+
+      "_rbc_rows=[list(r) for r in _wb.worksheets[0].iter_rows(values_only=True)]\n"+
+      "_sr=[list(r) for r in _wb['Surplus'].iter_rows(values_only=True)] if 'Surplus' in _wb.sheetnames else None\n"+
+      "_wb.close()\n"+
+      "_surplus_rows=_sr if _sr is not None else ([[None if c is None else c for c in r] for r in _surplus_js] if '_surplus_js' in dir() else None)"
+    );
     S.py.globals.set('_tmpb',S.files.bp);
     await S.py.runPythonAsync("import io,openpyxl as _x\n_wb=_x.load_workbook(io.BytesIO(bytes(_tmpb)),data_only=True,read_only=True)\n_bp_rows=[list(r) for r in _wb.worksheets[0].iter_rows(values_only=True)];_wb.close()");
     msg.textContent='Loading EV60 default data...';bar.style.width='82%';
