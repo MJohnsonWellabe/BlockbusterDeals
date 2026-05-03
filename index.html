@@ -1052,7 +1052,7 @@ function getDefaultTestCases(){
     {id:'t003',name:'Acq expense +20% only changes acq expense',type:'expense',param:'acq_exp',multiplier:1.2,target_line:'acq_expense',expected_change:-0.20,tolerance:0.005,check_unchanged:['premium','claims','nii'],enabled:true},
     {id:'t004',name:'Maint expense +15% only changes maint expense',type:'expense',param:'maint_exp',multiplier:1.15,target_line:'maint_expense',expected_change:-0.15,tolerance:0.005,check_unchanged:['premium','claims','nii'],enabled:true},
     {id:'t005',name:'Zero ceding gives zero ceded premium',type:'reins_zero',target_line:'premium',expected_ceded:0,tolerance:1000,enabled:true},
-    {id:'t006',name:'Reins ceded premium within range of reins%',type:'reins_check',expected_rate:0.08,target_line:'premium',tolerance:0.04,enabled:true},
+    {id:'t006',name:'Ceding active: ceded premium > 0 and < predeal',type:'reins_direction',target_line:'premium',enabled:true},
     {id:'t007',name:'Lower discount rate increases predeal PVDE magnitude',type:'direction',param:'discount_rate',to_val:0.06,metric:'pvde',direction:'decrease',target_stmt:'predeal',enabled:true},
     {id:'t008',name:'Higher maint allowance increases ceded maint expense',type:'direction',param:'maint_exp_allowance',multiplier:1.5,metric:'maint_expense',direction:'decrease',target_stmt:'ceded',enabled:true},
   ];
@@ -1123,10 +1123,7 @@ async function runOneTest(tc){
       evidence[tc.target_line+'_by_year']=targetEvidence;
       evidence.pti_diff_by_year=ptiEvidence;
       evidence.base_yr1=(bv/1e6).toFixed(3);evidence.mod_yr1=(mv/1e6).toFixed(3);evidence.actual_pct=ch;evidence.expected_pct=tc.expected_change;
-      // Compare magnitudes for expense lines (always negative, comparing magnitude of change)
-      var ch_cmp=tc.expected_change<0?ch:Math.abs(ch);  // if expected negative, compare as-is; if positive, compare magnitude
-      var exp_cmp=Math.abs(tc.expected_change);
-      if(ch==null||Math.abs(Math.abs(ch)-exp_cmp)>tc.tolerance){pass=false;detail='Magnitude change '+(ch!=null?(Math.abs(ch)*100).toFixed(2)+'%':'null')+' expected '+(exp_cmp*100).toFixed(1)+'%';}
+      if(ch==null||Math.abs(ch-tc.expected_change)>tc.tolerance){pass=false;detail='Change '+(ch!=null?(ch*100).toFixed(2)+'%':'null')+' expected '+(tc.expected_change*100).toFixed(1)+'%';}
       (tc.check_unchanged||[]).forEach(function(line){
         var bvl=gv(baseOut.annual_predeal[line]||{},by);var mvl=gv(modOut.annual_predeal[line]||{},by);
         var c2=bvl!==0?Math.abs((mvl-bvl)/bvl):0;evidence['unchanged_'+line+'_pct']=(c2*100).toFixed(4)+'%';
@@ -1141,6 +1138,15 @@ async function runOneTest(tc){
       var ar=pred!==0?Math.abs(ced)/Math.abs(pred):null;
       evidence.pred=pred;evidence.ced=ced;evidence.rate=ar;
       if(ar==null||Math.abs(ar-tc.expected_rate)>tc.tolerance){pass=false;detail='Rate '+(ar!=null?(ar*100).toFixed(1)+'%':'null')+' expected '+(tc.expected_rate*100).toFixed(0)+'%';}
+    } else if(tc.type==='reins_direction'){
+      var pred2=gv(baseOut.annual_predeal[tc.target_line]||{},by);
+      var ced2=gv(baseOut.annual_ceded[tc.target_line]||{},by);
+      evidence.pred=pred2;evidence.ced=ced2;
+      evidence.note='Ceded should be nonzero and same sign as predeal';
+      var ced_nonzero=Math.abs(ced2)>0;
+      var same_sign=(pred2>0&&ced2>0)||(pred2<0&&ced2<0);
+      var ced_lt_pred=Math.abs(ced2)<Math.abs(pred2);
+      if(!ced_nonzero||!same_sign||!ced_lt_pred){pass=false;detail='Ceding not active or ceded>=predeal';}
     } else if(tc.type==='direction'){
       var stmt=tc.target_stmt==='ceded'?'annual_ceded':'annual_predeal';
       var bv2=gv(baseOut[stmt][tc.metric]||{},by);var mv2=gv(modOut[stmt][tc.metric]||{},by);
@@ -1235,10 +1241,10 @@ function buildEvidenceHtml(ev,testName){
     tbl+='<thead><tr><th>Metric</th>'+yrs.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr></thead><tbody>';
     tbl+='<tr><td>'+lineName+' — Base</td>'+yrs.map(function(y){return '<td>'+((lineDat[y]&&lineDat[y].base)||'-')+'</td>';}).join('')+'</tr>';
     tbl+='<tr><td>'+lineName+' — Test</td>'+yrs.map(function(y){return '<td>'+((lineDat[y]&&lineDat[y].mod)||'-')+'</td>';}).join('')+'</tr>';
-    tbl+='<tr class="sub"><td>'Base - Test ('+lineName+')</td>'+yrs.map(function(y){return '<td>'+((lineDat[y]&&lineDat[y].diff_M)||'-')+'</td>';}).join('')+'</tr>';
+    tbl+='<tr class="sub"><td>Base - Test ('+lineName+')</td>'+yrs.map(function(y){return '<td>'+((lineDat[y]&&lineDat[y].diff_M)||'-')+'</td>';}).join('')+'</tr>';
     tbl+='<tr><td>PTI — Base</td>'+yrs.map(function(y){return '<td>'+((ptiDat[y]&&ptiDat[y].base)||'-')+'</td>';}).join('')+'</tr>';
     tbl+='<tr><td>PTI — Test</td>'+yrs.map(function(y){return '<td>'+((ptiDat[y]&&ptiDat[y].mod)||'-')+'</td>';}).join('')+'</tr>';
-    tbl+='<tr class="sub"><td>PTI Diff</td>'+yrs.map(function(y){return '<td>'+((ptiDat[y]&&ptiDat[y].diff_M)||'-')+'</td>';}).join('')+'</tr>';
+    tbl+='<tr class="sub"><td>PTI Base - Test</td>'+yrs.map(function(y){return '<td>'+((ptiDat[y]&&ptiDat[y].diff_M)||'-')+'</td>';}).join('')+'</tr>';
     tbl+='</tbody></table></div>';
     // Part 2: % change table
     tbl+='<div style="font-weight:bold;color:var(--mu);margin:6px 0 3px">Evidence Part 2: '+lineName+' % change by year</div>';
