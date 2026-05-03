@@ -275,6 +275,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
     <button class="btn btn-o btn-sm" onclick="clearScenarios()">Clear All</button>
   </div>
   <div id="sc-list"></div>
+  <div id="sc-compare" style="margin-top:16px"></div>
 </div>
 <!-- AUDIT -->
 <div class="panel" id="panel-audit">
@@ -383,7 +384,12 @@ async function initPy(){
     // Always start with fresh defaults, append any custom (non-default) cases
     const _defIds=new Set(getDefaultTestCases().map(function(t){return t.id;}));
     const _custom=(S.testCases||[]).filter(function(t){return !_defIds.has(t.id);});
-    S.testCases=getDefaultTestCases().concat(_custom);
+    // Normalize expense tests: expected_change should be negative (cost increases = more negative)
+    var _all=getDefaultTestCases().concat(_custom);
+    _all.forEach(function(t){
+      if(t.type==='expense'&&t.expected_change>0)t.expected_change=-t.expected_change;
+    });
+    S.testCases=_all;
     renderTestCases();
   }catch(e){st.textContent='Error';st.className='error';msg.textContent='Error: '+e.message;console.error(e);}
 }
@@ -451,9 +457,32 @@ async function handleUpload(evt,key){
 async function parseEVwithSheetJS(bytes){
   return new Promise((resolve,reject)=>{
     try{
-      const wb=XLSX.read(bytes,{type:'array',cellDates:false});
+      const wb=XLSX.read(bytes,{type:'array',cellDates:false,dense:false,
+        sheetStubs:false,cellHTML:false,cellFormula:false,cellNF:false});
       const ws=wb.Sheets[wb.SheetNames[0]];
-      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      // For large files (30yr = 361 cols), avoid sheet_to_json which loads all cells
+        const ref=ws['!ref'];if(!ref)throw new Error('Empty sheet');
+        const range=XLSX.utils.decode_range(ref);
+        const nRows=range.e.r-range.s.r+1,nCols=range.e.c-range.s.c+1;
+        // Build header row
+        const raw=[];
+        const hdrRow=[];
+        for(let c=range.s.c;c<=range.e.c;c++){
+          const cell=ws[XLSX.utils.encode_cell({r:range.s.r,c})];
+          hdrRow.push(cell?cell.v:null);
+        }
+        raw.push(hdrRow);
+        // Build data rows efficiently
+        for(let r=range.s.r+1;r<=range.e.r;r++){
+          const row=new Array(nCols).fill(null);
+          let hasData=false;
+          for(let c=range.s.c;c<=range.e.c;c++){
+            const addr=XLSX.utils.encode_cell({r,c});
+            const cell=ws[addr];
+            if(cell!=null){row[c-range.s.c]=cell.v;hasData=true;}
+          }
+          if(hasData)raw.push(row);
+        }
       if(!raw||raw.length<2){reject(new Error('Empty sheet'));return;}
       const hdr=raw[0].map(h=>h!=null?String(h):null);
       const vnI=hdr.indexOf('VarName'),iyI=hdr.indexOf('ck.IssYear'),imI=hdr.indexOf('ck.IssMon'),nbI=hdr.indexOf('ck.NewBus'),prI=hdr.indexOf('Product');
@@ -805,9 +834,10 @@ function renderIYDiag(){
     '<div class="tw"><table class="bbt" style="font-size:.65rem"><thead><tr><th>Line</th><th>Direct ($)</th><th>Ceded ($)</th><th>Actual %</th><th>Expected</th><th>Status</th></tr></thead><tbody>';
     for(const l of cd.lines){
       const ar=l.actual_rate!=null?(l.actual_rate*100).toFixed(1)+'%':'-';
+      const lep=l.expected_rate!=null?(l.expected_rate*100).toFixed(1)+'%':ep;
       const isSkip=l.zero_skip;
       const st=isSkip?'<span class="tag tgg">N/A (zero)</span>':!rel?'<span class="tag tgg">N/A</span>':l.ok?'<span class="tag tgy">OK</span>':'<span class="tag" style="background:#C0392B;color:#fff">!</span>';
-      html+='<tr'+(rel&&!isSkip?'':' style="opacity:.5"')+'><td style="font-weight:600">'+l.line+'</td><td>'+fmtDol(l.direct)+'</td><td>'+fmtDol(l.ceded)+'</td><td style="font-weight:bold">'+ar+'</td><td>'+ep+'</td><td style="text-align:center">'+st+'</td></tr>';
+      html+='<tr'+(rel&&!isSkip?'':' style="opacity:.5"')+'><td style="font-weight:600">'+l.line+'</td><td>'+fmtDol(l.direct)+'</td><td>'+fmtDol(l.ceded)+'</td><td style="font-weight:bold">'+ar+'</td><td>'+lep+'</td><td style="text-align:center">'+st+'</td></tr>';
     }
     html+='</tbody></table></div></div>';
   }
@@ -840,23 +870,37 @@ function saveScenario(){
     assumptions:JSON.parse(JSON.stringify(S.assumptions)),
     metrics_predeal:S.out.metrics_predeal,
     metrics_ceded:S.out.metrics_ceded,
-    metrics_net:S.out.metrics_net});
+    metrics_net:S.out.metrics_net,
+    annual_predeal:S.out.annual_predeal,
+    annual_ceded:S.out.annual_ceded,
+    annual_net:S.out.annual_net});
   localStorage.setItem('bb_sc',JSON.stringify(S.scenarios));
   document.getElementById('sccount').textContent=S.scenarios.length;renderScenarios();
 }
+// SCENARIO COMPARISON CODE - inject into renderScenarios
+
 function renderScenarios(){
   const div=document.getElementById('sc-list');if(!div)return;
   const scenarios=S.scenarios||[];
   if(!scenarios.length){
-    div.innerHTML='<div class="empty"><div class="ei">&#x1F4CB;</div><h3>No saved scenarios</h3><p>Run the model and click Save Scenario to compare runs</p></div>';return;
+    div.innerHTML='<div class="empty"><div class="ei">&#x1F4CB;</div><h3>No saved scenarios</h3><p>Run the model and click Save Scenario to compare runs</p></div>';
+    document.getElementById('sc-compare').innerHTML='';
+    return;
   }
-  let h='<div style="overflow-x:auto"><table class="bbt"><thead><tr><th>Scenario</th><th>Date</th>'+
-    '<th>Predeal EV ($M)</th><th>Net EV ($M)</th><th>Predeal IRR</th><th>Net IRR</th>'+
-    '<th>Ceded EV ($M)</th><th>Max Neg DE ($M)</th><th>Actions</th></tr></thead><tbody>';
-  (scenarios||[]).forEach(function(sc,i){
-    var mp=sc.metrics_predeal||{},mc2=sc.metrics_ceded||{},mn=sc.metrics_net||{};
-    h+='<tr><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sc.name+'</td>'+
-      '<td style="font-size:.68rem;color:var(--mu)">'+new Date(sc.saved_at).toLocaleDateString()+'</td>'+
+  const metrics=[{k:'pvde_pre',l:'Predeal EV ($M)'},{k:'pvde_net',l:'Net EV ($M)'},
+    {k:'irr_pre',l:'Predeal IRR'},{k:'irr_net',l:'Net IRR'},
+    {k:'pvde_ced',l:'Ceded EV ($M)'},{k:'max_neg',l:'Max Neg DE ($M)'}];
+  let h='<div style="overflow-x:auto"><table class="bbt"><thead><tr>'+
+    '<th></th><th>Scenario</th><th>Date</th>'+
+    metrics.map(m=>'<th>'+m.l+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>';
+  const sel=S._scSelSet||new Set();
+  scenarios.forEach(function(sc,i){
+    const mp=sc.metrics_predeal||{},mc2=sc.metrics_ceded||{},mn=sc.metrics_net||{};
+    const isChecked=sel.has(i);
+    h+='<tr>'+
+      '<td><input type="checkbox"'+(isChecked?' checked':'')+' onchange="toggleScCompare('+i+',this.checked)"></td>'+
+      '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sc.name+'</td>'+
+      '<td style="font-size:.68rem;color:var(--mu)">'+new Date(sc.saved_at||sc.ts||'').toLocaleDateString()+'</td>'+
       '<td>'+fmtM(mp.pvde)+'M</td><td>'+fmtM(mn.pvde)+'M</td>'+
       '<td>'+fmtPct(mp.irr)+'</td><td>'+fmtPct(mn.irr)+'</td>'+
       '<td>'+fmtM(mc2.pvde)+'M</td><td>'+fmtM(mn.max_neg_cum_de)+'M</td>'+
@@ -865,7 +909,117 @@ function renderScenarios(){
   });
   h+='</tbody></table></div>';
   div.innerHTML=h;
+  renderScCompare();
 }
+
+function toggleScCompare(i,checked){
+  if(!S._scSelSet)S._scSelSet=new Set();
+  if(checked){
+    if(S._scSelSet.size>=2){
+      alert('Select exactly 2 scenarios to compare. Deselect one first.');
+      renderScenarios(); return;
+    }
+    S._scSelSet.add(i);
+  } else { S._scSelSet.delete(i); }
+  renderScCompare();
+}
+
+function renderScCompare(){
+  const cDiv=document.getElementById('sc-compare');if(!cDiv)return;
+  const sel=S._scSelSet;
+  if(!sel||sel.size<2){
+    if(sel&&sel.size===1)cDiv.innerHTML='<div style="color:var(--mu);font-size:.76rem;margin-top:8px">Select one more scenario to compare.</div>';
+    else cDiv.innerHTML='';
+    return;
+  }
+  const scenarios=S.scenarios||[];
+  const [i1,i2]=[...sel].sort((a,b)=>a-b);
+  const sc1=scenarios[i1],sc2=scenarios[i2];
+  if(!sc1||!sc2)return;
+
+  function incomeRows(stmt,yrs){
+    const pairs=[['Total Revenue','revenue'],['Total Benefits','benefits'],
+      ['Selling Expense','selling_expense'],['Op Expense','op_expense'],
+      ['Pre-Tax Income','pretax_income'],['Distrib. Earnings','distributable_earnings']];
+    const sub=new Set(['Total Revenue','Pre-Tax Income']);
+    return pairs.map(([lbl,key])=>{
+      const s1=stmt.s1||{},s2=stmt.s2||{};
+      return '<tr'+(sub.has(lbl)?' class="sub"':'')+'><td>'+lbl+'</td>'+
+        yrs.map(y=>'<td>'+fmtNum((s1[key]||{})[y]||(s1[key]||{})[String(y)]||0)+'</td>').join('')+
+        '<td style="background:rgba(0,0,0,.04)"></td>'+
+        yrs.map(y=>'<td>'+fmtNum((s2[key]||{})[y]||(s2[key]||{})[String(y)]||0)+'</td>').join('')+'</tr>';
+    }).join('');
+  }
+
+  // Determine years from stored periods (fall back to 2026-2030)
+  function getPeriods(sc){
+    const p=(sc.annual_predeal&&sc.annual_predeal.periods)||
+            Object.keys((sc.annual_predeal&&sc.annual_predeal.premium)||{}).map(Number).filter(n=>n>2000).sort();
+    return p.slice(0,5);
+  }
+  const yrs1=getPeriods(sc1),yrs2=getPeriods(sc2);
+  const allYrs=[...new Set([...yrs1,...yrs2])].sort().slice(0,5);
+
+  function scBlock(sc,stmtKey,label){
+    const stmt=sc[stmtKey]||{};
+    return {s1:stmt,s2:stmt,key:stmtKey};
+  }
+
+  function compareTable(sc1,sc2,stmtKey,label){
+    if(!sc1[stmtKey]&&!sc2[stmtKey])return '';
+    const pairs=[['Total Revenue','revenue'],['Total Benefits','benefits'],
+      ['Selling Expense','selling_expense'],['Op Expense','op_expense'],
+      ['Pre-Tax Income','pretax_income'],['Distrib. Earnings','distributable_earnings']];
+    const sub=new Set(['Total Revenue','Pre-Tax Income']);
+    let t='<div style="margin-bottom:10px">'+
+      '<div style="font-size:.76rem;font-weight:bold;color:var(--navy);padding:3px 8px;background:var(--off);border-radius:3px;margin-bottom:3px">'+label+'</div>'+
+      '<div class="tw"><table class="bbt" style="font-size:.68rem">'+
+      '<thead><tr><th>Line</th>'+
+        allYrs.map(y=>'<th>'+y+'<br><span style="font-weight:400;font-size:.6rem">'+sc1.name.slice(0,8)+'</span></th>').join('')+
+        '<th style="width:8px;background:rgba(0,35,102,.06)"></th>'+
+        allYrs.map(y=>'<th>'+y+'<br><span style="font-weight:400;font-size:.6rem">'+sc2.name.slice(0,8)+'</span></th>').join('')+
+      '</tr></thead><tbody>';
+    pairs.forEach(([lbl,key])=>{
+      t+='<tr'+(sub.has(lbl)?' class="sub"':'')+'>'+
+        '<td>'+lbl+'</td>'+
+        allYrs.map(y=>'<td>'+fmtNum((sc1[stmtKey]||{})[key]?
+          ((sc1[stmtKey][key][y]||sc1[stmtKey][key][String(y)])||0):0)+'</td>').join('')+
+        '<td style="background:rgba(0,35,102,.06)"></td>'+
+        allYrs.map(y=>'<td>'+fmtNum((sc2[stmtKey]||{})[key]?
+          ((sc2[stmtKey][key][y]||sc2[stmtKey][key][String(y)])||0):0)+'</td>').join('')+
+        '</tr>';
+    });
+    t+='</tbody></table></div></div>';
+    return t;
+  }
+
+  let html='<div style="border-top:2px solid var(--navy);margin-top:12px;padding-top:12px">'+
+    '<div style="font-size:.9rem;font-weight:bold;color:var(--navy);margin-bottom:8px">'+
+    'Comparing: <span style="color:var(--acc)">'+sc1.name+'</span> vs <span style="color:#2ecc71">'+sc2.name+'</span></div>'+
+    // Key metrics side by side
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:.74rem">'+
+      '<div style="background:var(--off);border-radius:var(--r);padding:8px 12px">'+
+        '<div style="font-weight:bold;color:var(--navy);margin-bottom:4px">'+sc1.name+'</div>'+
+        '<div>Predeal EV: <b>'+fmtM(sc1.metrics_predeal.pvde)+'M</b></div>'+
+        '<div>Net EV: <b>'+fmtM(sc1.metrics_net.pvde)+'M</b></div>'+
+        '<div>Predeal IRR: <b>'+fmtPct(sc1.metrics_predeal.irr)+'</b></div>'+
+        '<div>Net IRR: <b>'+fmtPct(sc1.metrics_net.irr)+'</b></div>'+
+      '</div>'+
+      '<div style="background:var(--off);border-radius:var(--r);padding:8px 12px">'+
+        '<div style="font-weight:bold;color:var(--navy);margin-bottom:4px">'+sc2.name+'</div>'+
+        '<div>Predeal EV: <b>'+fmtM(sc2.metrics_predeal.pvde)+'M</b></div>'+
+        '<div>Net EV: <b>'+fmtM(sc2.metrics_net.pvde)+'M</b></div>'+
+        '<div>Predeal IRR: <b>'+fmtPct(sc2.metrics_predeal.irr)+'</b></div>'+
+        '<div>Net IRR: <b>'+fmtPct(sc2.metrics_net.irr)+'</b></div>'+
+      '</div>'+
+    '</div>'+
+    compareTable(sc1,sc2,'annual_predeal','Predeal Income Statement')+
+    compareTable(sc1,sc2,'annual_ceded','Ceded Income Statement')+
+    compareTable(sc1,sc2,'annual_net','Net Income Statement')+
+    '</div>';
+  cDiv.innerHTML=html;
+}
+
 
 function loadSc(i){S.assumptions=JSON.parse(JSON.stringify(S.scenarios[i].assumptions));renderAssumUI();showTab('assumptions');}
 function delSc(i){if(!confirm('Delete?'))return;S.scenarios.splice(i,1);localStorage.setItem('bb_sc',JSON.stringify(S.scenarios));renderScenarios();}
@@ -1083,12 +1237,9 @@ async function runOneTest(tc){
     } else if(tc.type==='expense'){
       var ann=modAssum.annual||{};
       Object.keys(ann).forEach(function(y){if(ann[y]&&ann[y][tc.param]!=null)ann[y][tc.param]*=(tc.multiplier||1.2);});
-      // Rebuild top-level so runModelWith gets updated values
+      // Rebuild top-level so engine receives updated values
       modAssum[tc.param]={};
       Object.keys(ann).forEach(function(y){if(ann[y]&&ann[y][tc.param]!=null)modAssum[tc.param][parseInt(y)]=ann[y][tc.param];});
-      // Rebuild top-level dict so engine receives updated values
-      var rebuildKey=tc.param; modAssum[rebuildKey]={};
-      Object.keys(ann).forEach(function(y){if(ann[y]&&ann[y][rebuildKey]!=null)modAssum[rebuildKey][parseInt(y)]=ann[y][rebuildKey];});
     } else if(tc.type==='direction'){
       if(tc.param==='discount_rate'){modAssum.discount_rate=tc.to_val||0.06;}
       else if(tc.param==='acq_exp_allowance'||tc.param==='maint_exp_allowance'){
