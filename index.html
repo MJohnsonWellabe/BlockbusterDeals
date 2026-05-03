@@ -925,42 +925,53 @@ function buildRBCOrigTable(rbc, origFull){
   var years=origFull&&origFull.years&&origFull.years.length?origFull.years.filter(function(y){return y>=2025;}).map(Number):
     Object.keys(Object.values(allData)[0]||{}).map(Number).filter(function(y){return y>=2025;}).sort(function(a,b){return a-b;});
   function getV(key,yr){var src=allData[key]||rbc[key]||{};var v=src[yr]||src[String(yr)];return v!=null?Number(v):null;}
-  function f3(v){if(v==null)return '-';var n=Number(v);return isNaN(n)?'-':n.toFixed(3);}
+  function f3(v,frac){if(v==null)return '-';var n=Number(v);return isNaN(n)?'-':n.toFixed(frac||3);}
   function fx(v){if(v==null)return '-';var n=Number(v);return isNaN(n)?'-':n.toFixed(2)+'x';}
-  function mkTable(title,rowDefs,isR){
-    var h='<div class="sect-hdr">'+title+'</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+
-      '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead><tbody>';
-    rowDefs.forEach(function(rd){
-      var key=rd[0],lbl=rd[1]||rd[0];
-      var vals=years.map(function(y){return getV(key,y);});
-      if(!vals.some(function(v){return v!=null&&v!==0;}))return;
-      h+='<tr><td>'+lbl+'</td>'+vals.map(function(v){return '<td>'+(isR?fx(v):f3(v))+'</td>';}).join('')+'</tr>';
-    });
-    return h+'</tbody></table></div>';
+  function th(){return '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead>';}
+  function row(lbl,key,cls,frac){
+    var vals=years.map(function(y){return getV(key,y);});
+    if(!vals.some(function(v){return v!=null&&v!==0;}))return '';
+    return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+lbl+'</td>'+vals.map(function(v){return '<td>'+f3(v,frac)+'</td>';}).join('')+'</tr>';
   }
-  // AVR: constant from first value
-  var avrVal=getV('AVR',years[0]);
-  var surpHtml='<div class="sect-hdr">Surplus & Capital</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+
-    '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead><tbody>'+
-    [['Total Surplus'],['In LOBs'],['Portion in non-ins cos'],['Portion in ins co Corp']].map(function(rd){
-      var vals=years.map(function(y){return getV(rd[0],y);});
-      if(!vals.some(function(v){return v!=null&&v!==0;}))return '';
-      return '<tr><td>'+rd[0]+'</td>'+vals.map(function(v){return '<td>'+f3(v)+'</td>';}).join('')+'</tr>';
-    }).join('')+
-    '<tr><td>AVR</td>'+years.map(function(){return '<td>'+(avrVal!=null?avrVal.toFixed(3):'-')+'</td>';}).join('')+'</tr>'+
-    '<tr><td>TAC (C&S + AVR)</td>'+years.map(function(y){var v=getV('TAC (C&S + AVR)',y);return '<td>'+(v!=null?f3(v):'-')+'</td>';}).join('')+'</tr>'+
-    '</tbody></table></div>';
+  function rowx(lbl,key){
+    var vals=years.map(function(y){return getV(key,y);});
+    return '<tr><td>'+lbl+'</td>'+vals.map(function(v){return '<td>'+fx(v)+'</td>';}).join('')+'</tr>';
+  }
+  function sect(title,rows){return '<div class="sect-hdr">'+title+'</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+rows+'</tbody></table></div>';}
+  // AVR constant
+  var avrVal=years.map(function(y){var v=getV('AVR',y);return v!=null?v:getV('AVR',years[0]);});
+  var avrRow='<tr><td>AVR</td>'+avrVal.map(function(v){return '<td>'+f3(v)+'</td>';}).join('')+'</tr>';
   return '<div class="card"><div class="ch">Original RBC & Surplus</div><div class="cb">'+
-    mkTable('Med Sup Income',[['Premium'],['Claims'],['Income','Pre-Tax Income']],false)+
-    mkTable('Med Sup RBC Charges',[['TSC0'],['TSC1'],['TSLR016'],['TSC1CS'],['TSC2'],['TSC3'],['TSC4a'],['TSC4b']],false)+
-    mkTable('All Product RBC Charges',[['All_TSC0','TSC0'],['All_TSC1','TSC1'],['All_TSLR016','TSLR016'],
-      ['All_TSC1CS','TSC1CS'],['All_TSC2','TSC2'],['All_TSC3','TSC3'],['All_TSC4a','TSC4a'],['All_TSC4b','TSC4b'],
-      ['Total (Pre Covariance)']],false)+
-    mkTable('Post-Covariance',[['Post Covariance'],['Conservatism factor'],
-      ['Adding 1% conservatism'],['Adding 3% loss of covariance'],['Total (Post Covariance)']],false)+
-    surpHtml+
-    mkTable('RBC Ratios',[['RBC Ratio pre-covariance'],['RBC Ratio post-covariance w margin'],
-      ['RBC Ratio post-covariance w/o margin']],true)+
+    // MS Income
+    sect('Med Sup Income',
+      row('Premium','Premium')+row('Claims','Claims')+row('Pre-Tax Income','Income'))+
+    // MS Charges
+    sect('Med Sup RBC Charges',
+      row('TSC0','TSC0')+row('TSC1','TSC1')+row('TSLR016','TSLR016')+row('TSC1CS','TSC1CS')+
+      row('TSC2','TSC2')+row('TSC3','TSC3')+row('TSC4a','TSC4a')+row('TSC4b','TSC4b'))+
+    // All-product charges
+    sect('All Product RBC Charges',
+      row('TSC0','All_TSC0')+row('TSC1','All_TSC1')+row('TSLR016','All_TSLR016')+
+      row('TSC1CS','All_TSC1CS')+row('TSC2','All_TSC2')+row('TSC3','All_TSC3')+
+      row('TSC4a','All_TSC4a')+row('TSC4b','All_TSC4b')+
+      row('Total (Pre Covariance)','Total (Pre Covariance)','sub'))+
+    // Post-covariance
+    sect('Post-Covariance',
+      row('Post Covariance','Post Covariance')+
+      row('Adding 1% conservatism','Adding 1% conservatism')+
+      row('Adding 3% loss of covariance','Adding 3% loss of covariance')+
+      row('Total (Post Covariance)','Total (Post Covariance)','sub'))+
+    // Surplus & Capital
+    '<div class="sect-hdr">Surplus & Capital</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
+      row('Total Surplus','Total Surplus')+row('In LOBs','In LOBs')+
+      row('Portion in non-ins cos','Portion in non-ins cos')+row('Portion in ins co Corp','Portion in ins co Corp')+
+      avrRow+row('TAC (C&S + AVR)','TAC (C&S + AVR)','sub')+
+    '</tbody></table></div>'+
+    // Ratios
+    sect('RBC Ratios',
+      rowx('RBC Ratio pre-covariance','RBC Ratio pre-covariance')+
+      rowx('RBC Ratio post-covariance w margin','RBC Ratio post-covariance w margin')+
+      rowx('RBC Ratio post-covariance w/o margin','RBC Ratio post-covariance w/o margin'))+
     '</div></div>';
 }
 
@@ -973,60 +984,52 @@ function buildRBCSection(origRbc, label, annualStmt, rbcResult){
   var allData=origRbc.data||origRbc;
   var years=origRbc.years?origRbc.years.filter(function(y){return y>=2025;}).map(Number):
     Object.keys(Object.values(allData)[0]||{}).map(Number).filter(function(y){return y>=2025;}).sort(function(a,b){return a-b;});
-  
   function a(yr){return adjDict[yr]||adjDict[String(yr)]||{};}
   function f3(v){if(v==null)return '-';var n=Number(v);return isNaN(n)?'-':n.toFixed(3);}
   function fx(v){if(v==null)return '-';var n=Number(v);return isNaN(n)?'-':n.toFixed(2)+'x';}
   function th(){return '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead>';}
-  function row(lbl,vals,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+lbl+'</td>'+vals.map(function(v){return '<td>'+f3(v)+'</td>';}).join('')+'</tr>';}
-  function rowx(lbl,vals){return '<tr><td>'+lbl+'</td>'+vals.map(function(v){return '<td>'+fx(v)+'</td>';}).join('')+'</tr>';}
-
-  // MS Income section
-  var incHtml='<div class="sect-hdr">Med Sup Income ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    row('Premium',years.map(function(y){return a(y).ms_prem;}))+
-    row('Claims',years.map(function(y){return a(y).ms_claims!=null?-a(y).ms_claims:null;}))+
-    row('Pre-Tax Income',years.map(function(y){return a(y).ms_income;}))+
-    '</tbody></table></div>';
-
-  // MS TSC section
-  var msTscHtml='<div class="sect-hdr">Med Sup RBC Charges ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    ['TSC0','TSC1','TSLR016','TSC1CS','TSC2','TSC3','TSC4a','TSC4b'].map(function(tsc){
-      return row(tsc,years.map(function(y){var ms=a(y).ms_tsc||{};return ms[tsc]!=null?ms[tsc]:null;}));
-    }).join('')+'</tbody></table></div>';
-
-  // All-product TSC section
-  var allTscHtml='<div class="sect-hdr">All Product RBC Charges ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    ['TSC0','TSC1','TSLR016','TSC1CS','TSC2','TSC3','TSC4a','TSC4b'].map(function(tsc){
-      return row(tsc,years.map(function(y){var ap=a(y).allprod_tsc||{};return ap[tsc]!=null?ap[tsc]:null;}));
-    }).join('')+
-    row('Total (Pre Covariance)',years.map(function(y){return a(y).pre_cov;}), 'sub')+
-    '</tbody></table></div>';
-
-  // Post-cov section
-  var pcHtml='<div class="sect-hdr">Post-Covariance ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    row('Post Covariance',years.map(function(y){return a(y).post_cov;}))+
-    row('Adding 1% conservatism',years.map(function(y){return a(y).add_1pct;}))+
-    row('Adding 3% loss of covariance',years.map(function(y){return a(y).add_3pct;}))+
-    row('Total (Post Covariance)',years.map(function(y){return a(y).total_post_cov;}), 'sub')+
-    '</tbody></table></div>';
-
-  // Surplus section
-  var surpHtml='<div class="sect-hdr">Surplus & Capital ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    row('diff in MS income after tax (cumul.)',years.map(function(y){return a(y).cum_surplus_adj;}))+
-    row('Total Surplus',years.map(function(y){return a(y).total_surplus;}))+
-    row('Portion in non-ins cos',years.map(function(y){return a(y).portion_non_ins;}))+
-    row('AVR',years.map(function(y){return a(y).avr;}))+
-    row('TAC (C&S + AVR)',years.map(function(y){return a(y).tac;}), 'sub')+
-    '</tbody></table></div>';
-
-  // Ratios - pre-cov first per user request
-  var ratHtml='<div class="sect-hdr">RBC Ratios</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
-    rowx('RBC Ratio pre-covariance',years.map(function(y){return a(y).ratio_pre_cov;}))+
-    rowx('RBC Ratio post-covariance w margin',years.map(function(y){return a(y).ratio_w_margin;}))+
-    rowx('RBC Ratio post-covariance w/o margin',years.map(function(y){return a(y).ratio_wo_margin;}))+
-    '</tbody></table></div>';
-
-  return '<div class="card"><div class="ch">'+label+'</div><div class="cb">'+incHtml+msTscHtml+allTscHtml+pcHtml+surpHtml+ratHtml+'</div></div>';
+  function rowV(lbl,fn,cls){return '<tr'+(cls?' class="'+cls+'"':'')+'><td>'+lbl+'</td>'+years.map(function(y){return '<td>'+f3(fn(y))+'</td>';}).join('')+'</tr>';}
+  function rowX(lbl,fn){return '<tr><td>'+lbl+'</td>'+years.map(function(y){return '<td>'+fx(fn(y))+'</td>';}).join('')+'</tr>';}
+  function sect(title,rows){return '<div class="sect-hdr">'+title+'</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+rows+'</tbody></table></div>';}
+  function tsc(key){return function(y){var ms=a(y).ms_tsc||{};return ms[key]!=null?ms[key]:null;};}
+  function atsc(key){return function(y){var ap=a(y).allprod_tsc||{};return ap[key]!=null?ap[key]:null;};}
+  return '<div class="card"><div class="ch">'+label+'</div><div class="cb">'+
+    // MS Income (claims shown as negative - stored as positive in adj)
+    sect('Med Sup Income ($M)',
+      rowV('Premium',function(y){return a(y).ms_prem;})+
+      rowV('Claims',function(y){return a(y).ms_claims!=null?-a(y).ms_claims:null;})+
+      rowV('Pre-Tax Income',function(y){return a(y).ms_income;}))+
+    // MS TSC charges
+    sect('Med Sup RBC Charges ($M)',
+      rowV('TSC0',tsc('TSC0'))+rowV('TSC1',tsc('TSC1'))+rowV('TSLR016',tsc('TSLR016'))+
+      rowV('TSC1CS',tsc('TSC1CS'))+rowV('TSC2',tsc('TSC2'))+rowV('TSC3',tsc('TSC3'))+
+      rowV('TSC4a',tsc('TSC4a'))+rowV('TSC4b',tsc('TSC4b')))+
+    // All-product TSC charges
+    sect('All Product RBC Charges ($M)',
+      rowV('TSC0',atsc('TSC0'))+rowV('TSC1',atsc('TSC1'))+rowV('TSLR016',atsc('TSLR016'))+
+      rowV('TSC1CS',atsc('TSC1CS'))+rowV('TSC2',atsc('TSC2'))+rowV('TSC3',atsc('TSC3'))+
+      rowV('TSC4a',atsc('TSC4a'))+rowV('TSC4b',atsc('TSC4b'))+
+      rowV('Total (Pre Covariance)',function(y){return a(y).pre_cov;},'sub'))+
+    // Post-covariance
+    sect('Post-Covariance ($M)',
+      rowV('Post Covariance',function(y){return a(y).post_cov;})+
+      rowV('Adding 1% conservatism',function(y){return a(y).add_1pct;})+
+      rowV('Adding 3% loss of covariance',function(y){return a(y).add_3pct;})+
+      rowV('Total (Post Covariance)',function(y){return a(y).total_post_cov;},'sub'))+
+    // Surplus & Capital
+    '<div class="sect-hdr">Surplus & Capital ($M)</div><div class="tw"><table class="bbt" style="font-size:.68rem">'+th()+'<tbody>'+
+      rowV('diff in MS income after tax (cumul.)',function(y){return a(y).cum_surplus_adj;})+
+      rowV('Total Surplus',function(y){return a(y).total_surplus;})+
+      rowV('Portion in non-ins cos',function(y){return a(y).portion_non_ins;})+
+      rowV('AVR',function(y){return a(y).avr;})+
+      rowV('TAC (C&S + AVR)',function(y){return a(y).tac;},'sub')+
+    '</tbody></table></div>'+
+    // Ratios - pre-cov first
+    sect('RBC Ratios',
+      rowX('RBC Ratio pre-covariance',function(y){return a(y).ratio_pre_cov;})+
+      rowX('RBC Ratio post-covariance w margin',function(y){return a(y).ratio_w_margin;})+
+      rowX('RBC Ratio post-covariance w/o margin',function(y){return a(y).ratio_wo_margin;}))+
+    '</div></div>';
 }
 
 
@@ -1472,7 +1475,7 @@ function downloadEVTemplate(){
   const blob=new Blob([csvContent],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='EV_Data_template.csv';
+  a.download='EV_Data_template120.csv';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
