@@ -1,3 +1,53 @@
+function buildRBCLiftTable(rbc,rbcNet,out){
+  if(!out)return '<p style="color:var(--mu);padding:8px">Run the model.</p>';
+  var origC=out.rbc_orig_computed||{};
+  var predR=out.rbc_predeal_result||{};
+  var netR=out.rbc_net_result||{};
+  var origVals=origC.original_values||{};
+  var predAdj=predR.predeal_adjustments||{};
+  var netAdj=netR.net_adjustments||{};
+  // Years: 2026-2035 (skip base year 2025)
+  var years=(origC.years||[]).map(Number).filter(function(y){return y>=2026&&y<=2035;}).sort(function(a,b){return a-b;});
+  if(!years.length){
+    // fallback: pull from any source
+    var src=origVals[Object.keys(origVals)[0]]?Object.keys(origVals):[];
+    years=src.map(Number).filter(function(y){return y>=2026&&y<=2035;}).sort(function(a,b){return a-b;});
+  }
+  if(!years.length)return '<p style="color:var(--mu);padding:8px">No RBC data available.</p>';
+  
+  function lookup(d,yr){return d[yr]||d[String(yr)]||{};}
+  function fx(x){if(x==null||isNaN(x))return '-';return Number(x).toFixed(2)+'x';}
+  function fxLift(x){if(x==null||isNaN(x))return '-';var s=x>=0?'+':'';return s+Number(x).toFixed(2)+'x';}
+  
+  function origRatio(yr){return lookup(origVals,yr).ratio_w_margin;}
+  function predRatio(yr){return lookup(predAdj,yr).ratio_w_margin;}
+  function netRatio(yr){return lookup(netAdj,yr).ratio_w_margin;}
+  
+  var h='<div class="card"><div class="ch">RBC Ratio Post-Covariance (w/ Margin) — Lift Analysis</div><div class="cb">';
+  h+='<div class="tw"><table class="bbt" style="font-size:.72rem">';
+  h+='<thead><tr><th style="min-width:120px">Scenario</th>'+
+    years.map(function(y){return '<th style="min-width:60px">'+y+'</th>';}).join('')+'</tr></thead><tbody>';
+  // Original row
+  h+='<tr><td style="font-weight:600">Original</td>'+
+    years.map(function(y){return '<td>'+fx(origRatio(y))+'</td>';}).join('')+'</tr>';
+  // Predeal row
+  h+='<tr><td style="font-weight:600">Predeal</td>'+
+    years.map(function(y){return '<td>'+fx(predRatio(y))+'</td>';}).join('')+'</tr>';
+  // Net row
+  h+='<tr><td style="font-weight:600">Net (Post-Deal)</td>'+
+    years.map(function(y){return '<td>'+fx(netRatio(y))+'</td>';}).join('')+'</tr>';
+  // Lift row (Net - Original)
+  h+='<tr class="sub"><td>Lift (Net − Original)</td>'+
+    years.map(function(y){
+      var o=origRatio(y),n=netRatio(y);
+      var lift=(o!=null&&n!=null)?n-o:null;
+      var col=lift==null?'':lift>0?'#28a745':lift<0?'#C0392B':'';
+      return '<td style="color:'+col+'">'+fxLift(lift)+'</td>';
+    }).join('')+'</tr>';
+  h+='</tbody></table></div></div></div>';
+  return h;
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1536,14 +1586,33 @@ function renderSummary(){
   function mkRow(stmt,key,lbl,isSub){
     return '<tr'+(isSub?' class="sub"':'')+'><td>'+lbl+'</td>'+yrs.map(function(y){return '<td>'+fmtNum(gv(stmt[key]||{},y))+'</td>';}).join('')+'</tr>';
   }
-  function incomeTbl(stmt,label){
+  function incomeTbl(stmt,label,stmtKey){
     var pairs=[['Total Revenue','revenue'],['Total Benefits','benefits'],
       ['Selling Expense','selling_expense'],['Op Expense','op_expense'],
       ['Pre-Tax Income','pretax_income'],['Distrib. Earnings','distributable_earnings']];
     var subs=new Set(['Total Revenue','Pre-Tax Income']);
+    // RBC ratio row from formulaic results
+    var rbcRow='';
+    if(stmtKey==='predeal'||stmtKey==='net'){
+      var adjDict={};
+      if(stmtKey==='predeal')adjDict=(out.rbc_predeal_result&&out.rbc_predeal_result.predeal_adjustments)||{};
+      else if(stmtKey==='net')adjDict=(out.rbc_net_result&&out.rbc_net_result.net_adjustments)||{};
+      // Fallback to original computed for predeal if predeal_result unavailable
+      var origVals=(out.rbc_orig_computed&&out.rbc_orig_computed.original_values)||{};
+      function getRatio(y){
+        var a=adjDict[y]||adjDict[String(y)];
+        if(a&&a.ratio_w_margin!=null)return a.ratio_w_margin;
+        var o=origVals[y]||origVals[String(y)];
+        if(o&&o.ratio_w_margin!=null)return o.ratio_w_margin;
+        return null;
+      }
+      rbcRow='<tr class="ratio"><td>RBC Ratio (w/ Margin)</td>'+
+        yrs.map(function(y){var r=getRatio(y);return '<td>'+(r!=null?Number(r).toFixed(2)+'x':'-')+'</td>';}).join('')+'</tr>';
+    }
     return '<div style="margin-bottom:10px"><div style="font-size:.76rem;font-weight:bold;color:var(--navy);padding:3px 8px;background:var(--off);border-radius:3px;margin-bottom:3px">'+label+'</div>'+
       '<div class="tw"><table class="bbt" style="font-size:.69rem"><thead><tr><th>Line</th>'+yrs.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr></thead><tbody>'+
       pairs.map(function(p){return mkRow(stmt,p[1],p[0],subs.has(p[0]));}).join('')+
+      rbcRow+
       '</tbody></table></div></div>';
   }
   var rbcOrigSurp=(rbco['Total Surplus']||{})[fy]||(rbco['Total Surplus']||{})[String(fy)]||null;
@@ -1575,9 +1644,9 @@ function renderSummary(){
     '</div>'+
     '<div style="margin-bottom:12px">'+
       '<div style="font-size:.8rem;font-weight:bold;color:var(--navy);margin-bottom:5px">5-Year Income Statement ($M)</div>'+
-      incomeTbl(ap,'Direct Carrier — Predeal')+
-      incomeTbl(ac,'Direct Carrier — Ceded')+
-      incomeTbl(an,'Direct Carrier — Net')+
+      incomeTbl(ap,'Direct Carrier — Predeal','predeal')+
+      incomeTbl(ac,'Direct Carrier — Ceded','ceded')+
+      incomeTbl(an,'Direct Carrier — Net','net')+
     '</div>'+
     '<div style="margin-bottom:12px">'+
     '<div style="font-size:.8rem;font-weight:bold;color:var(--navy);margin-bottom:5px">RBC & Surplus Summary</div>'+
