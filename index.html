@@ -358,34 +358,14 @@ async function initPy(){
     msg.textContent='Loading actuarial engine...';bar.style.width='45%';
     await S.py.runPythonAsync(PY_ENGINE);
     msg.textContent='Loading default files...';bar.style.width='65%';
-    S.files.rbc=b64ToBytes(DEFAULT_RBC_B64);S.files.bp=b64ToBytes(DEFAULT_BP_B64);
-    S.py.globals.set('_tmpb',S.files.rbc);
+    S.files.bp=b64ToBytes(DEFAULT_BP_B64);
+    // Default: use DEFAULT_SURPLUS_ROWS (correct MS+All-product structure)
+    // _rbc_rows is intentionally NOT set so run_model falls back to _surplus_rows
     S.py.globals.set('_sjson',JSON.stringify(DEFAULT_SURPLUS_ROWS));
     await S.py.runPythonAsync(
-      "import io,json as _j,csv as _csv\n"+
-      "_data=bytes(_tmpb)\n"+
-      "if _data[:2]==b'PK':\n"+
-      "    import openpyxl as _x\n"+
-      "    _wb=_x.load_workbook(io.BytesIO(_data),data_only=True,read_only=True)\n"+
-      "    _rbc_rows=[list(r) for r in _wb.worksheets[0].iter_rows(values_only=True)]\n"+
-      "    _sr=([list(r) for r in _wb['Surplus'].iter_rows(values_only=True)] if 'Surplus' in _wb.sheetnames else None)\n"+
-      "    _wb.close()\n"+
-      "else:\n"+
-      "    _txt=_data.decode('utf-8',errors='ignore')\n"+
-      "    _rbc_rows=[]\n"+
-      "    for _ln in _csv.reader(io.StringIO(_txt)):\n"+
-      "        if not _ln: continue\n"+
-      "        if _ln[0].startswith('//'): continue\n"+
-      "        _row=[]\n"+
-      "        for _i,_c in enumerate(_ln):\n"+
-      "            _c=_c.strip()\n"+
-      "            if _i==0 or not _c: _row.append(_c if _c else None)\n"+
-      "            else:\n"+
-      "                try: _row.append(float(_c))\n"+
-      "                except: _row.append(_c)\n"+
-      "        _rbc_rows.append(_row)\n"+
-      "    _sr=None\n"+
-      "_surplus_rows=(_sr if _sr is not None else _j.loads(_sjson))"
+      "import json as _j\n"+
+      "_rbc_rows=None\n"+
+      "_surplus_rows=_j.loads(_sjson)"
     );
     S.py.globals.set('_tmpb',S.files.bp);
     await S.py.runPythonAsync(
