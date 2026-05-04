@@ -946,7 +946,7 @@ function buildRBCOrigTable(origComputed, origFull){
   var years=(origComputed.years||[]).filter(function(y){return Number(y)>=2025;}).map(Number).sort(function(a,b){return a-b;});
   
   function v(yr){return values[yr]||values[String(yr)]||{};}
-  function f3(x){if(x==null||isNaN(x))return '0.000';return Number(x).toFixed(3);}
+  function f3(x){if(x==null||isNaN(x))return '0.0000';return Number(x).toFixed(4);}
   function fx(x){if(x==null||isNaN(x))return '0.00x';return Number(x).toFixed(2)+'x';}
   function th(){return '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead>';}
   function rowVals(lbl,fn,cls){
@@ -1009,7 +1009,7 @@ function buildRBCSection(origRbc, label, annualStmt, rbcResult){
   var years=origRbc.years?origRbc.years.filter(function(y){return y>=2025;}).map(Number):
     Object.keys(Object.values(allData)[0]||{}).map(Number).filter(function(y){return y>=2025;}).sort(function(a,b){return a-b;});
   function a(yr){return adjDict[yr]||adjDict[String(yr)]||{};}
-  function f3(v){if(v==null||isNaN(v))return '0.000';return Number(v).toFixed(3);}
+  function f3(v){if(v==null||isNaN(v))return '0.0000';return Number(v).toFixed(4);}
   function fx(v){if(v==null||isNaN(v))return '0.00x';return Number(v).toFixed(2)+'x';}
   function th(){return '<thead><tr><th style="min-width:200px">Line Item</th>'+years.map(function(y){return '<th style="min-width:72px">'+y+'</th>';}).join('')+'</tr></thead>';}
   // Always show row, populate with 0 if missing
