@@ -1210,7 +1210,7 @@ function cedantCard(out){
   // Upfront ceding commission schedule (nominal $M by year) from the current assumptions
   var ccf=(S.assumptions&&S.assumptions.ceding_comm_front)||{};
   var ccfYrs=Object.keys(ccf).map(Number).sort(function(a,b){return a-b;}).filter(function(y){return ccf[y];});
-  var upfrontSched=ccfYrs.length?ccfYrs.map(function(y){return (ccf[y]/1e6).toFixed(0);}).join('-'):'-';
+  var upfrontSched=ccfYrs.length?ccfYrs.map(function(y){return (+ccf[y]).toFixed(0);}).join('-'):'-';
   // Early-strain relief ($M): improvement in peak negative cumulative DE (predeal vs net)
   var strainRelief=((mp.max_neg_cum_de||0)-(mn.max_neg_cum_de||0))/1e6;
   // RBC ratio lift at the predeal trough year (computed RBC results)
@@ -1224,6 +1224,8 @@ function cedantCard(out){
   var irrChg=(mp.irr!=null&&mn.irr!=null)?(mn.irr-mp.irr):null;
   var mb=ca.metrics_back||{},mnew=ca.metrics_new||{};
   function irrPair(a,b){return (a==null?'-':pct(a,1))+' &rarr; '+(b==null?'-':pct(b,1));}
+  function mM(v){return v==null||isNaN(v)?'-':(v<0?'('+Math.abs(v).toFixed(0)+')':v.toFixed(0))+'M';}  // value already in $M
+  function pvPair(a,b){return mM(a)+' &rarr; '+mM(b);}
   var tile=function(lbl,val,desc,accent){return '<div style="flex:1 1 170px;min-width:160px;padding:8px 10px;background:var(--off);border-radius:5px;border-left:3px solid '+(accent||'var(--bdr)')+'">'+
     '<div style="font-size:.6rem;color:var(--mu);text-transform:uppercase;letter-spacing:.3px">'+lbl+'</div>'+
     '<div style="font-size:1.02rem;font-weight:bold;color:var(--navy);margin:1px 0">'+val+'</div>'+
@@ -1245,8 +1247,8 @@ function cedantCard(out){
     '</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
       tile('Portfolio EV',(mp.pvde==null?'-':fmtM(mp.pvde)+'M')+' &rarr; '+(mn.pvde==null?'-':fmtM(mn.pvde)+'M'),'Total book value of new business (PV distributable earnings) before &rarr; after the deal.','var(--bdr)')+
-      tile('Back-book IRR',irrPair(mb.predeal_irr,mb.net_irr),'In-force (IssYr&le;2025) IRR before &rarr; after the deal &mdash; the profitability you may be ceding.','var(--bdr)')+
-      tile('New-issue IRR',irrPair(mnew.predeal_irr,mnew.net_irr),'New business (IssYr&ge;2026) IRR before &rarr; after the deal.','var(--bdr)')+
+      tile('Back-book (IssYr&le;2025)','EV '+pvPair(mb.predeal_pvde,mb.net_pvde)+'<br>IRR '+irrPair(mb.predeal_irr,mb.net_irr),'In-force book before &rarr; after the deal. EV (book value) is the value signal &mdash; it falls as profit is ceded; the IRR is an outlay-free stream rate and can move counter-intuitively.','var(--bdr)')+
+      tile('New-issue (IssYr&ge;2026)','EV '+pvPair(mnew.predeal_pvde,mnew.net_pvde)+'<br>IRR '+irrPair(mnew.predeal_irr,mnew.net_irr),'New business before &rarr; after the deal. Read EV (book value) as the value given up; IRR is a stream rate shown for reference.','var(--bdr)')+
     '</div></div>';
 }
 function renderSummary(){
@@ -1950,26 +1952,52 @@ async function runFrontier(){
   if(!cede.length||!fe.length||!cc.length||!dur.length){if(warn)warn.textContent='Fill in all four lever ranges.';return;}
   if(warn)warn.textContent='';
   var total=cede.length*fe.length*cc.length*dur.length*scopes.length*claims.length*lapses.length;
-  if(btn)btn.disabled=true;if(prog)prog.textContent='Running '+total+' scenarios…';
+  if(btn)btn.disabled=true;if(prog)prog.textContent='Preparing '+total+' scenarios…';
   try{
     collectAssumptions();
-    var a=S.assumptions,by=a.base_year||2025;
+    var py=S.py,a=S.assumptions,by=a.base_year||2025;
     var ev_for_py={agg:S.evData.agg,agg_iy:S.evData.agg_iy,periods:S.evData.periods,iss_years:S.evData.iss_years,row_count:S.evData.row_count};
-    S.py.globals.set('_fev',JSON.stringify(ev_for_py));
-    S.py.globals.set('_fba',JSON.stringify(a));
-    S.py.globals.set('_fcfg',JSON.stringify({by:by,cede:cede,fe:fe,cc:cc,scopes:scopes,dur:dur,claims:claims,lapses:lapses}));
-    var code=["import json",
-      "ev=json.loads(_fev)","base=json.loads(_fba)","cfg=json.loads(_fcfg)",
+    py.globals.set('_fev',JSON.stringify(ev_for_py));
+    py.globals.set('_fba',JSON.stringify(a));
+    py.globals.set('_FBY',by);
+    py.globals.set('_fclaims',JSON.stringify(claims));
+    py.globals.set('_flapses',JSON.stringify(lapses));
+    // One-time setup: parse ev/base into Python globals (heavy payload crosses once),
+    // then compute the no-deal RBC baselines per (claim,lapse) environment.
+    var setup=["import json",
+      "_ev=json.loads(_fev)","_base=json.loads(_fba)",
       "for k in ['acq_exp','maint_exp','nier','acq_exp_allowance','maint_exp_allowance']:",
-      "    if k in base and isinstance(base[k],dict): base[k]={int(kk):vv for kk,vv in base[k].items()}",
-      "ev['agg']={k:{int(p):v for p,v in pv.items()} for k,pv in ev['agg'].items()}",
-      "ev['agg_iy']={str(iy):{k:{int(p):v for p,v in pv.items()} for k,pv in vm.items()} for iy,vm in ev['agg_iy'].items()}",
-      "ev['periods']=[int(p) for p in ev['periods']]",
-      "res=run_frontier_grid(ev, base, int(cfg['by']), _surplus_rows if '_surplus_rows' in dir() else None, [float(x) for x in cfg['cede']], [tuple(float(x) for x in s) for s in cfg['fe']], [float(x) for x in cfg['cc']], [tuple(int(i) for i in s) for s in cfg['scopes']], [int(d) for d in cfg['dur']], [float(x) for x in cfg['claims']], [float(x) for x in cfg['lapses']])",
-      "json.dumps(res)"].join("\n");
-    var rj=await S.py.runPythonAsync(code);
-    S.frontier=JSON.parse(rj);
-    if(prog)prog.textContent=S.frontier.length+' scenarios done ('+S.frontier.filter(function(r){return r.is_base;}).length+' structures).';
+      "    if k in _base and isinstance(_base[k],dict): _base[k]={int(kk):vv for kk,vv in _base[k].items()}",
+      "_ev['agg']={k:{int(p):v for p,v in pv.items()} for k,pv in _ev['agg'].items()}",
+      "_ev['agg_iy']={str(iy):{k:{int(p):v for p,v in pv.items()} for k,pv in vm.items()} for iy,vm in _ev['agg_iy'].items()}",
+      "_ev['periods']=[int(p) for p in _ev['periods']]",
+      "_FSURP=_surplus_rows if '_surplus_rows' in dir() else None",
+      "_fr_nodeal=frontier_nodeal_baselines(_ev,_base,int(_FBY),_FSURP,[float(x) for x in json.loads(_fclaims)],[float(x) for x in json.loads(_flapses)])"
+      ].join("\n");
+    await py.runPythonAsync(setup);
+    // Build the scenario combos (same product as `total`).
+    var combos=[],n=0;
+    claims.forEach(function(cs){lapses.forEach(function(ls){cede.forEach(function(cd){fe.forEach(function(sch){cc.forEach(function(ccm){scopes.forEach(function(sc){dur.forEach(function(nby){
+      combos.push({cede:cd,sched:sch,ccm:ccm,scope:sc,nby:nby,cs:cs,ls:ls,n:++n});
+    });});});});});});});
+    // JS-driven loop: one run_frontier_one per scenario, live counter, yield each step.
+    var perScenario=["import json","_p=json.loads(_fone)",
+      "try:",
+      "    _rec=run_frontier_one(_ev,_base,int(_FBY),_FSURP,float(_p['cede']),tuple(float(x) for x in _p['sched']),float(_p['ccm']),tuple(int(x) for x in _p['scope']),int(_p['nby']),float(_p['cs']),float(_p['ls']),_fr_nodeal.get((float(_p['cs']),float(_p['ls'])),0),int(_p['n']))",
+      "    _out=json.dumps(_rec)",
+      "except Exception as _e:",
+      "    _out=json.dumps(None)",
+      "_out"].join("\n");
+    S.frontier=[];
+    for(var i=0;i<combos.length;i++){
+      py.globals.set('_fone',JSON.stringify(combos[i]));
+      var rj=await py.runPythonAsync(perScenario);
+      var rec=JSON.parse(rj);
+      if(rec)S.frontier.push(rec);
+      if(prog)prog.textContent=(i+1)+' / '+total+' scenarios run…';
+      await new Promise(function(r){setTimeout(r);});  // yield so the UI repaints
+    }
+    if(prog)prog.textContent=S.frontier.length+' / '+total+' scenarios done ('+S.frontier.filter(function(r){return r.is_base;}).length+' structures).';
     renderFrontierChart();
   }catch(e){if(warn)warn.textContent='Error: '+e.message;console.error(e);}
   finally{if(btn)btn.disabled=false;}

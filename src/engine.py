@@ -791,47 +791,39 @@ def batch_run(ev_agg, base_assum, by, rbc_rows=None, bp_rows=None, surplus_rows=
 
 
 
-def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
-                      cede_pcts, front_schedules, cc_mults, iy_scopes, nb_years_list,
-                      claim_scalars, lapse_scalars=(1.0,)):
-    """Grid sweep of structural reinsurance levers across claim x lapse stress
-    environments. Returns one record per (structure x environment); the
-    (claim=1.0, lapse=1.0) record is flagged is_base=True (the deterministic
-    frontier point), the others are the sensitivity cloud around it.
-
-    front_schedules: list of (y2026, y2027, y2028) upfront-commission triples ($M).
-    nb_years_list:   list of N = years of new business; each N cedes new-business
-                     issue cohorts 2026..2025+N alongside the in-force (<=2025) book
-                     selected by iy_scope, for the life of each cohort."""
-    results = []
-
+def _frontier_hz_end(ev_agg, by):
     # End of projection horizon (life-of-cohort cession window).
     _per = sorted(int(p) for p in ev_agg.get('periods', []))
-    hz_end = (int(by) + (_per[-1] // 12) + 1) if _per else 2036
+    return (int(by) + (_per[-1] // 12) + 1) if _per else 2036
 
-    def fmt_sched(sched):
-        return '-'.join(str(int(round(float(x)))) for x in sched)
 
-    def make_assum(cede_pct, sched, cc_mult, iy_scope, nb_years, claim_scalar, lapse_scalar):
-        a = {k: v for k, v in base_assum.items()}
-        a['claim_scalar'] = float(claim_scalar)
-        a['lapse_scalar'] = float(lapse_scalar)
-        # Ceded cohorts: in-force (<=2025) per iy_scope, plus new business 2026..2025+N.
-        ceded_iys = sorted(set([iy for iy in iy_scope if iy <= 2025]
-                               + list(range(2026, 2026 + int(nb_years)))))
-        rp = {}
-        for iy in ceded_iys:
-            start = max(2026, iy + 1)
-            rp[iy] = {cy: float(cede_pct) for cy in range(start, hz_end + 1)}
-        a['reins_pct'] = rp
-        ccf = {2026 + i: float(sched[i]) * 1e6 for i in range(len(sched)) if float(sched[i]) > 0}
-        a['ceding_comm_front'] = ccf
-        base_tiers = [[0, 0.75, 250], [0.75, 0.85, 200], [0.85, 0.95, 150],
-                      [0.95, float('inf'), 100]]
-        a['ceding_comm_table'] = [[r[0], r[1], r[2] * float(cc_mult)] for r in base_tiers]
-        return a
+def _frontier_fmt_sched(sched):
+    return '-'.join(str(int(round(float(x)))) for x in sched)
 
-    # No-deal stressed RBC baseline per (claim, lapse) environment, for rbc_lift.
+
+def _frontier_make_assum(base_assum, hz_end, cede_pct, sched, cc_mult, iy_scope, nb_years,
+                         claim_scalar, lapse_scalar):
+    a = {k: v for k, v in base_assum.items()}
+    a['claim_scalar'] = float(claim_scalar)
+    a['lapse_scalar'] = float(lapse_scalar)
+    # Ceded cohorts: in-force (<=2025) per iy_scope, plus new business 2026..2025+N.
+    ceded_iys = sorted(set([iy for iy in iy_scope if iy <= 2025]
+                           + list(range(2026, 2026 + int(nb_years)))))
+    rp = {}
+    for iy in ceded_iys:
+        start = max(2026, iy + 1)
+        rp[iy] = {cy: float(cede_pct) for cy in range(start, hz_end + 1)}
+    a['reins_pct'] = rp
+    ccf = {2026 + i: float(sched[i]) * 1e6 for i in range(len(sched)) if float(sched[i]) > 0}
+    a['ceding_comm_front'] = ccf
+    base_tiers = [[0, 0.75, 250], [0.75, 0.85, 200], [0.85, 0.95, 150],
+                  [0.95, float('inf'), 100]]
+    a['ceding_comm_table'] = [[r[0], r[1], r[2] * float(cc_mult)] for r in base_tiers]
+    return a
+
+
+def frontier_nodeal_baselines(ev_agg, base_assum, by, surplus_rows, claim_scalars, lapse_scalars):
+    """No-deal stressed RBC 2029 ratio per (claim, lapse) environment, for rbc_lift."""
     nodeal_rbc29 = {}
     for cs in claim_scalars:
         for ls in lapse_scalars:
@@ -842,12 +834,94 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
                 nd['ceding_comm_front'] = {}
                 nd['ceding_comm_table'] = [[0, float('inf'), 0.0]]
                 nd_r = run_model(ev_agg, nd, by, rbc_rows=None, bp_rows=None,
-                                 surplus_rows=surplus_rows)
+                                 surplus_rows=surplus_rows, lite=True)
                 nd_na = nd_r['rbc_net_result']['net_adjustments']
                 nodeal_rbc29[(float(cs), float(ls))] = (nd_na.get(2029) or {}).get('ratio_w_margin', 0)
             except Exception:
                 nodeal_rbc29[(float(cs), float(ls))] = 0.0
+    return nodeal_rbc29
 
+
+def run_frontier_one(ev_agg, base_assum, by, surplus_rows,
+                     cede, sched, ccm, iy_scope, nby, cs, ls, nodeal29, n_run=0):
+    """Run one (structure x environment) point and return its frontier record.
+    Uses run_model lite mode (skips the unused per-IssYear diagnostic / cohort
+    metrics) for speed. The viewer calls this per scenario in a JS-driven loop so
+    it can show a live counter and yield to the event loop between points."""
+    hz_end = _frontier_hz_end(ev_agg, by)
+    a = _frontier_make_assum(base_assum, hz_end, cede, sched, ccm, iy_scope, nby, cs, ls)
+    r = run_model(ev_agg, a, by, rbc_rows=None, bp_rows=None, surplus_rows=surplus_rows, lite=True)
+    mp = r['metrics_predeal']; mn = r['metrics_net']; mc = r['metrics_ceded']
+    ap = r['annual_predeal']; an = r['annual_net']
+    na = r['rbc_net_result']['net_adjustments']
+    ca = r.get('cedant_analytics', {})
+
+    def gy(d, yr):
+        return (d.get(yr) or d.get(str(yr)) or 0) / 1e6
+
+    cost = mc['pvde'] / 1e6  # X axis: ceded PVDE handed over ($M)
+    net_rbc29 = (na.get(2029) or {}).get('ratio_w_margin', 0)
+    rbc_lift = net_rbc29 - (nodeal29 or 0)
+
+    # Early strain relief: net PTI vs predeal PTI, 2026-28 ($M)
+    strain = sum(gy(an['pretax_income'], yr) - gy(ap['pretax_income'], yr)
+                 for yr in [2026, 2027, 2028])
+
+    pred_ptis = [gy(ap['pretax_income'], yr) for yr in range(2026, 2036)]
+    net_ptis = [gy(an['pretax_income'], yr) for yr in range(2026, 2036)]
+    def _std(arr):
+        m2 = sum(arr) / len(arr)
+        return math.sqrt(sum((x - m2) ** 2 for x in arr) / len(arr))
+    ps = _std(pred_ptis)
+    pti_stability = (ps - _std(net_ptis)) / ps if ps else 0
+
+    cap_relief = ca.get('cap_relief_value')
+    cap_relief = cap_relief if cap_relief is not None else 0.0
+    benefit = cap_relief + strain  # Y axis: capital + strain relief ($M)
+
+    iy_lo = min(iy_scope); iy_hi = max(iy_scope)
+    iy_excluded = [iy for iy in range(iy_lo, iy_hi + 1) if iy not in iy_scope]
+
+    return {
+        'n_run': n_run,
+        'cost': cost,
+        'cap_relief': cap_relief,
+        'strain_relief': strain,
+        'benefit': benefit,
+        'rbc_lift': rbc_lift,
+        'pti_stability': pti_stability,
+        'net_pvde': mn['pvde'] / 1e6,
+        'pred_pvde': mp['pvde'] / 1e6,
+        'net_rbc29': net_rbc29,
+        'nodeal_rbc29': nodeal29 or 0,
+        'net_irr': mn['irr'],
+        'cede_pct': cede,
+        'front_label': _frontier_fmt_sched(sched),
+        'cc_mult': ccm,
+        'iy_min': iy_lo,
+        'iy_max': iy_hi,
+        'iy_excluded': iy_excluded,
+        'nb_years': nby,
+        'claim_scalar': cs,
+        'lapse_scalar': ls,
+        'is_base': (float(cs) == 1.0 and float(ls) == 1.0),
+    }
+
+
+def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
+                      cede_pcts, front_schedules, cc_mults, iy_scopes, nb_years_list,
+                      claim_scalars, lapse_scalars=(1.0,)):
+    """Headless grid sweep: no-deal baselines + run_frontier_one over the full grid.
+    The viewer drives this same loop from JS (frontier_nodeal_baselines +
+    run_frontier_one) for live progress; this wrapper is kept for headless use.
+
+    front_schedules: list of (y2026, y2027, y2028) upfront-commission triples ($M).
+    nb_years_list:   list of N = years of new business; each N cedes new-business
+                     issue cohorts 2026..2025+N alongside the in-force (<=2025) book
+                     selected by iy_scope, for the life of each cohort."""
+    nodeal_rbc29 = frontier_nodeal_baselines(ev_agg, base_assum, by, surplus_rows,
+                                             claim_scalars, lapse_scalars)
+    results = []
     for cs in claim_scalars:
       for ls in lapse_scalars:
         for cede in cede_pcts:
@@ -856,73 +930,21 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
                     for iy_scope in iy_scopes:
                         for nby in nb_years_list:
                             try:
-                                a = make_assum(cede, sched, ccm, iy_scope, nby, cs, ls)
-                                r = run_model(ev_agg, a, by, rbc_rows=None,
-                                              bp_rows=None, surplus_rows=surplus_rows)
-                                mp = r['metrics_predeal']; mn = r['metrics_net']; mc = r['metrics_ceded']
-                                ap = r['annual_predeal']; an = r['annual_net']
-                                na = r['rbc_net_result']['net_adjustments']
-                                ca = r.get('cedant_analytics', {})
-
-                                def gy(d, yr):
-                                    return (d.get(yr) or d.get(str(yr)) or 0) / 1e6
-
-                                cost = mc['pvde'] / 1e6  # X axis: ceded PVDE handed over ($M)
-
-                                net_rbc29 = (na.get(2029) or {}).get('ratio_w_margin', 0)
-                                rbc_lift = net_rbc29 - nodeal_rbc29.get((float(cs), float(ls)), 0)
-
-                                # Early strain relief: net PTI vs predeal PTI, 2026-28 ($M)
-                                strain = sum(
-                                    gy(an['pretax_income'], yr) - gy(ap['pretax_income'], yr)
-                                    for yr in [2026, 2027, 2028])
-
-                                pred_ptis = [gy(ap['pretax_income'], yr) for yr in range(2026, 2036)]
-                                net_ptis = [gy(an['pretax_income'], yr) for yr in range(2026, 2036)]
-                                def _std(arr):
-                                    m2 = sum(arr) / len(arr)
-                                    return math.sqrt(sum((x - m2) ** 2 for x in arr) / len(arr))
-                                ps = _std(pred_ptis)
-                                pti_stability = (ps - _std(net_ptis)) / ps if ps else 0
-
-                                # Capital-relief value ($M) from cedant analytics (uses surplus data)
-                                cap_relief = ca.get('cap_relief_value')
-                                cap_relief = cap_relief if cap_relief is not None else 0.0
-                                benefit = cap_relief + strain  # Y axis: capital + strain relief ($M)
-
-                                iy_lo = min(iy_scope); iy_hi = max(iy_scope)
-                                iy_excluded = [iy for iy in range(iy_lo, iy_hi + 1) if iy not in iy_scope]
-
-                                results.append({
-                                    'n_run': len(results) + 1,
-                                    'cost': cost,
-                                    'cap_relief': cap_relief,
-                                    'strain_relief': strain,
-                                    'benefit': benefit,
-                                    'rbc_lift': rbc_lift,
-                                    'pti_stability': pti_stability,
-                                    'net_pvde': mn['pvde'] / 1e6,
-                                    'pred_pvde': mp['pvde'] / 1e6,
-                                    'net_rbc29': net_rbc29,
-                                    'nodeal_rbc29': nodeal_rbc29.get((float(cs), float(ls)), 0),
-                                    'net_irr': mn['irr'],
-                                    'cede_pct': cede,
-                                    'front_label': fmt_sched(sched),
-                                    'cc_mult': ccm,
-                                    'iy_min': iy_lo,
-                                    'iy_max': iy_hi,
-                                    'iy_excluded': iy_excluded,
-                                    'nb_years': nby,
-                                    'claim_scalar': cs,
-                                    'lapse_scalar': ls,
-                                    'is_base': (float(cs) == 1.0 and float(ls) == 1.0),
-                                })
+                                rec = run_frontier_one(
+                                    ev_agg, base_assum, by, surplus_rows,
+                                    cede, sched, ccm, iy_scope, nby, cs, ls,
+                                    nodeal_rbc29.get((float(cs), float(ls)), 0),
+                                    n_run=len(results) + 1)
+                                results.append(rec)
                             except Exception:
                                 pass
     return results
 
 
-def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None):
+def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False):
+    # lite=True skips the per-issue-year diagnostic and the back/new cohort metrics
+    # (both unused by the Frontier sweep) for a large per-call speedup; the rest of
+    # the result — statements, RBC, and cedant cap-relief — is identical.
     rp={int(iy):{int(c2):v for c2,v in yd.items() if v is not None}
         for iy,yd in assum.get("reins_pct",{}).items()}
     agg_d=ev_agg.get("agg",{})
@@ -1026,7 +1048,7 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None):
     mn=_ann_pvde(aN["distributable_earnings"],disc)
     iys=sorted(ev_agg.get("iss_years",[]))
     iyd={}
-    for iy in iys:
+    for iy in ([] if lite else iys):
         iy_d=agg_iy.get(str(iy),{})
         if not iy_d:continue
         single_agg_iy={str(iy):iy_d}
@@ -1152,7 +1174,8 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None):
         _mp=_ann_pvde(_dep,disc);_mn=_ann_pvde(_den,disc)
         return {"predeal_pvde":_mp["pvde"]/1e6,"predeal_irr":_mp["irr"],
                 "net_pvde":_mn["pvde"]/1e6,"net_irr":_mn["irr"]}
-    metrics_back=_cohort_metrics(True);metrics_new=_cohort_metrics(False)
+    metrics_back=None if lite else _cohort_metrics(True)
+    metrics_new=None if lite else _cohort_metrics(False)
     cedant_analytics={"reinsurer_pvde":reinsurer_pvde,"ceded_gross_pvde":ceded_gross_pvde,
         "comm_pv":comm_pv,"comm_front_pv":comm_front_pv,"comm_ong_pv":comm_ong_pv,
         "value_recovery_pct":value_recovery_pct,"cedant_giveup_pvde":cedant_giveup_pvde,
