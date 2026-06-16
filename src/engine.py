@@ -942,9 +942,9 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
 
 
 def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False):
-    # lite=True skips the per-issue-year diagnostic and the back/new cohort metrics
-    # (both unused by the Frontier sweep) for a large per-call speedup; the rest of
-    # the result — statements, RBC, and cedant cap-relief — is identical.
+    # lite=True skips the per-issue-year diagnostic (unused by the Frontier sweep)
+    # for a large per-call speedup; statements, RBC, cedant cap-relief, and the
+    # back/new cohort metrics are still produced identically.
     rp={int(iy):{int(c2):v for c2,v in yd.items() if v is not None}
         for iy,yd in assum.get("reins_pct",{}).items()}
     agg_d=ev_agg.get("agg",{})
@@ -1170,12 +1170,18 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=
         _dep=compute_ann_de(_ap["pretax_income"],_spt,_sct,by,periods,"predeal")
         _dec=compute_ann_de(_ac["pretax_income"],_spt,_sct,by,periods,"ceded")
         _yrs=sorted(set(list(_dep.keys())+list(_dec.keys())))
-        _den={_yr:_dep.get(_yr,0)-_dec.get(_yr,0) for _yr in _yrs}
-        _mp=_ann_pvde(_dep,disc);_mn=_ann_pvde(_den,disc)
+        # Allocate ceding commissions into the cohort net DE so cohort nets reconcile
+        # to the portfolio: the front-end (10-5-5) compensates for ceding the in-force
+        # book -> back-book; the ongoing per-policy commission is computed only on
+        # newly-issued business -> new-issue. After-tax (x0.79), mirroring net revenue.
+        _comm_ann=_comm1_ann if is_back else _comm2_ann
+        _den={_yr:_dep.get(_yr,0)-_dec.get(_yr,0)+_comm_ann.get(int(_yr),0)*0.79 for _yr in _yrs}
+        _mp=_ann_pvde(_dep,disc);_mn=_ann_pvde(_den,disc);_mc=_ann_pvde(_dec,disc)
         return {"predeal_pvde":_mp["pvde"]/1e6,"predeal_irr":_mp["irr"],
-                "net_pvde":_mn["pvde"]/1e6,"net_irr":_mn["irr"]}
-    metrics_back=None if lite else _cohort_metrics(True)
-    metrics_new=None if lite else _cohort_metrics(False)
+                "net_pvde":_mn["pvde"]/1e6,"net_irr":_mn["irr"],
+                "ceded_pvde":_mc["pvde"]/1e6}
+    metrics_back=_cohort_metrics(True)
+    metrics_new=_cohort_metrics(False)
     cedant_analytics={"reinsurer_pvde":reinsurer_pvde,"ceded_gross_pvde":ceded_gross_pvde,
         "comm_pv":comm_pv,"comm_front_pv":comm_front_pv,"comm_ong_pv":comm_ong_pv,
         "value_recovery_pct":value_recovery_pct,"cedant_giveup_pvde":cedant_giveup_pvde,
