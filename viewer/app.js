@@ -74,7 +74,7 @@ async function initPy(){
     document.getElementById('runbtn').disabled=false;
     document.getElementById('runbtn2').disabled=false;
     document.getElementById('loading').classList.add('hidden');
-    initAssumptions();renderScenarios();renderAuditLog();
+    initAssumptions();renderScenarios();
     // Always start with fresh defaults, append any custom (non-default) cases
     const _defIds=new Set(getDefaultTestCases().map(function(t){return t.id;}));
     const _custom=(S.testCases||[]).filter(function(t){return !_defIds.has(t.id);});
@@ -104,16 +104,29 @@ function showTab(n){
   if(n==='docs')renderDocs();
 }
 function showSub(n){
-  ['predeal','ceded','net','ev','evc','balance','rbc','issyr','summary','testlog','stress','frontier','matrix'].forEach(x=>{
-    const sp=document.getElementById('sp-'+x);if(sp)sp.style.display=x===n?'':'none';
+  ['summary','stmt','rbc','data','validation','frontier'].forEach(x=>{
+    const sp=document.getElementById('sec-'+x);if(sp)sp.style.display=x===n?'':'none';
   });
   document.querySelectorAll('#main-stabs .stab').forEach(s=>s.classList.remove('active'));
-  if(event&&event.target)event.target.classList.add('active');
-  if(n==='ev'||n==='evc')renderEV(n==='ev'?'d':'c');
-  if(n==='rbc'&&S.out)renderRBC(S.out.rbc_data,S.out.rbc_net,S.out);
-  if(n==='stress')renderStressUI();
-  if(n==='frontier')renderFrontierUI();
+  const btn=document.getElementById('stab-'+n);if(btn)btn.classList.add('active');
   if(n==='summary')renderSummary();
+  else if(n==='rbc'&&S.out)renderRBC(S.out.rbc_data,S.out.rbc_net,S.out);
+  else if(n==='data')renderEV('d');
+  else if(n==='frontier')renderFrontierUI();
+}
+// Secondary view toggle within a Results section
+function subView(section,name){
+  const groups={stmt:['predeal','ceded','net'],data:['ev','evc'],
+    validation:['balance','issyr','testlog','checklist'],frontier:['frontier','stress','matrix']};
+  (groups[section]||[]).forEach(x=>{const el=document.getElementById('sp-'+x);if(el)el.style.display=x===name?'':'none';});
+  const bar=document.getElementById('vtog-'+section);
+  if(bar)bar.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  const vb=document.getElementById('vb-'+section+'-'+name);if(vb)vb.classList.add('active');
+  if(name==='ev')renderEV('d');
+  else if(name==='evc')renderEV('c');
+  else if(name==='stress')renderStressUI();
+  else if(name==='frontier')renderFrontierUI();
+  else if(name==='issyr')renderIYDiag();
 }
 
 async function handleUpload(evt,key){
@@ -416,7 +429,7 @@ async function runModel(){
     msg.textContent='Rendering...';bar.style.width='85%';
     const out=JSON.parse(rj);if(out.error)throw new Error(out.error);
     S.out=out;S.runId='run_'+Date.now();
-    populateFilters(S.evData);renderResults(out);createAuditEntry(out);updateReview(out);
+    populateFilters(S.evData);renderResults(out);updateReview(out);
     bar.style.width='100%';stat.textContent='Done - '+new Date().toLocaleTimeString();
     const iysel=document.getElementById('iy-select');
     if(iysel)iysel.innerHTML='<option value="">select</option>'+(out.iss_years||[]).map(y=>'<option>'+y+'</option>').join('');
@@ -611,29 +624,14 @@ function setView(v,mode,btn){
 function renderResults(out){
   document.getElementById('res-empty').style.display='none';
   document.getElementById('res-content').style.display='';
-  const mp=out.metrics_predeal||{},mc=out.metrics_ceded||{},mn=out.metrics_net||{};
-  const rbc=out.rbc_data||{},rbn=out.rbc_net||{};
-  const yrList=Object.keys(rbc['RBC Ratio post-covariance w margin']||{}).sort();
-  const fy=yrList[1]||yrList[0]||'';
-  const origR=(rbc['RBC Ratio post-covariance w margin']||{})[fy];
-  const netR=(rbn['RBC Ratio post-covariance w margin']||{})[fy];
-  const liftStr=origR&&netR?((netR-origR)>=0?'+':'')+((netR-origR).toFixed(2))+'x (yr '+fy+')':'See RBC Tab';
-  document.getElementById('metric-tiles').innerHTML=[
-    {l:'Direct Carrier Initial EV',v:fmtM(mp.pvde)+'M',s:'Predeal PVDE'},
-    {l:'Initial IRR',v:fmtPct(mp.irr),s:'Predeal'},
-    {l:'Ceded EV to Reinsurer',v:fmtM(mc.pvde)+'M',s:'Ceded PVDE'},
-    {l:'Direct Carrier Final EV',v:fmtM(mn.pvde)+'M',s:'Net PVDE'},
-    {l:'Final IRR',v:fmtPct(mn.irr),s:'Net'},
-    {l:'Max Neg Cum DE',v:fmtM(mn.max_neg_cum_de)+'M',s:'Peak strain'},
-    {l:'RBC Ratio Lift',v:liftStr,s:'Post-cov w margin'},
-    {l:'Max Period',v:out.max_period+'',s:'months'},
-  ].map(t=>'<div class="mtile"><div class="ml">'+t.l+'</div><div class="mv">'+t.v+'</div><div class="ms">'+t.s+'</div></div>').join('');
   const firstYr=(out.annual_predeal?.periods||[2026])[0]||2026;S.out.first_yr=firstYr;
   const getPeriods=v=>(out['annual_'+v]?.periods||[]).filter(y=>y>=firstYr).slice(0,30);
   renderStmt('tbl-predeal',out.annual_predeal,getPeriods('predeal'),'predeal');
   renderStmt('tbl-ceded',out.annual_ceded,getPeriods('ceded'),'ceded');
   renderStmt('tbl-net',out.annual_net,getPeriods('net'),'net');
   renderBalancePlan(out,getPeriods('predeal'));renderRBC(out.rbc_data,out.rbc_net,out);
+  renderSummary();
+  showSub('summary'); // land on the headline view
 }
 
 // -- EV BROWSER (5 frozen cols with solid background) --
@@ -982,8 +980,8 @@ function renderScenarios(){
       '<td>'+fmtM(mp.pvde)+'M</td><td>'+fmtM(mn.pvde)+'M</td>'+
       '<td>'+fmtPct(mp.irr)+'</td><td>'+fmtPct(mn.irr)+'</td>'+
       '<td>'+fmtM(mc2.pvde)+'M</td><td>'+fmtM(mn.max_neg_cum_de)+'M</td>'+
-      '<td><button class="btn btn-o btn-sm" onclick="loadScenario('+i+')" style="margin-right:4px">Load</button>'+
-      '<button onclick="deleteScenario('+i+')" style="color:var(--err);background:none;border:none;cursor:pointer;font-size:.75rem">&#10005;</button></td></tr>';
+      '<td><button class="btn btn-o btn-sm" onclick="loadSc('+i+')" style="margin-right:4px">Load</button>'+
+      '<button onclick="delSc('+i+')" style="color:var(--err);background:none;border:none;cursor:pointer;font-size:.75rem">&#10005;</button></td></tr>';
   });
   h+='</tbody></table></div>';
   div.innerHTML=h;
@@ -1145,35 +1143,6 @@ function delSc(i){if(!confirm('Delete?'))return;S.scenarios.splice(i,1);localSto
 function clearScenarios(){if(!confirm('Clear all?'))return;S.scenarios=[];localStorage.removeItem('bb_sc');renderScenarios();}
 
 // ── AUDIT ──
-function createAuditEntry(out){
-  S.auditLog.unshift({run_id:S.runId,ts:new Date().toISOString(),
-    assumptions:JSON.parse(JSON.stringify(S.assumptions)),
-    metrics:{predeal:{pvde:out.metrics_predeal?.pvde,irr:out.metrics_predeal?.irr},
-             ceded:{pvde:out.metrics_ceded?.pvde},
-             net:{pvde:out.metrics_net?.pvde,irr:out.metrics_net?.irr,max_neg_cum_de:out.metrics_net?.max_neg_cum_de}},
-    ev_records:out.ev_records_count,max_period:out.max_period,status:'draft'});
-  if(S.auditLog.length>50)S.auditLog.pop();
-  localStorage.setItem('bb_al',JSON.stringify(S.auditLog));renderAuditLog();
-}
-function renderAuditLog(){
-  const list=document.getElementById('al-list');
-  if(!S.auditLog.length){list.innerHTML='<div class="empty"><h3>No Entries Yet</h3></div>';return;}
-  const bmap={draft:'bd',review:'br',approved:'ba',rejected:'bd'};
-  const lmap={draft:'Draft',review:'Under Review',approved:'Approved',rejected:'Rejected'};
-  list.innerHTML=S.auditLog.map((e,i)=>
-    '<div class="ae"><div class="aeh">'+
-    '<span class="abd '+(bmap[e.status]||'bd')+'">'+(lmap[e.status]||'Draft')+'</span>'+
-    '<span style="font-family:var(--fm);font-size:.64rem">'+e.run_id+'</span>'+
-    '<span style="color:var(--mu);font-size:.66rem">'+new Date(e.ts).toLocaleString()+'</span>'+
-    (e.reviewer?'<span style="margin-left:auto;font-size:.66rem">'+e.reviewer+'</span>':'')+
-    '</div><div class="aeb"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:.68rem">'+
-    [['Predeal EV',fmtM(e.metrics?.predeal?.pvde)+'M'],['Net EV',fmtM(e.metrics?.net?.pvde)+'M'],['Net IRR',fmtPct(e.metrics?.net?.irr)],['Records',(e.ev_records||0).toLocaleString()]].map(([l,v])=>
-      '<div><div style="font-size:.58rem;color:var(--mu);text-transform:uppercase">'+l+'</div><div style="font-family:var(--fm);font-weight:bold">'+v+'</div></div>'
-    ).join('')+
-    '</div></div></div>'
-  ).join('');
-}
-
 // ── REVIEW ──
 function updateReview(out){
   document.getElementById('rev-content').style.display='';
@@ -1202,18 +1171,6 @@ function updateReview(out){
      ['Net EV',fmtM(out.metrics_net?.pvde)+'M'],['Net IRR',fmtPct(out.metrics_net?.irr)],
      ['Discount Rate',fmtPct(a.discount_rate)],
     ].map(([l,v])=>'<tr style="border-bottom:1px solid var(--bdr)"><td style="padding:3px 0;color:var(--mu);width:50%">'+l+'</td><td style="font-family:var(--fm);font-weight:bold">'+v+'</td></tr>').join('')+'</table>';
-  const rd=document.getElementById('rev-date');if(rd&&!rd.value)rd.value=new Date().toISOString().slice(0,10);
-}
-
-function signOff(status){
-  const name=document.getElementById('rev-name')?.value?.trim();
-  if(!name){alert('Enter reviewer name.');return;}
-  if(!S.auditLog.length){alert('Run model first.');return;}
-  S.auditLog[0].status=status;S.auditLog[0].reviewer=name;
-  S.auditLog[0].comment=document.getElementById('rev-comment')?.value?.trim()||'';
-  localStorage.setItem('bb_al',JSON.stringify(S.auditLog));renderAuditLog();
-  document.getElementById('rev-progress').textContent=(status==='approved'?'Approved':'Under Review')+' by '+name;
-  showTab('audit');
 }
 
 // ── EXPORT ──

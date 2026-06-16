@@ -158,8 +158,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
   <div class="nt" onclick="showTab('assumptions')" id="tab-assumptions">Assumptions</div>
   <div class="nt" onclick="showTab('results')" id="tab-results">Results</div>
   <div class="nt" onclick="showTab('scenarios')" id="tab-scenarios">Scenarios <span class="nbadge" id="sccount">0</span></div>
-  <div class="nt" onclick="showTab('audit')" id="tab-audit">Audit</div>
-  <div class="nt" onclick="showTab('review')" id="tab-review">Review</div><div class="nt" onclick="showTab('docs')" id="tab-docs">Docs</div>
+<div class="nt" onclick="showTab('docs')" id="tab-docs">Docs</div>
 </nav>
 <main id="main">
 <!-- UPLOAD -->
@@ -249,24 +248,18 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
 <div class="panel" id="panel-results">
   <div id="res-empty" class="empty"><div class="ei">&#x1F3AC;</div><h3>No Results Yet</h3><p>Upload EV data and run the model.</p></div>
   <div id="res-content" style="display:none">
-    <div class="g4" id="metric-tiles" style="margin-bottom:14px;"></div>
     <div class="stabs" id="main-stabs">
-      <div class="stab active" onclick="showSub('predeal')">Predeal</div>
-      <div class="stab" onclick="showSub('ceded')">Ceded</div>
-      <div class="stab" onclick="showSub('net')">Net</div>
-      <div class="stab" onclick="showSub('ev')">EV Data</div>
-      <div class="stab" onclick="showSub('evc')">EV Ceded</div>
-      <div class="stab" onclick="showSub('balance')">Balance Plan</div>
-      <div class="stab" onclick="showSub('rbc')">RBC &amp; Surplus</div>
-      <div class="stab" onclick="showSub('issyr')">Issue Yr Diag</div><div class="stab" onclick="showSub('summary')">Deal Summary</div><div class="stab" onclick="showSub('testlog')">Test Log</div>
-      <div class="stab" onclick="showSub('frontier')">Deal Frontier</div>
-      <div class="stab" onclick="showSub('stress')">Stress Test</div>
-      <div class="stab" onclick="showSub('matrix')">Scenario Matrix</div>
+      <div class="stab active" id="stab-summary" onclick="showSub('summary')">Summary</div>
+      <div class="stab" id="stab-stmt" onclick="showSub('stmt')">Income Statement</div>
+      <div class="stab" id="stab-rbc" onclick="showSub('rbc')">RBC &amp; Surplus</div>
+      <div class="stab" id="stab-data" onclick="showSub('data')">Data</div>
+      <div class="stab" id="stab-validation" onclick="showSub('validation')">Validation</div>
+      <div class="stab" id="stab-frontier" onclick="showSub('frontier')">Frontier</div>
     </div>
-    <div id="sp-predeal"><div class="tb"><div class="vtog"><button class="active" onclick="setView('predeal','annual',this)">Annual</button><button onclick="setView('predeal','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">CSV</button></div><div class="tw" id="tw-predeal"><table class="bbt" id="tbl-predeal"></table></div></div>
-    <div id="sp-ceded" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('ceded','annual',this)">Annual</button><button onclick="setView('ceded','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('ceded')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-ceded"></table></div></div>
-    <div id="sp-net" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('net','annual',this)">Annual</button><button onclick="setView('net','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('net')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-net"></table></div></div>
-    <div id="sp-ev" style="display:none">
+    <div id="sec-summary"><div id="sp-summary"><div id="summary-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div></div></div></div>
+    <div id="sec-stmt" style="display:none"><div class="vtog" id="vtog-stmt" style="margin-bottom:8px"><button class="active" id="vb-stmt-predeal" onclick="subView('stmt','predeal')">Predeal</button><button id="vb-stmt-ceded" onclick="subView('stmt','ceded')">Ceded</button><button id="vb-stmt-net" onclick="subView('stmt','net')">Net</button></div><div id="sp-predeal"><div class="tb"><div class="vtog"><button class="active" onclick="setView('predeal','annual',this)">Annual</button><button onclick="setView('predeal','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">CSV</button></div><div class="tw" id="tw-predeal"><table class="bbt" id="tbl-predeal"></table></div></div><div id="sp-ceded" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('ceded','annual',this)">Annual</button><button onclick="setView('ceded','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('ceded')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-ceded"></table></div></div><div id="sp-net" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('net','annual',this)">Annual</button><button onclick="setView('net','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('net')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-net"></table></div></div></div>
+    <div id="sec-rbc" style="display:none"><div id="sp-rbc"><div class="tb"><div class="vtog"><button class="active" onclick="showRBCTab('orig',this)">Original</button><button onclick="showRBCTab('predeal',this)">Predeal</button><button onclick="showRBCTab('net',this)">Net</button><button onclick="showRBCTab('lift',this)">Lift</button></div></div><div id="rbc-orig-content"></div><div id="rbc-predeal-content" style="display:none"></div><div id="rbc-net-content" style="display:none"></div><div id="rbc-lift-content" style="display:none"></div></div></div>
+    <div id="sec-data" style="display:none"><div class="vtog" id="vtog-data" style="margin-bottom:8px"><button class="active" id="vb-data-ev" onclick="subView('data','ev')">EV Data</button><button id="vb-data-evc" onclick="subView('data','evc')">EV Ceded</button></div><div id="sp-ev">
       <div class="tb">
         <div class="fg" style="margin:0"><label class="fl">VarName</label><select class="fi" id="ev-vn" onchange="renderEV('d')" style="width:auto;min-width:140px"><option value="">All</option></select></div>
         <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="ev-iy" onchange="renderEV('d')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
@@ -275,8 +268,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
         <div class="fg" style="margin:0"><label class="fl">IssMon</label><select class="fi" id="ev-im" onchange="renderEV('d')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
       </div>
       <div class="tw"><table class="bbt" id="tbl-ev"></table></div>
-    </div>
-    <div id="sp-evc" style="display:none">
+    </div><div id="sp-evc" style="display:none">
       <div class="tb">
         <div class="fg" style="margin:0"><label class="fl">VarName</label><select class="fi" id="evc-vn" onchange="renderEV('c')" style="width:auto;min-width:140px"><option value="">All</option></select></div>
         <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="evc-iy" onchange="renderEV('c')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
@@ -285,13 +277,37 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
         <div class="fg" style="margin:0"><label class="fl">IssMon</label><select class="fi" id="evc-im" onchange="renderEV('c')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
       </div>
       <div class="tw"><table class="bbt" id="tbl-evc"></table></div>
-    </div>
-    <div id="sp-balance" style="display:none"><div class="tw"><table class="bbt" id="tbl-balance"></table></div></div>
-    <div id="sp-rbc" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="showRBCTab('orig',this)">Original</button><button onclick="showRBCTab('predeal',this)">Predeal</button><button onclick="showRBCTab('net',this)">Net</button><button onclick="showRBCTab('lift',this)">Lift</button></div></div><div id="rbc-orig-content"></div><div id="rbc-predeal-content" style="display:none"></div><div id="rbc-net-content" style="display:none"></div><div id="rbc-lift-content" style="display:none"></div></div>
-    <div id="sp-summary" style="display:none"><div id="summary-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div></div></div>
-    <div id="sp-stress" style="display:none"><div id="stress-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Click to open Stress Test</h3></div></div></div>
-    <div id="sp-frontier" style="display:none"><div id="frontier-content"></div></div>
-    <div id="sp-matrix" style="display:none"><div style="padding:8px">
+    </div></div>
+    <div id="sec-validation" style="display:none"><div class="vtog" id="vtog-validation" style="margin-bottom:8px"><button class="active" id="vb-validation-balance" onclick="subView('validation','balance')">Balance Plan</button><button id="vb-validation-issyr" onclick="subView('validation','issyr')">Issue Yr Diag</button><button id="vb-validation-testlog" onclick="subView('validation','testlog')">Test Log</button><button id="vb-validation-checklist" onclick="subView('validation','checklist')">Checklist</button></div><div id="sp-balance"><div class="tw"><table class="bbt" id="tbl-balance"></table></div></div><div id="sp-issyr" style="display:none">
+      <div class="card"><div class="ch">Issue Year Diagnostic</div><div class="cb">
+        <p style="font-size:.7rem;color:var(--mu);margin-bottom:10px;">Predeal and Ceded dollar amounts, with ratio validation against the Reins% matrix.</p>
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+          <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="iy-select" onchange="renderIYDiag()" style="width:auto;min-width:110px"><option value="">select</option></select></div>
+        </div>
+        <div id="iy-diag-content"></div>
+      </div></div>
+    </div><div id="sp-testlog" style="display:none"><div style="padding:8px"><div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:8px">Test Log</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button id="run-tests-btn" class="btn" onclick="runAllTests()">&#9654; Run Tests</button><div style="flex:1;min-width:220px"><div id="test-cases-list" style="margin-bottom:5px"></div><div style="display:flex;gap:5px"><input id="nl-test-input" type="text" placeholder="e.g. claim scalar 1.1 increases claims 10%" style="flex:1;padding:4px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:.71rem;background:var(--wh);color:var(--dk)"><button class="btn btn-o btn-sm" onclick="addNLTestCase()">Add</button></div></div></div><div id="test-log-output"></div></div></div><div id="sp-checklist" style="display:none"><div id="rev-content">
+      <div class="g2">
+        <div>
+          <div class="rck"><div class="rckh">1 - Data Integrity</div>
+            <div class="rckr"><input type="checkbox" id="rc1"><div class="rckl"><strong>EV file parsed</strong><span>Columns and row count</span></div><div class="rckev" id="re1">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc2"><div class="rckl"><strong>Issue years span expected range</strong></div><div class="rckev" id="re2">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc3"><div class="rckl"><strong>Projection periods complete</strong></div><div class="rckev" id="re3">-</div></div>
+          </div>
+          <div class="rck"><div class="rckh">2 - Reinsurance Structure</div>
+            <div class="rckr"><input type="checkbox" id="rc4"><div class="rckl"><strong>Reins% matrix populated</strong></div><div class="rckev" id="re4">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc5"><div class="rckl"><strong>Issue year diagnostic passes</strong></div><div class="rckev" id="re5">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc6"><div class="rckl"><strong>Ceding commissions reviewed</strong></div><div class="rckev" id="re6">-</div></div>
+          </div>
+          <div class="rck"><div class="rckh">3 - Income Statement</div>
+            <div class="rckr"><input type="checkbox" id="rc7"><div class="rckl"><strong>Loss ratio reasonable</strong></div><div class="rckev" id="re7">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc8"><div class="rckl"><strong>Net EV vs Predeal EV</strong></div><div class="rckev" id="re8">-</div></div>
+            <div class="rckr"><input type="checkbox" id="rc9"><div class="rckl"><strong>Balance plan reconciliation</strong></div><div class="rckev" id="re9">-</div></div>
+          </div>
+        </div>
+        <div><div class="card"><div class="ch">Run Summary</div><div class="cb" id="rev-summary" style="font-size:.72rem;line-height:1.7;"></div></div></div>
+      </div></div></div></div>
+    <div id="sec-frontier" style="display:none"><div class="vtog" id="vtog-frontier" style="margin-bottom:8px"><button class="active" id="vb-frontier-frontier" onclick="subView('frontier','frontier')">Deal Frontier</button><button id="vb-frontier-stress" onclick="subView('frontier','stress')">Stress Test</button><button id="vb-frontier-matrix" onclick="subView('frontier','matrix')">Scenario Matrix</button></div><div id="sp-frontier"><div id="frontier-content"></div></div><div id="sp-stress" style="display:none"><div id="stress-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Click to open Stress Test</h3></div></div></div><div id="sp-matrix" style="display:none"><div style="padding:8px">
       <div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:4px">Cedant Scenario Matrix</div>
       <div style="font-size:.7rem;color:var(--mu);margin-bottom:8px;max-width:780px">Full combinatoric sweep over upfront ceding commission (2026/27/28), ongoing LR-commission split, and reins% by cohort (2019&amp;prior / 2021-24 incl. 2020 / 2025 / 2026+), each scored under 4 claims&times;lapse environments. Ranked by <b>Net Deal Value = capital-relief value &minus; reinsurer PVDE</b> (capital-relief leg needs RBC/surplus data; without it, scenarios rank on reinsurer PVDE handed over plus downside protection).</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
@@ -302,17 +318,8 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
       </div>
       <div id="mtx-prog" style="display:none;margin-bottom:8px"><div class="ldbw" style="width:100%;height:5px"><div class="ldb" id="mtx-bar" style="width:0%"></div></div></div>
       <div id="matrix-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run a sweep to rank structures for the cedant</h3></div></div>
-    </div></div>
-    <div id="sp-testlog" style="display:none"><div style="padding:8px"><div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:8px">Test Log</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button id="run-tests-btn" class="btn" onclick="runAllTests()">&#9654; Run Tests</button><div style="flex:1;min-width:220px"><div id="test-cases-list" style="margin-bottom:5px"></div><div style="display:flex;gap:5px"><input id="nl-test-input" type="text" placeholder="e.g. claim scalar 1.1 increases claims 10%" style="flex:1;padding:4px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:.71rem;background:var(--wh);color:var(--dk)"><button class="btn btn-o btn-sm" onclick="addNLTestCase()">Add</button></div></div></div><div id="test-log-output"></div></div></div>
-    <div id="sp-issyr" style="display:none">
-      <div class="card"><div class="ch">Issue Year Diagnostic</div><div class="cb">
-        <p style="font-size:.7rem;color:var(--mu);margin-bottom:10px;">Predeal and Ceded dollar amounts, with ratio validation against the Reins% matrix.</p>
-        <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
-          <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="iy-select" onchange="renderIYDiag()" style="width:auto;min-width:110px"><option value="">select</option></select></div>
-        </div>
-        <div id="iy-diag-content"></div>
-      </div></div>
-    </div>
+    </div></div></div>
+
   </div>
 </div>
 <!-- SCENARIOS -->
@@ -325,46 +332,8 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
   <div id="sc-list"></div>
   <div id="sc-compare" style="margin-top:16px"></div>
 </div>
-<!-- AUDIT -->
-<div class="panel" id="panel-audit">
-  <div class="stitle">Audit Log</div>
-  <div id="al-list"></div>
-</div>
-<!-- REVIEW -->
-<div class="panel" id="panel-review">
-  <div class="stitle">Peer Review</div>
-  <div id="rev-content" style="display:none">
-    <div class="g2">
-      <div>
-        <div class="rck"><div class="rckh">1 - Data Integrity</div>
-          <div class="rckr"><input type="checkbox" id="rc1"><div class="rckl"><strong>EV file parsed</strong><span>Columns and row count</span></div><div class="rckev" id="re1">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc2"><div class="rckl"><strong>Issue years span expected range</strong></div><div class="rckev" id="re2">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc3"><div class="rckl"><strong>Projection periods complete</strong></div><div class="rckev" id="re3">-</div></div>
-        </div>
-        <div class="rck"><div class="rckh">2 - Reinsurance Structure</div>
-          <div class="rckr"><input type="checkbox" id="rc4"><div class="rckl"><strong>Reins% matrix populated</strong></div><div class="rckev" id="re4">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc5"><div class="rckl"><strong>Issue year diagnostic passes</strong></div><div class="rckev" id="re5">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc6"><div class="rckl"><strong>Ceding commissions reviewed</strong></div><div class="rckev" id="re6">-</div></div>
-        </div>
-        <div class="rck"><div class="rckh">3 - Income Statement</div>
-          <div class="rckr"><input type="checkbox" id="rc7"><div class="rckl"><strong>Loss ratio reasonable</strong></div><div class="rckev" id="re7">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc8"><div class="rckl"><strong>Net EV vs Predeal EV</strong></div><div class="rckev" id="re8">-</div></div>
-          <div class="rckr"><input type="checkbox" id="rc9"><div class="rckl"><strong>Balance plan reconciliation</strong></div><div class="rckev" id="re9">-</div></div>
-        </div>
-      </div>
-      <div>
-        <div class="card"><div class="ch">Run Summary</div><div class="cb" id="rev-summary" style="font-size:.72rem;line-height:1.7;"></div></div>
-        <div class="card"><div class="ch">Sign-Off</div><div class="cb">
-          <div class="fg"><label class="fl">Reviewer</label><input class="fi" id="rev-name" placeholder="Name, FSA MAAA"></div>
-          <div class="fg"><label class="fl">Date</label><input class="fi" id="rev-date" type="date"></div>
-          <div class="fg"><label class="fl">Comments</label><textarea class="fi" id="rev-comment" rows="3"></textarea></div>
-          <div style="display:flex;gap:7px"><button class="btn btn-y" onclick="signOff('approved')">Approve</button><button class="btn btn-o" onclick="signOff('review')">Under Review</button></div>
-          <div id="rev-progress" style="margin-top:8px;font-size:.7rem;color:var(--mu);"></div>
-        </div></div>
-      </div>
-    </div>
-  </div>
-</div>
+
+
 
 <div class="panel" id="panel-docs"><div class="stitle">Actuarial Documentation</div><div class="card"><div class="ch">Model Documentation v7</div><div class="cb"><div id="docs-content"></div></div></div></div>
 </main>

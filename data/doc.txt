@@ -212,19 +212,42 @@ card; all $M):
   Back-book (IssYr<=2025) vs new-issue (IssYr>=2026) IRR/PVDE, predeal and net,
     to show whether healthy-margin business is being ceded.
 
-12. SCENARIO MATRIX
-Results > Scenario Matrix runs a combinatoric cedant sweep: upfront ceding
-commission (2026/27/28), ongoing LR-commission split, and reins% by cohort
-(2019&prior / 2021-24 incl. 2020 / 2025 / 2026+), each scored under four
-claims x lapse environments (base, claims +2.5%, lapse +10%, combined). The
-full grid is 3^8 = 6,561 structures x 4 = 26,244 runs (use Quick Subset for a
-fast preview). Structures are ranked by Net Deal Value, with best/worst tables,
-a value-driver sensitivity table, a downside-protection metric (3-yr earnings
-deterioration absorbed by the reinsurer under combined stress), and CSV export.
+12. FRONTIER (DEAL FRONTIER, STRESS TEST, SCENARIO MATRIX)
+The Results > Frontier section gathers the three tools that search and score
+deal structures for this treaty; switch between them with the toggle.
+
+Deal Frontier: sweeps structural levers (cede %, front-end commission, ongoing
+commission level, treaty duration, issue-year scope) under selectable claim
+stress, and plots each structure as cost (reinsurer PVDE handed over) versus a
+weighted reward (RBC-trough lift, early-strain relief, earnings stability). The
+efficient frontier and the current deal are highlighted, so you can see whether
+the live structure sits on or below the achievable boundary.
+
+Stress Test: fixes the current deal and runs N stochastic samples of the claim
+and lapse scalars (user-set sigmas), reporting mean / P10 / P50 / P90 / CTE70
+(mean of the worst 30%) for Net/Predeal/Ceded PVDE, IRRs and RBC ratios, with
+histograms - the distributional/downside view of a single structure.
+
+Scenario Matrix: a combinatoric cedant sweep over upfront ceding commission
+(2026/27/28), ongoing LR-commission split, and reins% by cohort (2019&prior /
+2021-24 incl. 2020 / 2025 / 2026+), each scored under four claims x lapse
+environments (base, claims +2.5%, lapse +10%, combined). The full grid is
+3^8 = 6,561 structures x 4 = 26,244 runs (use Quick Subset for a fast preview).
+Structures are ranked by Net Deal Value, with best/worst tables, a value-driver
+sensitivity table, a downside-protection metric (3-yr earnings deterioration
+absorbed by the reinsurer under combined stress), and CSV export.
 The one-year cession lag (policy year 1 reinsured the following calendar year)
 is preserved throughout.
 
-13. ACCESS
+13. RESULTS LAYOUT
+The Results tab opens on the Deal Summary (the Cedant Economics headline) and is
+organized into six sections via the sub-nav: Summary; Income Statement (Predeal /
+Ceded / Net behind one toggle); RBC & Surplus (Original / Predeal / Net / Lift);
+Data (EV Data / EV Ceded input browsers); Validation (Balance Plan, Issue-Year
+Diagnostic, Test Log, and the data-integrity checklist); and Frontier (section
+12). Saved runs are compared on the separate Scenarios tab.
+
+14. ACCESS
 The page is gated by a client-side password prompt (SHA-256 hash check stored
 in sessionStorage). This is obfuscation only: the static source and embedded
 data remain reachable to a determined visitor. To change the password, recompute
