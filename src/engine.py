@@ -793,13 +793,17 @@ def batch_run(ev_agg, base_assum, by, rbc_rows=None, bp_rows=None, surplus_rows=
 
 def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
                       cede_pcts, front_ends, cc_mults, iy_scopes, durations,
-                      claim_scalars):
-    """Grid sweep of structural levers across stress scenarios."""
+                      claim_scalars, lapse_scalars=(1.0,)):
+    """Grid sweep of structural reinsurance levers across claim x lapse stress
+    environments. Returns one record per (structure x environment); the
+    (claim=1.0, lapse=1.0) record is flagged is_base=True (the deterministic
+    frontier point), the others are the sensitivity cloud around it."""
     results = []
 
-    def make_assum(cede_pct, front_end, cc_mult, iy_scope, duration, claim_scalar):
+    def make_assum(cede_pct, front_end, cc_mult, iy_scope, duration, claim_scalar, lapse_scalar):
         a = {k: v for k, v in base_assum.items()}
         a['claim_scalar'] = float(claim_scalar)
+        a['lapse_scalar'] = float(lapse_scalar)
         rp = {}
         for iy in iy_scope:
             start = max(2026, iy + 1)
@@ -807,7 +811,6 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
             rp[iy] = {cy: float(cede_pct) for cy in range(start, end_cy)}
         a['reins_pct'] = rp
         if float(front_end) > 0:
-            # All front-end in 2026 to match how base model assumptions work
             a['ceding_comm_front'] = {2026: float(front_end) * 1e6}
         else:
             a['ceding_comm_front'] = {}
@@ -816,82 +819,80 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
         a['ceding_comm_table'] = [[r[0], r[1], r[2] * float(cc_mult)] for r in base_tiers]
         return a
 
-    # Precompute no-deal stressed RBC baseline for each claim scalar.
-    # This means +5% claims correctly shows MORE reward: reinsurer absorbs
-    # 10% of the extra deterioration, so the deal is worth more under stress.
+    # No-deal stressed RBC baseline per (claim, lapse) environment, for rbc_lift.
     nodeal_rbc29 = {}
     for cs in claim_scalars:
-        try:
-            nd = {k: v for k, v in base_assum.items()}
-            nd['claim_scalar'] = float(cs)
-            nd['reins_pct'] = {}
-            nd['ceding_comm_front'] = {}
-            nd['ceding_comm_table'] = [[0, float('inf'), 0.0]]
-            nd_r = run_model(ev_agg, nd, by, rbc_rows=None, bp_rows=None,
-                             surplus_rows=surplus_rows)
-            nd_na = nd_r['rbc_net_result']['net_adjustments']
-            nodeal_rbc29[float(cs)] = (nd_na.get(2029) or {}).get('ratio_w_margin', 0)
-        except Exception:
-            nodeal_rbc29[float(cs)] = 0.0
+        for ls in lapse_scalars:
+            try:
+                nd = {k: v for k, v in base_assum.items()}
+                nd['claim_scalar'] = float(cs); nd['lapse_scalar'] = float(ls)
+                nd['reins_pct'] = {}
+                nd['ceding_comm_front'] = {}
+                nd['ceding_comm_table'] = [[0, float('inf'), 0.0]]
+                nd_r = run_model(ev_agg, nd, by, rbc_rows=None, bp_rows=None,
+                                 surplus_rows=surplus_rows)
+                nd_na = nd_r['rbc_net_result']['net_adjustments']
+                nodeal_rbc29[(float(cs), float(ls))] = (nd_na.get(2029) or {}).get('ratio_w_margin', 0)
+            except Exception:
+                nodeal_rbc29[(float(cs), float(ls))] = 0.0
 
     for cs in claim_scalars:
+      for ls in lapse_scalars:
         for cede in cede_pcts:
             for fe in front_ends:
                 for ccm in cc_mults:
                     for iy_scope in iy_scopes:
                         for dur in durations:
                             try:
-                                a = make_assum(cede, fe, ccm, iy_scope, dur, cs)
+                                a = make_assum(cede, fe, ccm, iy_scope, dur, cs, ls)
                                 r = run_model(ev_agg, a, by, rbc_rows=None,
                                               bp_rows=None, surplus_rows=surplus_rows)
-                                mp = r['metrics_predeal']
-                                mn = r['metrics_net']
-                                mc = r['metrics_ceded']
-                                ap = r['annual_predeal']
-                                an = r['annual_net']
+                                mp = r['metrics_predeal']; mn = r['metrics_net']; mc = r['metrics_ceded']
+                                ap = r['annual_predeal']; an = r['annual_net']
                                 na = r['rbc_net_result']['net_adjustments']
+                                ca = r.get('cedant_analytics', {})
 
                                 def gy(d, yr):
                                     return (d.get(yr) or d.get(str(yr)) or 0) / 1e6
 
-                                cost = mc['pvde'] / 1e6
+                                cost = mc['pvde'] / 1e6  # X axis: ceded PVDE handed over ($M)
 
-                                # RBC lift vs stressed no-deal baseline
                                 net_rbc29 = (na.get(2029) or {}).get('ratio_w_margin', 0)
-                                rbc_lift = net_rbc29 - nodeal_rbc29.get(float(cs), 0)
+                                rbc_lift = net_rbc29 - nodeal_rbc29.get((float(cs), float(ls)), 0)
 
-                                # Early strain relief (net PTI vs predeal PTI, 2026-28)
+                                # Early strain relief: net PTI vs predeal PTI, 2026-28 ($M)
                                 strain = sum(
                                     gy(an['pretax_income'], yr) - gy(ap['pretax_income'], yr)
                                     for yr in [2026, 2027, 2028])
 
-                                # PTI stability: reduction in annual PTI std dev
-                                pred_ptis = [gy(ap['pretax_income'], yr)
-                                             for yr in range(2026, 2036)]
-                                net_ptis = [gy(an['pretax_income'], yr)
-                                            for yr in range(2026, 2036)]
+                                pred_ptis = [gy(ap['pretax_income'], yr) for yr in range(2026, 2036)]
+                                net_ptis = [gy(an['pretax_income'], yr) for yr in range(2026, 2036)]
                                 def _std(arr):
                                     m2 = sum(arr) / len(arr)
-                                    return math.sqrt(
-                                        sum((x - m2) ** 2 for x in arr) / len(arr))
+                                    return math.sqrt(sum((x - m2) ** 2 for x in arr) / len(arr))
                                 ps = _std(pred_ptis)
                                 pti_stability = (ps - _std(net_ptis)) / ps if ps else 0
 
-                                # IY metadata
+                                # Capital-relief value ($M) from cedant analytics (uses surplus data)
+                                cap_relief = ca.get('cap_relief_value')
+                                cap_relief = cap_relief if cap_relief is not None else 0.0
+                                benefit = cap_relief + strain  # Y axis: capital + strain relief ($M)
+
                                 iy_lo = min(iy_scope); iy_hi = max(iy_scope)
-                                iy_excluded = [iy for iy in range(iy_lo, iy_hi + 1)
-                                               if iy not in iy_scope]
+                                iy_excluded = [iy for iy in range(iy_lo, iy_hi + 1) if iy not in iy_scope]
 
                                 results.append({
                                     'n_run': len(results) + 1,
                                     'cost': cost,
-                                    'rbc_lift': rbc_lift,
+                                    'cap_relief': cap_relief,
                                     'strain_relief': strain,
+                                    'benefit': benefit,
+                                    'rbc_lift': rbc_lift,
                                     'pti_stability': pti_stability,
                                     'net_pvde': mn['pvde'] / 1e6,
                                     'pred_pvde': mp['pvde'] / 1e6,
                                     'net_rbc29': net_rbc29,
-                                    'nodeal_rbc29': nodeal_rbc29.get(float(cs), 0),
+                                    'nodeal_rbc29': nodeal_rbc29.get((float(cs), float(ls)), 0),
                                     'net_irr': mn['irr'],
                                     'cede_pct': cede,
                                     'front_end': fe,
@@ -901,6 +902,8 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
                                     'iy_excluded': iy_excluded,
                                     'duration': dur,
                                     'claim_scalar': cs,
+                                    'lapse_scalar': ls,
+                                    'is_base': (float(cs) == 1.0 and float(ls) == 1.0),
                                 })
                             except Exception:
                                 pass

@@ -10,6 +10,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{--navy:#1C2B6B;--blue:#1A3A8F;--yel:#FFD700;--gold:#E6C200;--ly:#FFF9CC;--wh:#FFF;--off:#F7F6F0;--gray:#EEEDE8;--mid:#9A9890;--dk:#1A1A1A;--mu:#5A5A5A;--ok:#2D7A4F;--err:#C0392B;--warn:#D4880A;--bdr:#D6D4CC;--ft:'Georgia',serif;--fb:'Verdana',sans-serif;--fm:'Courier New',monospace;--r:4px;--sh:0 2px 8px rgba(28,43,107,.10);--shl:0 4px 20px rgba(28,43,107,.18)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -307,18 +308,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
         </div>
         <div><div class="card"><div class="ch">Run Summary</div><div class="cb" id="rev-summary" style="font-size:.72rem;line-height:1.7;"></div></div></div>
       </div></div></div></div>
-    <div id="sec-frontier" style="display:none"><div class="vtog" id="vtog-frontier" style="margin-bottom:8px"><button class="active" id="vb-frontier-frontier" onclick="subView('frontier','frontier')">Deal Frontier</button><button id="vb-frontier-stress" onclick="subView('frontier','stress')">Stress Test</button><button id="vb-frontier-matrix" onclick="subView('frontier','matrix')">Scenario Matrix</button></div><div id="sp-frontier"><div id="frontier-content"></div></div><div id="sp-stress" style="display:none"><div id="stress-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Click to open Stress Test</h3></div></div></div><div id="sp-matrix" style="display:none"><div style="padding:8px">
-      <div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:4px">Cedant Scenario Matrix</div>
-      <div style="font-size:.7rem;color:var(--mu);margin-bottom:8px;max-width:780px">Full combinatoric sweep over upfront ceding commission (2026/27/28), ongoing LR-commission split, and reins% by cohort (2019&amp;prior / 2021-24 incl. 2020 / 2025 / 2026+), each scored under 4 claims&times;lapse environments. Ranked by <b>Net Deal Value = capital-relief value &minus; reinsurer PVDE</b> (capital-relief leg needs RBC/surplus data; without it, scenarios rank on reinsurer PVDE handed over plus downside protection).</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-        <button class="btn btn-y btn-sm" id="mtx-run-full" onclick="runScenarioMatrix(false)">&#9654; Run Full Sweep</button>
-        <button class="btn btn-o btn-sm" id="mtx-run-quick" onclick="runScenarioMatrix(true)">Quick Subset</button>
-        <button class="btn btn-o btn-sm" onclick="exportMatrixCSV()">Export CSV</button>
-        <span id="mtx-status" style="font-size:.68rem;color:var(--mu);font-family:var(--fm)"></span>
-      </div>
-      <div id="mtx-prog" style="display:none;margin-bottom:8px"><div class="ldbw" style="width:100%;height:5px"><div class="ldb" id="mtx-bar" style="width:0%"></div></div></div>
-      <div id="matrix-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run a sweep to rank structures for the cedant</h3></div></div>
-    </div></div></div>
+    <div id="sec-frontier" style="display:none"><div id="sp-frontier"><div id="frontier-content"></div></div></div>
 
   </div>
 </div>
