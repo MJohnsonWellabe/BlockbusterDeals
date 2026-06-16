@@ -234,7 +234,7 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
     <div class="card"><div class="ch">Economic Assumptions</div><div class="cb">
       <div class="g2">
         <div class="fg"><label class="fl">Discount Rate (PVDE)</label><input class="fi" type="number" id="a-disc" step="0.001" value="0.08"></div>
-        <div class="fg"><label class="fl">Cost of Capital</label><input class="fi" type="number" id="a-coc" step="0.005" value="0.10" title="Values RBC capital relief: freed required capital x cost of capital, discounted. Drives Net Deal Value."></div>
+        <div class="fg"><label class="fl">Cost of Capital</label><input class="fi" type="number" id="a-coc" step="0.005" value="0.10" title="Values RBC capital relief: freed required capital x cost of capital, discounted. Drives the capital-relief value."></div>
         <div class="fg"><label class="fl">Premium Tax Rate</label><input class="fi" type="number" id="a-ptax" step="0.001" value="0.021"></div>
         <div class="fg"><label class="fl">Base Calendar Year</label><input class="fi" type="number" id="a-base" step="1" value="2025"></div>
       </div>
@@ -264,9 +264,6 @@ html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(-
       <div class="tb">
         <div class="fg" style="margin:0"><label class="fl">VarName</label><select class="fi" id="ev-vn" onchange="renderEV('d')" style="width:auto;min-width:140px"><option value="">All</option></select></div>
         <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="ev-iy" onchange="renderEV('d')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
-        <div class="fg" style="margin:0"><label class="fl">Product</label><select class="fi" id="ev-pr" onchange="renderEV('d')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
-        <div class="fg" style="margin:0"><label class="fl">NewBus</label><select class="fi" id="ev-nb" onchange="renderEV('d')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
-        <div class="fg" style="margin:0"><label class="fl">IssMon</label><select class="fi" id="ev-im" onchange="renderEV('d')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
       </div>
       <div class="tw"><table class="bbt" id="tbl-ev"></table></div>
     </div><div id="sp-evc" style="display:none">

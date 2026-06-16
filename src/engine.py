@@ -792,28 +792,40 @@ def batch_run(ev_agg, base_assum, by, rbc_rows=None, bp_rows=None, surplus_rows=
 
 
 def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
-                      cede_pcts, front_ends, cc_mults, iy_scopes, durations,
+                      cede_pcts, front_schedules, cc_mults, iy_scopes, nb_years_list,
                       claim_scalars, lapse_scalars=(1.0,)):
     """Grid sweep of structural reinsurance levers across claim x lapse stress
     environments. Returns one record per (structure x environment); the
     (claim=1.0, lapse=1.0) record is flagged is_base=True (the deterministic
-    frontier point), the others are the sensitivity cloud around it."""
+    frontier point), the others are the sensitivity cloud around it.
+
+    front_schedules: list of (y2026, y2027, y2028) upfront-commission triples ($M).
+    nb_years_list:   list of N = years of new business; each N cedes new-business
+                     issue cohorts 2026..2025+N alongside the in-force (<=2025) book
+                     selected by iy_scope, for the life of each cohort."""
     results = []
 
-    def make_assum(cede_pct, front_end, cc_mult, iy_scope, duration, claim_scalar, lapse_scalar):
+    # End of projection horizon (life-of-cohort cession window).
+    _per = sorted(int(p) for p in ev_agg.get('periods', []))
+    hz_end = (int(by) + (_per[-1] // 12) + 1) if _per else 2036
+
+    def fmt_sched(sched):
+        return '-'.join(str(int(round(float(x)))) for x in sched)
+
+    def make_assum(cede_pct, sched, cc_mult, iy_scope, nb_years, claim_scalar, lapse_scalar):
         a = {k: v for k, v in base_assum.items()}
         a['claim_scalar'] = float(claim_scalar)
         a['lapse_scalar'] = float(lapse_scalar)
+        # Ceded cohorts: in-force (<=2025) per iy_scope, plus new business 2026..2025+N.
+        ceded_iys = sorted(set([iy for iy in iy_scope if iy <= 2025]
+                               + list(range(2026, 2026 + int(nb_years)))))
         rp = {}
-        for iy in iy_scope:
+        for iy in ceded_iys:
             start = max(2026, iy + 1)
-            end_cy = 2026 + int(duration)
-            rp[iy] = {cy: float(cede_pct) for cy in range(start, end_cy)}
+            rp[iy] = {cy: float(cede_pct) for cy in range(start, hz_end + 1)}
         a['reins_pct'] = rp
-        if float(front_end) > 0:
-            a['ceding_comm_front'] = {2026: float(front_end) * 1e6}
-        else:
-            a['ceding_comm_front'] = {}
+        ccf = {2026 + i: float(sched[i]) * 1e6 for i in range(len(sched)) if float(sched[i]) > 0}
+        a['ceding_comm_front'] = ccf
         base_tiers = [[0, 0.75, 250], [0.75, 0.85, 200], [0.85, 0.95, 150],
                       [0.95, float('inf'), 100]]
         a['ceding_comm_table'] = [[r[0], r[1], r[2] * float(cc_mult)] for r in base_tiers]
@@ -839,12 +851,12 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
     for cs in claim_scalars:
       for ls in lapse_scalars:
         for cede in cede_pcts:
-            for fe in front_ends:
+            for sched in front_schedules:
                 for ccm in cc_mults:
                     for iy_scope in iy_scopes:
-                        for dur in durations:
+                        for nby in nb_years_list:
                             try:
-                                a = make_assum(cede, fe, ccm, iy_scope, dur, cs, ls)
+                                a = make_assum(cede, sched, ccm, iy_scope, nby, cs, ls)
                                 r = run_model(ev_agg, a, by, rbc_rows=None,
                                               bp_rows=None, surplus_rows=surplus_rows)
                                 mp = r['metrics_predeal']; mn = r['metrics_net']; mc = r['metrics_ceded']
@@ -895,12 +907,12 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
                                     'nodeal_rbc29': nodeal_rbc29.get((float(cs), float(ls)), 0),
                                     'net_irr': mn['irr'],
                                     'cede_pct': cede,
-                                    'front_end': fe,
+                                    'front_label': fmt_sched(sched),
                                     'cc_mult': ccm,
                                     'iy_min': iy_lo,
                                     'iy_max': iy_hi,
                                     'iy_excluded': iy_excluded,
-                                    'duration': dur,
+                                    'nb_years': nby,
                                     'claim_scalar': cs,
                                     'lapse_scalar': ls,
                                     'is_base': (float(cs) == 1.0 and float(ls) == 1.0),

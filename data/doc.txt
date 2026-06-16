@@ -87,23 +87,29 @@ All in $M unless noted. **What you give up:**
 - **IRR change** — book IRR before vs after the deal; the return given up for the relief.
 
 **What you get:**
-- **Upfront commission** — cash paid upfront by the reinsurer (front-end ceding commission).
+- **Upfront commission** — front-end ceding commission paid by the reinsurer, shown as a schedule
+  of $M by year (e.g. 10-5-5 = $10M/$5M/$5M in 2026/2027/2028). It is a component of the
+  early-strain relief below.
 - **Early-strain relief** — reduction in the peak negative cumulative earnings: early capital you
-  no longer have to hold (includes the upfront payment).
+  no longer have to hold (includes the upfront commission).
 - **RBC ratio lift** — improvement in the RBC ratio at the trough year (regulatory capital freed).
-- **Cedant recovery %** — commissions received as a share of the value ceded.
-- **Net Deal Value** — capital-relief value minus profit ceded; positive means the deal adds value.
-  Kept for reference; read it alongside the components above, not on its own.
-- **Back-book vs new-issue IRR** — the inherent profitability of in-force (<=2025) vs new business
-  (>=2026), so you can see whether you are ceding your healthiest business.
+- **Cedant recovery %** — commissions received as a share of the value ceded; already netted out of
+  the Ceded PVDE above, so it is not additive to it.
+- **Portfolio EV** — total book value of new business (PV distributable earnings) before vs after
+  the deal.
+- **Back-book / new-issue IRR** — IRR of in-force (<=2025) vs new business (>=2026), each shown
+  before vs after the deal, so you can see whether you are ceding your healthiest business.
 
 ## 7. Deal Frontier
 
 The Frontier tab sweeps reinsurance **structures** and plots a cost-vs-benefit efficient frontier,
 the same idea as a capital-allocation efficient frontier.
 
-- **Structure sweep** — every combination of cede %, upfront commission, ongoing commission level,
-  issue-year scope and treaty duration becomes one deterministic point.
+- **Structure sweep** — every combination of cede %, upfront-commission schedule, ongoing commission
+  level, issue-year scope and years of new business becomes one deterministic point. The upfront
+  schedules are entered as three slots (default 10-5-5, sensitivity 15-0-0, and a custom slot).
+  **Years of new business** N cedes new-business issue cohorts 2026..2025+N (3 = 2026-2028) for the
+  life of each cohort, alongside the in-force book selected by the issue-year scope.
 - **Sensitivities** — each structure is re-run across a grid of **claims x lapse** scalars; the base
   (claims 1.0, lapse 1.0) point anchors the structure and the others form a faint cloud showing how
   robust it is.
