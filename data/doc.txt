@@ -100,27 +100,28 @@ All in $M unless noted. **What you give up:**
 - **Back-book / new-issue IRR** — IRR of in-force (<=2025) vs new business (>=2026), each shown
   before vs after the deal, so you can see whether you are ceding your healthiest business.
 
-## 7. Deal Frontier
+## 7. Deal Analysis
 
-The Frontier tab sweeps reinsurance **structures** and plots a cost-vs-benefit efficient frontier,
-the same idea as a capital-allocation efficient frontier.
+Most reinsurance levers are **monotonic** for the cedant — more upfront cash and a higher ongoing
+commission are always better — so this is not an efficient-frontier question. Instead the Deal
+Analysis tab quantifies the **cost of each assumption** and flags **where the deal turns bad**.
+From a base deal you set (cede %, ongoing level, upfront schedule, years of new business), each
+lever is varied **one at a time** and three panels are produced:
 
-- **Structure sweep** — every combination of cede %, upfront-commission schedule, ongoing commission
-  level, issue-year scope and years of new business becomes one deterministic point. The upfront
-  schedules are entered as three slots (default 10-5-5, sensitivity 15-0-0, and a custom slot).
-  **Years of new business** N cedes new-business issue cohorts 2026..2025+N (3 = 2026-2028) for the
-  life of each cohort, alongside the in-force book selected by the issue-year scope.
-- **Sensitivities** — each structure is re-run across a grid of **claims x lapse** scalars; the base
-  (claims 1.0, lapse 1.0) point anchors the structure and the others form a faint cloud showing how
-  robust it is.
-- **Axes** — X = **cost** (Ceded PVDE given up, lower is better); Y = **benefit** (capital relief +
-  early-strain relief, higher is better).
-- **Reading it** — the teal line is the efficient frontier (the structures giving the most benefit
-  per dollar of profit ceded); gray points are dominated; the gold star is your current deal. A
-  structure sitting below/right of the frontier is paying too much profit for the relief it buys.
+1. **Cost of each assumption** — a tornado of how much net portfolio EV swings as each lever moves
+   across its range (others held at base), plus a detailed table per lever (new-business net IRR,
+   new-business and back-book net EV, back-book compensation %, ceded PVDE, RBC lift, strain relief,
+   net EV). The longest bars are the assumptions worth negotiating hardest.
+2. **New-business IRR vs cede %** — new-issue net IRR as cession rises, against your hurdle (default
+   10%). The crossing point is the cede level at which new business stops clearing the hurdle.
+3. **Back-book compensation** — does the front-end commission fairly pay for the back-book PVDE we
+   cede? It shows the front-end PV, the back-book ceded PVDE, and the **compensation %** (front-end
+   PV / ceded PVDE) across cede levels. Because the deal also transfers risk, recovering less than
+   100% can still be a fair price.
 
-> Tip: run the model once first so the current-deal star and loaded data are available, then open
-> Frontier and press Run.
+> Tip: run the model once first so the loaded data and assumptions are available, then open Deal
+> Analysis and press Run. Each point is a full projection, so the sweep is paced (a live counter
+> shows progress) rather than instant.
 
 ## 8. Scenarios
 

@@ -1898,61 +1898,55 @@ function renderReinComp() {
 
 
 // =========================================================
-// DEAL FRONTIER MODULE
+// DEAL ANALYSIS MODULE — cost of each assumption + deal-quality thresholds
 // =========================================================
+// Lever sweeps (each varied one-at-a-time from the base deal). Ongoing
+// commission is expressed as a fraction of the $250/200/150/100 tiers.
+var DA_SWEEP={
+  cede:[0,0.05,0.10,0.15,0.20],
+  cc:[0.6,0.8,1.0,1.2],
+  fe:[[0,0,0],[10,0,0],[10,5,5],[15,0,0],[20,5,5]],
+  nby:[0,3,5],
+  cs:[1.0,1.05,1.10],
+  ls:[1.0,1.10]
+};
+var DA_LEVERS=[
+  {key:'cede',label:'Cede %',fmt:function(v){return (v*100).toFixed(0)+'%';}},
+  {key:'cc',label:'Ongoing comm (% of tiers)',fmt:function(v){return (v*100).toFixed(0)+'%';}},
+  {key:'fe',label:'Upfront schedule ($M)',fmt:function(v){return v.join('-');}},
+  {key:'nby',label:'Years of new business',fmt:function(v){return v+'y';}},
+  {key:'cs',label:'Claims stress',fmt:function(v){return v===1?'base':'+'+((v-1)*100).toFixed(0)+'%';}},
+  {key:'ls',label:'Lapse stress',fmt:function(v){return v===1?'base':'+'+((v-1)*100).toFixed(0)+'%';}}
+];
+
 function renderFrontierUI(){
   var el=document.getElementById('frontier-content');if(!el)return;
   var hint=function(t){return '<div style="font-size:.63rem;color:var(--mu);margin-top:2px">'+t+'</div>';};
-  el.innerHTML='<div class="card"><div class="ch">Deal Efficient Frontier</div><div class="cb">'+
-    '<div style="font-size:.72rem;color:var(--mu);margin-bottom:12px;max-width:840px">Sweeps reinsurance <b>structures</b> (cede %, upfront-commission schedule, ongoing commission level, issue-year scope, years of new business) as deterministic points, and tests each under a grid of <b>claims &times; lapse</b> sensitivities. Each structure is plotted by <b>cost</b> (Ceded PVDE handed to the reinsurer) versus <b>benefit</b> (capital relief + early-strain relief). The upper-left envelope is the efficient frontier; the faint cloud around each point is its claims/lapse sensitivity.</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:660px">'+
-    '<div><label class="fl">Cede % values (comma-sep)</label><input id="fl-cede" type="text" value="0.05,0.10,0.15,0.20" class="fi">'+hint('Quota-share percentages to sweep (0.10 = 10%)')+'</div>'+
-    '<div><label class="fl">Years of new business (comma-sep)</label><input id="fl-dur" type="text" value="3,5" class="fi">'+hint('Cedes new-business issue years 2026..2025+N (3 = 2026-2028) alongside the in-force scope below')+'</div>'+
-    '<div><label class="fl">Ongoing commission level (fraction of tiers)</label><input id="fl-cc" type="text" value="0.8,1.0" class="fi">'+hint('1.0 = full $250/$200/$150/$100 per-policy tiers; 0.8 = 80%')+'</div>'+
+  el.innerHTML='<div class="card"><div class="ch">Deal Analysis &mdash; cost of each assumption</div><div class="cb">'+
+    '<div style="font-size:.72rem;color:var(--mu);margin-bottom:12px;max-width:860px">From a <b>base deal</b>, each lever is varied <b>one at a time</b> to show what it costs and where the deal turns bad for the cedant. Most levers are monotonic (more upfront, higher ongoing % are always better for us), so the question is not an efficient frontier but <b>how much each assumption is worth</b>, <b>when new-business IRR drops below your hurdle</b>, and <b>whether the front-end commission fairly pays for the back-book PVDE ceded</b> (since we also shed risk, recovering less than 100% can still be fair).</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:760px">'+
+    '<div><label class="fl">Base cede %</label><input id="da-cede" type="text" value="0.10" class="fi">'+hint('0.10 = 10%')+'</div>'+
+    '<div><label class="fl">Base ongoing (frac)</label><input id="da-cc" type="text" value="1.0" class="fi">'+hint('1.0 = full tiers')+'</div>'+
+    '<div><label class="fl">Base upfront $M</label><input id="da-fe" type="text" value="10,5,5" class="fi">'+hint('2026-27-28')+'</div>'+
+    '<div><label class="fl">Base new-bus yrs</label><input id="da-nby" type="text" value="3" class="fi">'+hint('2026..2025+N')+'</div>'+
+    '<div><label class="fl">NB IRR hurdle %</label><input id="da-irr" type="text" value="10" class="fi">'+hint('flag below this')+'</div>'+
     '</div>'+
-    '<div style="margin-top:8px;max-width:660px"><label class="fl">Upfront commission schedules ($M, year1-year2-year3 = 2026/2027/2028)</label>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:3px">'+
-    '<input id="fl-fe-a" type="text" value="10,5,5" class="fi">'+
-    '<input id="fl-fe-b" type="text" value="15,0,0" class="fi">'+
-    '<input id="fl-fe-c" type="text" value="10,0,0" class="fi">'+
-    '</div>'+hint('Three front-end schedules swept as structures: default 10-5-5, sensitivity 15-0-0, and a custom slot (default 10-0-0)')+'</div>'+
-    '<div style="margin-top:8px;max-width:660px"><label class="fl">Issue-year scope</label>'+
-    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:3px">'+
-    '<label style="font-size:.73rem;cursor:pointer"><input type="checkbox" id="iy-full" checked> Full book (2019-2030)</label>'+
-    '<label style="font-size:.73rem;cursor:pointer"><input type="checkbox" id="iy-no2025"> Exclude IssYr 2025</label>'+
-    '<label style="font-size:.73rem;cursor:pointer"><input type="checkbox" id="iy-legacy"> Legacy only (pre-2022)</label>'+
-    '</div></div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:660px;margin-top:10px">'+
-    '<div><label class="fl">Claims sensitivities (scalars, comma-sep)</label><input id="fl-claim" type="text" value="1.0,1.05,1.10" class="fi">'+hint('1.0 = base; 1.05 = +5% claims')+'</div>'+
-    '<div><label class="fl">Lapse sensitivities (scalars, comma-sep)</label><input id="fl-lapse" type="text" value="1.0,1.10" class="fi">'+hint('1.0 = base; 1.10 = +10% lapse')+'</div>'+
-    '</div>'+
-    '<div style="margin-top:14px"><button id="frontier-run-btn" class="btn btn-y" onclick="runFrontier()">&#x25b6; Run Frontier</button> '+
+    '<div style="margin-top:14px"><button id="frontier-run-btn" class="btn btn-y" onclick="runFrontier()">&#x25b6; Run Deal Analysis</button> '+
     '<span id="frontier-progress" style="font-size:.74rem;color:var(--mu);margin-left:10px"></span></div>'+
     '<div id="frontier-warning" style="font-size:.7rem;color:var(--err);margin-top:4px"></div>'+
-    '</div></div><div id="frontier-chart-area"></div>';
+    '</div></div><div id="da-out"></div>';
 }
 
-async function runFrontier(){
-  if(!S.out){alert('Run the model first so there is loaded data and a current deal to compare against.');return;}
+async function runFrontier(){  // runs the Deal Analysis sweep
+  if(!S.out){alert('Run the model first so there is loaded data to analyze.');return;}
   var btn=document.getElementById('frontier-run-btn'),prog=document.getElementById('frontier-progress'),warn=document.getElementById('frontier-warning');
-  function plist(id){return (document.getElementById(id).value||'').split(',').map(function(x){return parseFloat(x);}).filter(function(v){return!isNaN(v);});}
-  function sched(id){var v=plist(id);while(v.length<3)v.push(0);return v.slice(0,3);}
-  var cede=plist('fl-cede'),cc=plist('fl-cc'),dur=plist('fl-dur').map(function(d){return Math.round(d);});
-  var feRaw=[sched('fl-fe-a'),sched('fl-fe-b'),sched('fl-fe-c')].filter(function(s){return s.some(function(x){return x>0;});});
-  var feSeen={},fe=[];feRaw.forEach(function(s){var k=s.join('-');if(!feSeen[k]){feSeen[k]=1;fe.push(s);}});
-  if(!fe.length)fe=[[0,0,0]];
-  var claims=plist('fl-claim'),lapses=plist('fl-lapse');
-  if(!claims.length)claims=[1.0];if(!lapses.length)lapses=[1.0];
-  function rng(a,b,ex){var s=[];for(var i=a;i<=b;i++)if(i!==ex)s.push(i);return s;}
-  var scopes=[];
-  if(document.getElementById('iy-full').checked)scopes.push(rng(2019,2030));
-  if(document.getElementById('iy-no2025').checked)scopes.push(rng(2019,2030,2025));
-  if(document.getElementById('iy-legacy').checked)scopes.push(rng(2019,2021));
-  if(!scopes.length)scopes.push(rng(2019,2030));
-  if(!cede.length||!fe.length||!cc.length||!dur.length){if(warn)warn.textContent='Fill in all four lever ranges.';return;}
+  function num(id,d){var v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v;}
+  function fesched(id){var v=(document.getElementById(id).value||'').split(',').map(function(x){return parseFloat(x)||0;});while(v.length<3)v.push(0);return v.slice(0,3);}
+  var base={cede:num('da-cede',0.10),cc:num('da-cc',1.0),fe:fesched('da-fe'),nby:Math.round(num('da-nby',3)),cs:1.0,ls:1.0,scope:[]};
+  for(var y=2019;y<=2030;y++)base.scope.push(y);
+  var hurdle=num('da-irr',10)/100;
   if(warn)warn.textContent='';
-  var total=cede.length*fe.length*cc.length*dur.length*scopes.length*claims.length*lapses.length;
-  if(btn)btn.disabled=true;if(prog)prog.textContent='Preparing '+total+' scenarios…';
+  if(btn)btn.disabled=true;if(prog)prog.textContent='Preparing…';
   try{
     collectAssumptions();
     var py=S.py,a=S.assumptions,by=a.base_year||2025;
@@ -1960,10 +1954,8 @@ async function runFrontier(){
     py.globals.set('_fev',JSON.stringify(ev_for_py));
     py.globals.set('_fba',JSON.stringify(a));
     py.globals.set('_FBY',by);
-    py.globals.set('_fclaims',JSON.stringify(claims));
-    py.globals.set('_flapses',JSON.stringify(lapses));
-    // One-time setup: parse ev/base into Python globals (heavy payload crosses once),
-    // then compute the no-deal RBC baselines per (claim,lapse) environment.
+    py.globals.set('_fclaims',JSON.stringify(DA_SWEEP.cs));
+    py.globals.set('_flapses',JSON.stringify(DA_SWEEP.ls));
     var setup=["import json",
       "_ev=json.loads(_fev)","_base=json.loads(_fba)",
       "for k in ['acq_exp','maint_exp','nier','acq_exp_allowance','maint_exp_allowance']:",
@@ -1975,12 +1967,19 @@ async function runFrontier(){
       "_fr_nodeal=frontier_nodeal_baselines(_ev,_base,int(_FBY),_FSURP,[float(x) for x in json.loads(_fclaims)],[float(x) for x in json.loads(_flapses)])"
       ].join("\n");
     await py.runPythonAsync(setup);
-    // Build the scenario combos (same product as `total`).
+    // Build scenario list: the base deal, then each lever varied one-at-a-time.
     var combos=[],n=0;
-    claims.forEach(function(cs){lapses.forEach(function(ls){cede.forEach(function(cd){fe.forEach(function(sch){cc.forEach(function(ccm){scopes.forEach(function(sc){dur.forEach(function(nby){
-      combos.push({cede:cd,sched:sch,ccm:ccm,scope:sc,nby:nby,cs:cs,ls:ls,n:++n});
-    });});});});});});});
-    // JS-driven loop: one run_frontier_one per scenario, live counter, yield each step.
+    function mk(over){var c={cede:base.cede,sched:base.fe,ccm:base.cc,scope:base.scope,nby:base.nby,cs:base.cs,ls:base.ls};for(var k in over)c[k]=over[k];c.n=++n;return c;}
+    combos.push(Object.assign({lever:'base',lvl:null},mk({})));
+    DA_LEVERS.forEach(function(L){
+      DA_SWEEP[L.key].forEach(function(v){
+        var over={};
+        if(L.key==='cede')over.cede=v;else if(L.key==='cc')over.ccm=v;else if(L.key==='fe')over.sched=v;
+        else if(L.key==='nby')over.nby=v;else if(L.key==='cs')over.cs=v;else if(L.key==='ls')over.ls=v;
+        combos.push(Object.assign({lever:L.key,lvl:v},mk(over)));
+      });
+    });
+    var total=combos.length;
     var perScenario=["import json","_p=json.loads(_fone)",
       "try:",
       "    _rec=run_frontier_one(_ev,_base,int(_FBY),_FSURP,float(_p['cede']),tuple(float(x) for x in _p['sched']),float(_p['ccm']),tuple(int(x) for x in _p['scope']),int(_p['nby']),float(_p['cs']),float(_p['ls']),_fr_nodeal.get((float(_p['cs']),float(_p['ls'])),0),int(_p['n']))",
@@ -1988,80 +1987,112 @@ async function runFrontier(){
       "except Exception as _e:",
       "    _out=json.dumps(None)",
       "_out"].join("\n");
-    S.frontier=[];
+    var recs=[];
     for(var i=0;i<combos.length;i++){
       py.globals.set('_fone',JSON.stringify(combos[i]));
       var rj=await py.runPythonAsync(perScenario);
       var rec=JSON.parse(rj);
-      if(rec)S.frontier.push(rec);
-      if(prog)prog.textContent=(i+1)+' / '+total+' scenarios run…';
-      await new Promise(function(r){setTimeout(r);});  // yield so the UI repaints
+      if(rec){rec.lever=combos[i].lever;rec.lvl=combos[i].lvl;recs.push(rec);}
+      if(prog)prog.textContent=(i+1)+' / '+total+' runs…';
+      await new Promise(function(r){setTimeout(r);});
     }
-    if(prog)prog.textContent=S.frontier.length+' / '+total+' scenarios done ('+S.frontier.filter(function(r){return r.is_base;}).length+' structures).';
-    renderFrontierChart();
+    S.deal={recs:recs,hurdle:hurdle,base:base};
+    if(prog)prog.textContent=recs.length+' / '+total+' runs done.';
+    renderDealAnalysis();
   }catch(e){if(warn)warn.textContent='Error: '+e.message;console.error(e);}
   finally{if(btn)btn.disabled=false;}
 }
 
-function fpareto(pts){
-  return pts.filter(function(p){
-    return !pts.some(function(o){return o!==p && o.benefit>=p.benefit && o.cost<=p.cost && (o.benefit>p.benefit||o.cost<p.cost);});
-  });
-}
-function currentDealPoint(){
-  if(!S.out)return null;var ca=S.out.cedant_analytics||{};
-  var ap=S.out.annual_predeal||{},an=S.out.annual_net||{};
-  function gy(d,y){d=d||{};var v=(d[y]!=null?d[y]:d[String(y)]);return (v||0)/1e6;}
-  var strain=[2026,2027,2028].reduce(function(s,y){return s+(gy(an.pretax_income,y)-gy(ap.pretax_income,y));},0);
-  var cap=ca.cap_relief_value||0;
-  return {cost:ca.reinsurer_pvde||0,benefit:cap+strain};
-}
-function fmtPt(r){return {x:r.cost,y:r.benefit,r:r};}
+function renderDealAnalysis(){
+  var out=document.getElementById('da-out');if(!out||!S.deal)return;
+  var recs=S.deal.recs,hurdle=S.deal.hurdle;
+  var baseRec=recs.filter(function(r){return r.lever==='base';})[0];
+  function byLever(k){return recs.filter(function(r){return r.lever===k;});}
+  var pct=function(v,d){return v==null?'-':(v*100).toFixed(d==null?1:d)+'%';};
+  var m=function(v){return v==null?'-':Number(v).toFixed(1);};
+  var leverFmt={};DA_LEVERS.forEach(function(L){leverFmt[L.key]=L.fmt;});
 
-function renderFrontierChart(){
-  var area=document.getElementById('frontier-chart-area');if(!area)return;
-  var all=S.frontier||[];
-  if(!all.length){area.innerHTML='<div class="empty"><h3>No scenarios</h3></div>';return;}
-  var base=all.filter(function(r){return r.is_base;});
-  var sens=all.filter(function(r){return !r.is_base;});
-  var frontier=fpareto(base);
-  var frSet=new Set(frontier.map(function(p){return p.n_run;}));
-  var cur=currentDealPoint();
-  area.innerHTML='<div class="card"><div class="ch">Cost vs Benefit Frontier</div><div class="cb">'+
-    '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">X = cost (Ceded PVDE given up, lower = better) &middot; Y = benefit (capital + early-strain relief, higher = better). Teal line = efficient frontier; gray = dominated structures; faint = claims&times;lapse sensitivities; &#9733; = current deal.</div>'+
-    '<div style="position:relative;height:460px"><canvas id="frontier-canvas"></canvas></div>'+
-    '<div id="frontier-table"></div></div></div>';
-  var ds=[
-    {label:'Sensitivities (claims×lapse)',data:sens.map(fmtPt),backgroundColor:'rgba(120,140,170,.16)',pointRadius:3,order:5},
-    {label:'Dominated structures',data:base.filter(function(p){return!frSet.has(p.n_run);}).map(fmtPt),backgroundColor:'rgba(110,110,110,.55)',pointRadius:5,order:3},
-    {label:'Efficient frontier',data:frontier.slice().sort(function(a,b){return a.cost-b.cost;}).map(fmtPt),backgroundColor:'#0a7080',borderColor:'#0a7080',pointRadius:6,showLine:true,borderWidth:2,fill:false,tension:.1,order:1}
-  ];
-  if(cur)ds.push({label:'Current deal',data:[{x:cur.cost,y:cur.benefit}],backgroundColor:'#E6C200',borderColor:'#1C2B6B',borderWidth:2,pointStyle:'star',pointRadius:14,order:0});
-  if(S.frontierChart){S.frontierChart.destroy();}
-  S.frontierChart=new Chart(document.getElementById('frontier-canvas'),{
-    type:'scatter',data:{datasets:ds},
+  // ---- Panel 1: cost-of-assumption tornado on net portfolio EV ----
+  var torn=DA_LEVERS.map(function(L){
+    var rs=byLever(L.key).map(function(r){return r.net_pvde;});
+    return {label:L.label,lo:Math.min.apply(null,rs),hi:Math.max.apply(null,rs)};
+  }).map(function(t){t.swing=t.hi-t.lo;return t;}).sort(function(a,b){return b.swing-a.swing;});
+
+  // ---- Panel 2: NB IRR vs cede (threshold) ----
+  var cedeRs=byLever('cede').slice().sort(function(a,b){return a.cede_pct-b.cede_pct;});
+  var cross=null;
+  for(var i=1;i<cedeRs.length;i++){
+    var a0=cedeRs[i-1],b0=cedeRs[i];
+    if(a0.nb_net_irr!=null&&b0.nb_net_irr!=null&&(a0.nb_net_irr-hurdle)*(b0.nb_net_irr-hurdle)<0){
+      var t=(hurdle-a0.nb_net_irr)/(b0.nb_net_irr-a0.nb_net_irr);
+      cross=a0.cede_pct+t*(b0.cede_pct-a0.cede_pct);break;
+    }
+  }
+
+  function leverTable(L){
+    var rs=byLever(L.key);
+    var cols=['Level','NB net IRR','NB net EV','Back net EV','Back comp%','Ceded PVDE','RBC lift','Strain','Net EV'];
+    return '<div style="margin-bottom:10px"><div style="font-size:.72rem;font-weight:bold;color:var(--navy);margin-bottom:3px">'+L.label+'</div>'+
+      '<div class="tw"><table class="bbt" style="font-size:.68rem"><thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rs.map(function(r){
+        var below=r.nb_net_irr!=null&&r.nb_net_irr<hurdle;
+        return '<tr'+(below?' style="background:#FBEAEA"':'')+'><td>'+leverFmt[L.key](r.lvl)+'</td>'+
+          '<td>'+pct(r.nb_net_irr)+(below?' &#9888;':'')+'</td><td>'+m(r.nb_net_ev)+'</td><td>'+m(r.back_net_ev)+'</td>'+
+          '<td>'+pct(r.back_comp_pct,0)+'</td><td>'+m(r.cost)+'</td><td>'+(r.rbc_lift==null?'-':(r.rbc_lift>=0?'+':'')+r.rbc_lift.toFixed(2)+'x')+'</td>'+
+          '<td>'+m(r.strain_relief)+'</td><td>'+m(r.net_pvde)+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  out.innerHTML=
+    '<div class="card"><div class="ch">1 &middot; Cost of each assumption</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Swing in <b>net portfolio EV ($M)</b> as each lever moves across its range (others held at base). Longer bar = more sensitive.</div>'+
+      '<div style="position:relative;height:240px"><canvas id="da-tornado"></canvas></div>'+
+      '<div style="margin-top:10px">'+DA_LEVERS.map(leverTable).join('')+'</div>'+
+    '</div></div>'+
+    '<div class="card"><div class="ch">2 &middot; New-business IRR vs cede %</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">New-issue net IRR as cede % rises (other levers at base). Hurdle = '+pct(hurdle,0)+'. '+
+        (cross==null?'<b>NB IRR stays above the hurdle across the swept range.</b>':'<b>NB IRR crosses the hurdle at cede &asymp; '+(cross*100).toFixed(1)+'%.</b>')+'</div>'+
+      '<div style="position:relative;height:260px"><canvas id="da-nbirr"></canvas></div>'+
+    '</div></div>'+
+    '<div class="card"><div class="ch">3 &middot; Back-book compensation</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:8px">Is the front-end commission a fair price for the back-book PVDE we cede? Since we also transfer risk, recovering &lt;100% can still be fair.</div>'+
+      backCompCards(baseRec,pct,m)+
+      '<div style="font-size:.7rem;color:var(--mu);margin:10px 0 4px">Compensation across cede % (front-end held at base):</div>'+
+      '<div class="tw"><table class="bbt" style="font-size:.68rem"><thead><tr><th>Cede %</th><th>Front-end PV</th><th>Back-book ceded PVDE</th><th>Compensation %</th></tr></thead><tbody>'+
+        cedeRs.map(function(r){return '<tr><td>'+(r.cede_pct*100).toFixed(0)+'%</td><td>'+m(r.front_comm_pv)+'</td><td>'+m(r.back_ceded_pvde)+'</td><td>'+pct(r.back_comp_pct,0)+'</td></tr>';}).join('')+
+      '</tbody></table></div>'+
+    '</div></div>';
+
+  // tornado chart
+  if(S.daTorn)S.daTorn.destroy();
+  S.daTorn=new Chart(document.getElementById('da-tornado'),{type:'bar',
+    data:{labels:torn.map(function(t){return t.label;}),datasets:[{label:'Net EV swing ($M)',data:torn.map(function(t){return t.swing;}),backgroundColor:'#0a7080'}]},
+    options:{indexAxis:'y',animation:false,responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var t=torn[c.dataIndex];return 'swing $'+t.swing.toFixed(1)+'M  ('+t.lo.toFixed(0)+' .. '+t.hi.toFixed(0)+')';}}}},
+      scales:{x:{title:{display:true,text:'Net portfolio EV swing ($M)'}}}}});
+  // NB IRR line
+  if(S.daIrr)S.daIrr.destroy();
+  S.daIrr=new Chart(document.getElementById('da-nbirr'),{type:'line',
+    data:{labels:cedeRs.map(function(r){return (r.cede_pct*100).toFixed(0)+'%';}),
+      datasets:[{label:'NB net IRR',data:cedeRs.map(function(r){return r.nb_net_irr==null?null:r.nb_net_irr*100;}),borderColor:'#0a7080',backgroundColor:'#0a7080',tension:.1},
+        {label:'Hurdle',data:cedeRs.map(function(){return hurdle*100;}),borderColor:'#B53323',borderDash:[5,4],pointRadius:0}]},
     options:{animation:false,responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{boxWidth:10,font:{size:10}}},
-        tooltip:{callbacks:{label:function(c){var d=c.raw;if(!d||!d.r)return 'Cost $'+c.parsed.x.toFixed(1)+'M | Benefit $'+c.parsed.y.toFixed(1)+'M';var r=d.r;
-          return ['cede '+(r.cede_pct*100).toFixed(0)+'% | upfront '+r.front_label+' | comm '+(r.cc_mult*100).toFixed(0)+'% | new-bus '+r.nb_years+'y',
-            'IY '+r.iy_min+'-'+r.iy_max+(r.iy_excluded&&r.iy_excluded.length?' (excl '+r.iy_excluded.join(',')+')':''),
-            'env: claims '+r.claim_scalar+' / lapse '+r.lapse_scalar,
-            'Cost (ceded PVDE) $'+r.cost.toFixed(1)+'M | Benefit $'+r.benefit.toFixed(1)+'M',
-            'cap relief $'+r.cap_relief.toFixed(1)+'M | strain $'+r.strain_relief.toFixed(1)+'M | RBC lift '+r.rbc_lift.toFixed(2)+'x',
-            'net PVDE $'+r.net_pvde.toFixed(1)+'M | net IRR '+(r.net_irr*100).toFixed(1)+'%'];}}}},
-      scales:{x:{title:{display:true,text:'Cost — Ceded PVDE given up ($M, lower = better)'}},
-              y:{title:{display:true,text:'Benefit — capital + early-strain relief ($M, higher = better)'}}}}
-  });
-  renderFrontierTable(base,frSet);
+      plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{x:{title:{display:true,text:'Cede %'}},y:{title:{display:true,text:'New-business net IRR (%)'}}}}});
 }
 
-function renderFrontierTable(base,frSet){
-  var el=document.getElementById('frontier-table');if(!el)return;
-  var rows=base.slice().sort(function(a,b){var af=frSet.has(a.n_run)?0:1,bf=frSet.has(b.n_run)?0:1;return af-bf||b.benefit-a.benefit;});
-  var cols=['Structure','Cede%','Upfront $M','Comm%','NewBus yrs','IY','Cost $M','Cap Relief','Strain','Benefit $M','Net IRR'];
-  el.innerHTML='<div style="font-size:.7rem;color:var(--mu);margin:10px 0 4px">Base-environment structures (claims 1.0, lapse 1.0), frontier rows highlighted. Benefit = capital relief + early-strain relief; cost = Ceded PVDE.</div>'+
-    '<div class="tw" style="max-height:340px"><table class="bbt"><thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+
-    rows.map(function(r){var fr=frSet.has(r.n_run);
-      return '<tr'+(fr?' style="background:#EEF8F2"':'')+'><td>'+(fr?'★ ':'')+'#'+r.n_run+'</td><td>'+(r.cede_pct*100).toFixed(0)+'%</td><td>'+r.front_label+'</td><td>'+(r.cc_mult*100).toFixed(0)+'%</td><td>'+r.nb_years+'</td><td>'+r.iy_min+'-'+r.iy_max+'</td><td>'+r.cost.toFixed(1)+'</td><td>'+r.cap_relief.toFixed(1)+'</td><td>'+r.strain_relief.toFixed(1)+'</td><td>'+r.benefit.toFixed(1)+'</td><td>'+(r.net_irr*100).toFixed(1)+'%</td></tr>';
-    }).join('')+'</tbody></table></div>';
+function backCompCards(r,pct,m){
+  if(!r)return '';
+  var tile=function(lbl,val,desc){return '<div style="flex:1 1 150px;min-width:140px;padding:8px 10px;background:var(--off);border-radius:5px;border-left:3px solid var(--bdr)">'+
+    '<div style="font-size:.6rem;color:var(--mu);text-transform:uppercase;letter-spacing:.3px">'+lbl+'</div>'+
+    '<div style="font-size:1.02rem;font-weight:bold;color:var(--navy);margin:1px 0">'+val+'</div>'+
+    '<div style="font-size:.62rem;color:var(--mu);line-height:1.3">'+desc+'</div></div>';};
+  var comp=r.back_comp_pct;
+  var verdict=comp==null?'needs data':(comp>=1?'fully paid for the ceded PVDE':(comp>=0.5?'partial pay; remainder buys risk transfer':'thin pay relative to PVDE ceded'));
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    tile('Front-end PV','$'+m(r.front_comm_pv)+'M','After-tax PV of the upfront 10-5-5 received.')+
+    tile('Back-book ceded PVDE','$'+m(r.back_ceded_pvde)+'M','PV of distributable earnings ceded on the in-force book.')+
+    tile('Compensation',pct(comp,0),'Front-end PV as a share of back-book PVDE ceded &mdash; '+verdict+'.')+
+    tile('Back-book EV','$'+m(r.back_predeal_ev)+' &rarr; $'+m(r.back_net_ev)+'M','In-force book value before &rarr; after (net of the commission it receives).')+
+  '</div>';
 }

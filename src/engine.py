@@ -882,6 +882,12 @@ def run_frontier_one(ev_agg, base_assum, by, surplus_rows,
     iy_lo = min(iy_scope); iy_hi = max(iy_scope)
     iy_excluded = [iy for iy in range(iy_lo, iy_hi + 1) if iy not in iy_scope]
 
+    # Cohort economics (commissions allocated: front->back, ongoing->new).
+    mb = ca.get('metrics_back') or {}
+    mnew = ca.get('metrics_new') or {}
+    front_pv = ca.get('comm_front_pv') or 0.0
+    back_ceded = mb.get('ceded_pvde') or 0.0
+
     return {
         'n_run': n_run,
         'cost': cost,
@@ -895,6 +901,14 @@ def run_frontier_one(ev_agg, base_assum, by, surplus_rows,
         'net_rbc29': net_rbc29,
         'nodeal_rbc29': nodeal29 or 0,
         'net_irr': mn['irr'],
+        'nb_net_irr': mnew.get('net_irr'),
+        'nb_net_ev': mnew.get('net_pvde'),
+        'nb_predeal_ev': mnew.get('predeal_pvde'),
+        'back_net_ev': mb.get('net_pvde'),
+        'back_predeal_ev': mb.get('predeal_pvde'),
+        'back_ceded_pvde': back_ceded,
+        'front_comm_pv': front_pv,
+        'back_comp_pct': (front_pv / back_ceded) if back_ceded else None,
         'cede_pct': cede,
         'front_label': _frontier_fmt_sched(sched),
         'cc_mult': ccm,
