@@ -23,7 +23,7 @@ async function initPy(){
   try{
     // --- load engine + default data (decomposed sources) ---
     const _f=async(p,t)=>{const r=await fetch(p);if(!r.ok)throw new Error('Failed to load '+p+' ('+r.status+')');return t==='json'?r.json():t==='buf'?new Uint8Array(await r.arrayBuffer()):r.text();};
-    PY_ENGINE=await _f('../src/engine.py','text');
+    PY_ENGINE=await _f('../src/engine.py?v='+Date.now(),'text');
     DEFAULT_EV_CSV=await _f('../data/EV_Data_Final.csv','text');
     DOC_TEXT=await _f('../data/doc.txt','text');
     DEFAULT_SURPLUS_ROWS=await _f('../data/surplus.json','json');
