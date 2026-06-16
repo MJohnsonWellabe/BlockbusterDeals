@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>(function(){try{if(sessionStorage.getItem("bb_auth")!=="697a6e9f67c021de93a946c75c149c6fc0360a6cee2d334f9c4d154bea7f9cfd")location.replace("../index.html");}catch(e){location.replace("../index.html");}})();</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blockbuster Deals: Reinsurance</title>
+<script src="https://cdn.jsdelivr.net/npm/coi-serviceworker@0.1.7/coi-serviceworker.min.js"></script>
+</script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#1C2B6B;--blue:#1A3A8F;--yel:#FFD700;--gold:#E6C200;--ly:#FFF9CC;--wh:#FFF;--off:#F7F6F0;--gray:#EEEDE8;--mid:#9A9890;--dk:#1A1A1A;--mu:#5A5A5A;--ok:#2D7A4F;--err:#C0392B;--warn:#D4880A;--bdr:#D6D4CC;--ft:'Georgia',serif;--fb:'Verdana',sans-serif;--fm:'Courier New',monospace;--r:4px;--sh:0 2px 8px rgba(28,43,107,.10);--shl:0 4px 20px rgba(28,43,107,.18)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}body{font-family:var(--fb);background:var(--off);color:var(--dk);min-height:100vh;display:flex;flex-direction:column}
+#hdr{background:var(--navy);border-bottom:4px solid var(--yel);padding:0 20px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shl)}
+.logo{width:34px;height:34px;background:var(--yel);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:22px;height:22px}
+.at{font-family:var(--ft);font-size:1.15rem;font-weight:bold;color:var(--yel);line-height:1.1}
+.at span{display:block;font-size:.58rem;color:rgba(255,215,0,.6);font-family:var(--fb);font-weight:normal;letter-spacing:.08em;text-transform:uppercase}
+#pyst{font-size:.68rem;padding:3px 8px;border-radius:20px;font-family:var(--fm);background:rgba(255,255,255,.08);color:rgba(255,215,0,.8);border:1px solid rgba(255,215,0,.3);transition:all .3s}
+#pyst.ready{background:rgba(45,122,79,.25);color:#7EE8A2;border-color:rgba(126,232,162,.4)}
+#pyst.error{background:rgba(192,57,43,.25);color:#FF9090;border-color:rgba(255,144,144,.4)}
+#nav{background:var(--blue);display:flex;border-bottom:3px solid var(--yel);padding:0 20px;overflow-x:auto}
+.nt{padding:9px 14px;font-size:.72rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;transition:color .15s,border-color .15s;white-space:nowrap;user-select:none}
+.nt:hover{color:rgba(255,255,255,.85)}.nt.active{color:var(--yel);border-bottom-color:var(--yel)}
+.nbadge{display:inline-block;background:var(--yel);color:var(--navy);font-size:.58rem;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:middle}
+#main{flex:1;padding:18px;max-width:1600px;margin:0 auto;width:100%}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--wh);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px}
+.ch{background:var(--navy);color:var(--yel);padding:8px 14px;font-family:var(--ft);font-size:.88rem;font-weight:bold;border-radius:var(--r) var(--r) 0 0;display:flex;align-items:center;gap:8px}
+.ch .cbadge{margin-left:auto;font-size:.6rem;font-family:var(--fb);background:rgba(255,215,0,.15);color:var(--yel);padding:2px 8px;border-radius:20px;letter-spacing:.05em}
+.cb{padding:14px}
+.upzone{border:2px dashed var(--navy);border-radius:var(--r);background:var(--ly);padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upzone:hover,.upzone.drag-over{border-color:var(--yel);background:#FFFACC}
+.upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upzone h3{font-family:var(--ft);color:var(--navy);margin-bottom:3px;font-size:.85rem}
+.upzone p{color:var(--mu);font-size:.72rem}
+.upstat{margin-top:6px;font-size:.7rem;font-family:var(--fm);padding:4px 9px;border-radius:var(--r);display:inline-block}
+.upstat.ok{background:#EEF8F2;color:var(--ok);border:1px solid #BEE3CE}
+.upstat.err{background:#FEF0EE;color:var(--err);border:1px solid #FACACA}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.mtile{background:var(--navy);color:#fff;padding:12px;border-radius:var(--r);border-left:4px solid var(--yel)}
+.mtile .ml{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,215,0,.65);margin-bottom:2px}
+.mtile .mv{font-family:var(--ft);font-size:1.25rem;color:var(--yel);font-weight:bold}
+.mtile .ms{font-size:.62rem;color:rgba(255,255,255,.4);margin-top:1px}
+.tw{overflow:auto;border-radius:var(--r);border:1px solid var(--bdr);max-height:800px;position:relative}
+.bbt{width:100%;border-collapse:collapse;font-size:.7rem;font-family:var(--fm)}
+.bbt thead tr{background:var(--navy);position:sticky;top:0;z-index:4}
+.bbt thead th{color:var(--yel);padding:5px 8px;text-align:right;font-size:.62rem;letter-spacing:.04em;white-space:nowrap;border-right:1px solid rgba(255,215,0,.1)}
+.bbt thead th:first-child{text-align:left;position:sticky;left:0;z-index:5;background:var(--navy);box-shadow:2px 0 4px rgba(0,0,0,.15)}
+.bbt tbody tr{border-bottom:1px solid var(--bdr)}
+.bbt tbody tr:nth-child(even){background:var(--off)}.bbt tbody tr:nth-child(even) td:first-child{background:var(--off)}
+.bbt tbody tr:hover{background:var(--ly)}.bbt tbody tr:hover td:first-child{background:var(--ly)}
+.bbt td{padding:4px 8px;text-align:right;white-space:nowrap;border-right:1px solid var(--bdr)}
+.sect-hdr{font-size:.75rem;font-weight:bold;color:var(--navy);margin:10px 0 4px;padding:3px 0;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--bdr)}
+.bbt td:first-child{text-align:left;font-family:var(--fb);font-weight:600;padding-left:9px;position:sticky;left:0;z-index:2;background:var(--wh);min-width:180px;box-shadow:2px 0 4px rgba(0,0,0,.08)}
+.bbt tbody tr:nth-child(even) td:first-child{background:var(--off)}
+.bbt tbody tr:hover td:first-child{background:var(--ly)}
+.bbt tr.sub td{font-weight:bold;background:#EEF2FF;border-top:1px solid #aab}
+.bbt tbody tr.sub td:first-child{background:#EEF2FF!important}
+.bbt tr.tot td{font-weight:bold;background:var(--navy);color:var(--yel)}
+.bbt tbody tr.tot td:first-child{background:var(--navy)!important}
+.bbt tr.de td{font-weight:bold;background:#1a1a2e;color:#FFD700;border-top:2px solid var(--yel)}
+.bbt tbody tr.de td:first-child{background:#1a1a2e!important}
+.bbt tr.hdr td{background:#E8EAF6;font-weight:bold;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+.bbt tbody tr.hdr td:first-child{background:#E8EAF6!important}
+.bbt tr.ratio td{background:#FFFBEC;font-style:italic;font-size:.65rem;color:var(--navy)}
+.bbt tbody tr.ratio td:first-child{background:#FFFBEC!important}
+.neg{color:var(--err)}.pos{color:var(--ok)}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:var(--r);font-size:.7rem;font-weight:bold;letter-spacing:.04em;cursor:pointer;border:none;transition:all .15s;text-transform:uppercase}
+.btn-p{background:var(--navy);color:var(--yel)}.btn-p:hover{background:var(--blue)}
+.btn-y{background:var(--yel);color:var(--navy)}.btn-y:hover{background:var(--gold)}
+.btn-o{background:transparent;color:var(--navy);border:2px solid var(--navy)}.btn-o:hover{background:var(--navy);color:var(--yel)}
+.btn-sm{padding:3px 8px;font-size:.65rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.fl{display:block;font-size:.63rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);margin-bottom:3px}
+.fi{width:100%;padding:5px 8px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--fm);font-size:.76rem;background:#fff;transition:border-color .15s}
+.fi:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(28,43,107,.12)}
+.fg{margin-bottom:10px}
+.mtx{border-collapse:collapse;width:100%}
+.mtx th{background:var(--navy);color:var(--yel);padding:4px 8px;font-size:.62rem;letter-spacing:.05em;text-align:center;white-space:nowrap}
+.mtx td{border:1px solid var(--bdr);padding:0;text-align:center}
+.mtx td.rh{background:var(--navy);color:var(--yel);padding:4px 8px;font-size:.66rem;font-weight:bold;white-space:nowrap}
+.mtx td input{width:62px;border:none;padding:3px 5px;text-align:right;font-family:var(--fm);font-size:.72rem;background:transparent}
+.mtx td input:focus{background:var(--ly);outline:none}
+.mtx td.nc{background:var(--gray)}
+.stabs{display:flex;border-bottom:2px solid var(--bdr);margin-bottom:12px;background:#fff;overflow-x:auto;flex-wrap:nowrap}
+.stab{padding:6px 13px;font-size:.68rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.stab:hover{color:var(--navy)}.stab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.tb{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.scard{border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.sch{background:var(--navy);color:var(--yel);padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:.74rem;font-weight:bold}
+.scb{padding:9px 12px;font-size:.72rem;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sm .sml{font-size:.6rem;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.sm .smv{font-family:var(--fm);font-weight:bold;font-size:.84rem}
+.ae{border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:9px;overflow:hidden}
+.aeh{background:var(--off);padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);font-size:.72rem;flex-wrap:wrap}
+.aeb{padding:10px 12px}
+.abd{padding:2px 8px;border-radius:20px;font-size:.6rem;font-weight:bold;letter-spacing:.06em;text-transform:uppercase}
+.bd{background:#FFF3CD;color:#856404;border:1px solid #FFEAA7}
+.br{background:#CCE5FF;color:#004085;border:1px solid #9BC8F7}
+.ba{background:#D4EDDA;color:#155724;border:1px solid #A8D5B5}
+.rck{border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.rckh{background:var(--off);padding:7px 12px;font-size:.7rem;font-weight:bold;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px}
+.rckr{display:flex;align-items:flex-start;gap:8px;padding:7px 12px;border-bottom:1px solid var(--bdr);font-size:.7rem}
+.rckr:last-child{border-bottom:none}
+.rckr input[type=checkbox]{margin-top:2px;width:13px;height:13px;cursor:pointer;accent-color:var(--navy);flex-shrink:0}
+.rckl{flex:1;min-width:0}
+.rckl strong{display:block;color:var(--dk);font-size:.7rem}
+.rckl span{color:var(--mu);font-size:.65rem}
+.rckev{font-family:var(--fm);font-size:.64rem;color:var(--navy);background:var(--ly);padding:2px 6px;border-radius:10px;white-space:normal;word-break:break-word;max-width:200px;text-align:right;flex-shrink:0}
+#loading{position:fixed;inset:0;background:rgba(28,43,107,.97);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+#loading.hidden{display:none}
+.ldl{width:64px;height:64px;background:var(--yel);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.ldt{font-family:var(--ft);font-size:1.4rem;color:var(--yel);margin-bottom:4px}
+.lds{font-size:.76rem;color:rgba(255,255,255,.55);margin-bottom:22px}
+.ldbw{width:220px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.ldb{height:100%;background:var(--yel);border-radius:2px;transition:width .4s ease}
+.ldm{font-family:var(--fm);font-size:.68rem;color:rgba(255,215,0,.7)}
+.stitle{font-family:var(--ft);font-size:.92rem;color:var(--navy);margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--yel);display:flex;align-items:center;gap:8px}
+.bbdiv{border:none;border-top:2px solid var(--yel);margin:14px 0}
+.tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:.6rem;font-weight:bold;letter-spacing:.05em;text-transform:uppercase}
+.tgn{background:var(--navy);color:var(--yel)}.tgy{background:var(--yel);color:var(--navy)}.tgg{background:var(--gray);color:var(--mu)}
+.empty{text-align:center;padding:36px 20px;color:var(--mu)}
+.empty .ei{font-size:2rem;margin-bottom:9px}
+.empty h3{font-family:var(--ft);color:var(--navy);margin-bottom:5px}
+.vtog{display:flex;border:1.5px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.vtog button{padding:3px 9px;font-size:.64rem;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;border:none;cursor:pointer;background:#fff;color:var(--mu);transition:all .15s}
+.vtog button.active{background:var(--navy);color:var(--yel)}
+
+.doc-section{margin-bottom:8px}.tgr{background:#C0392B;color:#fff}</style>
+</head>
+<body>
+<div id="loading">
+  <div class="ldl"><svg viewBox="0 0 26 26" fill="none" width="22" height="22"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/></svg></div>
+  <div class="ldt">Blockbuster Deals</div>
+  <div class="lds">Reinsurance Projection Model</div>
+  <div class="ldbw"><div class="ldb" id="ldb" style="width:0%"></div></div>
+  <div class="ldm" id="ldm">Initializing...</div>
+</div>
+<header id="hdr">
+  <div class="logo"><svg viewBox="0 0 26 26" fill="none" width="22" height="22"><rect x="2" y="6" width="22" height="16" rx="2" fill="#1C2B6B"/><circle cx="8" cy="14" r="3.5" fill="#FFD700"/><circle cx="18" cy="14" r="3.5" fill="#FFD700"/></svg></div>
+  <div class="at">Blockbuster Deals<span>Reinsurance Projection Model</span></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+    <span id="pyst">Loading...</span>
+    <button class="btn btn-y btn-sm" onclick="runModel()" id="runbtn" disabled>Run</button>
+  </div>
+</header>
+<nav id="nav">
+  <div class="nt active" onclick="showTab('upload')" id="tab-upload">Upload</div>
+  <div class="nt" onclick="showTab('assumptions')" id="tab-assumptions">Assumptions</div>
+  <div class="nt" onclick="showTab('results')" id="tab-results">Results</div>
+  <div class="nt" onclick="showTab('scenarios')" id="tab-scenarios">Scenarios <span class="nbadge" id="sccount">0</span></div>
+  <div class="nt" onclick="showTab('audit')" id="tab-audit">Audit</div>
+  <div class="nt" onclick="showTab('review')" id="tab-review">Review</div><div class="nt" onclick="showTab('docs')" id="tab-docs">Docs</div>
+</nav>
+<main id="main">
+<!-- UPLOAD -->
+<div class="panel active" id="panel-upload">
+  <div class="stitle">Data Upload</div>
+  <div class="g3" style="margin-bottom:14px;">
+    <div class="card"><div class="ch">EV Projection Data<span class="cbadge">REQUIRED</span></div><div class="cb">
+      <div class="upzone" id="dz-ev"><input type="file" id="fi-ev" accept=".xlsx,.xls,.csv" onchange="handleUpload(event,'ev')"><h3>EV_Data.xlsx</h3><p>Sheet with VarName header</p></div>
+      <div id="st-ev" class="upstat" style="display:none"></div> <button class="btn btn-o btn-sm" style="margin-left:6px" onclick="downloadEVTemplate()">CSV Template</button></div></div>
+    <div class="card"><div class="ch">RBC / Surplus<span class="cbadge">DEFAULT LOADED</span></div><div class="cb">
+      <div class="upzone" id="dz-rbc"><input type="file" id="fi-rbc" accept=".xlsx,.xls,.csv" onchange="handleUpload(event,'rbc')"><h3>RBC.xlsx</h3><p>RBC charges and surplus</p></div>
+      <div id="st-rbc" class="upstat ok">Default loaded</div> <button class="btn btn-o btn-sm" style="margin-left:4px" onclick="downloadRBCTemplate('csv')">CSV Template</button></div></div>
+    <div class="card"><div class="ch">Balance Plan<span class="cbadge">DEFAULT LOADED</span></div><div class="cb">
+      <div class="upzone" id="dz-bp"><input type="file" id="fi-bp" accept=".xlsx,.xls,.csv" onchange="handleUpload(event,'bp')"><h3>balanceplan.xlsx</h3><p>Annual plan figures</p></div>
+      <div id="st-bp" class="upstat ok">Default loaded</div> <button class="btn btn-o btn-sm" style="margin-left:4px" onclick="downloadBPTemplate('csv')">CSV Template</button></div></div>
+  </div>
+  <div class="card"><div class="ch">Model Execution</div><div class="cb">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-p" onclick="runModel()" id="runbtn2" disabled style="font-size:.8rem;padding:8px 18px;">Run Model</button>
+      <span id="runstat" style="font-size:.68rem;color:var(--mu);font-family:var(--fm)"></span>
+    </div>
+    <div id="runprog" style="display:none;margin-top:10px;"><div class="ldbw" style="width:100%;height:5px;"><div class="ldb" id="runbar" style="width:0%"></div></div><div id="runmsg" style="font-size:.65rem;color:var(--mu);margin-top:3px;"></div></div>
+  </div></div>
+</div>
+<!-- ASSUMPTIONS -->
+<div class="panel" id="panel-assumptions">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <div class="stitle" style="margin:0;">Assumptions</div>
+    <button class="btn btn-y btn-sm" onclick="runModel()">Re-Run</button>
+    <button class="btn btn-o btn-sm" onclick="resetAssumptions()">Reset</button>
+  </div>
+  <div style="font-size:.72rem;color:var(--mu);margin-bottom:10px;max-width:800px">Grouped into <b>Treaty Structure</b> (the levers you negotiate), <b>Experience</b> (claims/lapse/sales stresses) and <b>Economic</b> (discounting &amp; capital) assumptions. The one-year cession lag is preserved &mdash; policy year 1 is reinsured the following calendar year.</div>
+
+  <div class="card"><div class="ch">Treaty Structure<span class="cbadge">DEAL LEVERS</span></div><div class="cb">
+    <div class="fl" style="margin-bottom:6px">Reinsurance % &mdash; Issue Year &times; Calendar Year <span style="font-size:.62rem;color:var(--mu)">(10 = 10%; blank = 0%; lower triangle = pre-issue)</span></div>
+    <div style="overflow-x:auto;"><table class="mtx" id="reins-mtx"><thead id="reins-hd"></thead><tbody id="reins-bd"></tbody></table></div>
+    <div style="display:flex;gap:7px;margin-top:8px;">
+      <button class="btn btn-o btn-sm" onclick="addReinsRow()">+ Issue Year</button>
+      <button class="btn btn-o btn-sm" onclick="addReinsCol()">+ Calendar Year</button>
+    </div>
+    <hr class="bbdiv">
+    <div class="fl" style="margin-bottom:6px">Upfront (Front-End) Ceding Commission <span style="font-size:.62rem;color:var(--mu)">(by calendar year, $M)</span></div>
+    <table class="mtx" style="width:auto"><thead><tr><th>Year</th><th>Amount ($M)</th><th></th></tr></thead><tbody id="ccfront-tbody"></tbody></table>
+    <button class="btn btn-o btn-sm" style="margin-top:6px;" onclick="addCCFrontRow()">+ Add Year</button>
+    <hr class="bbdiv">
+    <label class="fl">Ongoing Ceding Commission (sliding scale by loss ratio)</label>
+    <div style="font-size:.71rem;color:var(--mu);margin-bottom:4px">$/policy/year stepped by LR = cumulative claims/premium for that issue year through Dec of its first cede year. Higher LR pays less &mdash; a reinsurer-protective profit commission.</div>
+    <table id="cco-table" style="border-collapse:collapse;font-size:.72rem;width:100%;max-width:420px">
+      <thead><tr>
+        <th style="padding:3px 8px;background:var(--off);text-align:left">Min LR</th>
+        <th style="padding:3px 8px;background:var(--off);text-align:left">Max LR</th>
+        <th style="padding:3px 8px;background:var(--off);text-align:left">$/pol/yr</th>
+        <th style="padding:3px 4px;background:var(--off)"></th>
+      </tr></thead>
+      <tbody id="cco-tbody"></tbody>
+    </table>
+    <button onclick="ccoAddRow()" style="margin-top:4px;font-size:.69rem;padding:2px 8px;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:var(--wh)">+ Add Row</button>
+  </div></div>
+
+  <div class="g2">
+    <div class="card"><div class="ch">Experience Assumptions<span class="cbadge">STRESS</span></div><div class="cb">
+      <div class="g2">
+        <div class="fg"><label class="fl">Claim Scalar</label><input class="fi" type="number" id="a-clm" value="1.0" step="0.01" min="0.1" max="5" title="Default 1.0. Scales IncClaims and ReinsClaims."></div>
+        <div class="fg"><label class="fl">Lapse Scalar</label><input class="fi" type="number" id="a-lps" value="1.0" step="0.01" min="0.1" max="5" title="Default 1.0. Scales lapse rates."></div>
+      </div>
+      <div class="fg" style="margin-top:6px">
+        <label class="fl" style="margin-bottom:4px">Sales Scalar by Issue Year <span style="font-size:.65rem;color:var(--mu)">(1.0=base, 1.1=+10% for that IssYr)</span></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="text-align:center"><div style="font-size:.65rem;color:var(--mu);margin-bottom:2px">2026</div><input type="number" id="a-ss-2026" value="1.0" step="0.01" min="0.1" max="10" style="width:58px;text-align:center" class="fi" title="Sales scalar for IssYr 2026"></div><div style="text-align:center"><div style="font-size:.65rem;color:var(--mu);margin-bottom:2px">2027</div><input type="number" id="a-ss-2027" value="1.0" step="0.01" min="0.1" max="10" style="width:58px;text-align:center" class="fi" title="Sales scalar for IssYr 2027"></div><div style="text-align:center"><div style="font-size:.65rem;color:var(--mu);margin-bottom:2px">2028</div><input type="number" id="a-ss-2028" value="1.0" step="0.01" min="0.1" max="10" style="width:58px;text-align:center" class="fi" title="Sales scalar for IssYr 2028"></div><div style="text-align:center"><div style="font-size:.65rem;color:var(--mu);margin-bottom:2px">2029</div><input type="number" id="a-ss-2029" value="1.0" step="0.01" min="0.1" max="10" style="width:58px;text-align:center" class="fi" title="Sales scalar for IssYr 2029"></div><div style="text-align:center"><div style="font-size:.65rem;color:var(--mu);margin-bottom:2px">2030</div><input type="number" id="a-ss-2030" value="1.0" step="0.01" min="0.1" max="10" style="width:58px;text-align:center" class="fi" title="Sales scalar for IssYr 2030"></div>
+      </div>
+    </div></div>
+    <div class="card"><div class="ch">Economic Assumptions</div><div class="cb">
+      <div class="g2">
+        <div class="fg"><label class="fl">Discount Rate (PVDE)</label><input class="fi" type="number" id="a-disc" step="0.001" value="0.08"></div>
+        <div class="fg"><label class="fl">Cost of Capital</label><input class="fi" type="number" id="a-coc" step="0.005" value="0.10" title="Values RBC capital relief: freed required capital x cost of capital, discounted. Drives Net Deal Value."></div>
+        <div class="fg"><label class="fl">Premium Tax Rate</label><input class="fi" type="number" id="a-ptax" step="0.001" value="0.021"></div>
+        <div class="fg"><label class="fl">Base Calendar Year</label><input class="fi" type="number" id="a-base" step="1" value="2025"></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="card"><div class="ch">Annual Assumptions<span class="cbadge">NIER / EXPENSES</span></div><div class="cb" style="overflow-x:auto;">
+    <p style="font-size:.65rem;color:var(--mu);margin-bottom:5px">Tip: Copy from Excel and paste into any cell.</p><table class="mtx" id="ann-tbl" onpaste="handleAnnPaste(event)"><thead id="ann-hd"></thead><tbody id="ann-bd"></tbody></table>
+  </div></div>
+</div>
+<!-- RESULTS -->
+<div class="panel" id="panel-results">
+  <div id="res-empty" class="empty"><div class="ei">&#x1F3AC;</div><h3>No Results Yet</h3><p>Upload EV data and run the model.</p></div>
+  <div id="res-content" style="display:none">
+    <div class="g4" id="metric-tiles" style="margin-bottom:14px;"></div>
+    <div class="stabs" id="main-stabs">
+      <div class="stab active" onclick="showSub('predeal')">Predeal</div>
+      <div class="stab" onclick="showSub('ceded')">Ceded</div>
+      <div class="stab" onclick="showSub('net')">Net</div>
+      <div class="stab" onclick="showSub('ev')">EV Data</div>
+      <div class="stab" onclick="showSub('evc')">EV Ceded</div>
+      <div class="stab" onclick="showSub('balance')">Balance Plan</div>
+      <div class="stab" onclick="showSub('rbc')">RBC &amp; Surplus</div>
+      <div class="stab" onclick="showSub('issyr')">Issue Yr Diag</div><div class="stab" onclick="showSub('summary')">Deal Summary</div><div class="stab" onclick="showSub('testlog')">Test Log</div>
+      <div class="stab" onclick="showSub('frontier')">Deal Frontier</div>
+      <div class="stab" onclick="showSub('stress')">Stress Test</div>
+      <div class="stab" onclick="showSub('matrix')">Scenario Matrix</div>
+    </div>
+    <div id="sp-predeal"><div class="tb"><div class="vtog"><button class="active" onclick="setView('predeal','annual',this)">Annual</button><button onclick="setView('predeal','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('predeal')">CSV</button></div><div class="tw" id="tw-predeal"><table class="bbt" id="tbl-predeal"></table></div></div>
+    <div id="sp-ceded" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('ceded','annual',this)">Annual</button><button onclick="setView('ceded','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('ceded')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-ceded"></table></div></div>
+    <div id="sp-net" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="setView('net','annual',this)">Annual</button><button onclick="setView('net','monthly',this)">Monthly</button></div><button class="btn btn-o btn-sm" onclick="exportCSV('net')">CSV</button></div><div class="tw"><table class="bbt" id="tbl-net"></table></div></div>
+    <div id="sp-ev" style="display:none">
+      <div class="tb">
+        <div class="fg" style="margin:0"><label class="fl">VarName</label><select class="fi" id="ev-vn" onchange="renderEV('d')" style="width:auto;min-width:140px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="ev-iy" onchange="renderEV('d')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Product</label><select class="fi" id="ev-pr" onchange="renderEV('d')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">NewBus</label><select class="fi" id="ev-nb" onchange="renderEV('d')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">IssMon</label><select class="fi" id="ev-im" onchange="renderEV('d')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
+      </div>
+      <div class="tw"><table class="bbt" id="tbl-ev"></table></div>
+    </div>
+    <div id="sp-evc" style="display:none">
+      <div class="tb">
+        <div class="fg" style="margin:0"><label class="fl">VarName</label><select class="fi" id="evc-vn" onchange="renderEV('c')" style="width:auto;min-width:140px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="evc-iy" onchange="renderEV('c')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Product</label><select class="fi" id="evc-pr" onchange="renderEV('c')" style="width:auto;min-width:100px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">NewBus</label><select class="fi" id="evc-nb" onchange="renderEV('c')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">IssMon</label><select class="fi" id="evc-im" onchange="renderEV('c')" style="width:auto;min-width:80px"><option value="">All</option></select></div>
+      </div>
+      <div class="tw"><table class="bbt" id="tbl-evc"></table></div>
+    </div>
+    <div id="sp-balance" style="display:none"><div class="tw"><table class="bbt" id="tbl-balance"></table></div></div>
+    <div id="sp-rbc" style="display:none"><div class="tb"><div class="vtog"><button class="active" onclick="showRBCTab('orig',this)">Original</button><button onclick="showRBCTab('predeal',this)">Predeal</button><button onclick="showRBCTab('net',this)">Net</button><button onclick="showRBCTab('lift',this)">Lift</button></div></div><div id="rbc-orig-content"></div><div id="rbc-predeal-content" style="display:none"></div><div id="rbc-net-content" style="display:none"></div><div id="rbc-lift-content" style="display:none"></div></div>
+    <div id="sp-summary" style="display:none"><div id="summary-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run the model first</h3></div></div></div>
+    <div id="sp-stress" style="display:none"><div id="stress-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Click to open Stress Test</h3></div></div></div>
+    <div id="sp-frontier" style="display:none"><div id="frontier-content"></div></div>
+    <div id="sp-matrix" style="display:none"><div style="padding:8px">
+      <div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:4px">Cedant Scenario Matrix</div>
+      <div style="font-size:.7rem;color:var(--mu);margin-bottom:8px;max-width:780px">Full combinatoric sweep over upfront ceding commission (2026/27/28), ongoing LR-commission split, and reins% by cohort (2019&amp;prior / 2021-24 incl. 2020 / 2025 / 2026+), each scored under 4 claims&times;lapse environments. Ranked by <b>Net Deal Value = capital-relief value &minus; reinsurer PVDE</b> (capital-relief leg needs RBC/surplus data; without it, scenarios rank on reinsurer PVDE handed over plus downside protection).</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <button class="btn btn-y btn-sm" id="mtx-run-full" onclick="runScenarioMatrix(false)">&#9654; Run Full Sweep</button>
+        <button class="btn btn-o btn-sm" id="mtx-run-quick" onclick="runScenarioMatrix(true)">Quick Subset</button>
+        <button class="btn btn-o btn-sm" onclick="exportMatrixCSV()">Export CSV</button>
+        <span id="mtx-status" style="font-size:.68rem;color:var(--mu);font-family:var(--fm)"></span>
+      </div>
+      <div id="mtx-prog" style="display:none;margin-bottom:8px"><div class="ldbw" style="width:100%;height:5px"><div class="ldb" id="mtx-bar" style="width:0%"></div></div></div>
+      <div id="matrix-content"><div class="empty"><div class="ei">&#x25B6;</div><h3>Run a sweep to rank structures for the cedant</h3></div></div>
+    </div></div>
+    <div id="sp-testlog" style="display:none"><div style="padding:8px"><div style="font-size:.82rem;font-weight:bold;color:var(--navy);margin-bottom:8px">Test Log</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button id="run-tests-btn" class="btn" onclick="runAllTests()">&#9654; Run Tests</button><div style="flex:1;min-width:220px"><div id="test-cases-list" style="margin-bottom:5px"></div><div style="display:flex;gap:5px"><input id="nl-test-input" type="text" placeholder="e.g. claim scalar 1.1 increases claims 10%" style="flex:1;padding:4px 7px;border:1px solid var(--bdr);border-radius:var(--r);font-size:.71rem;background:var(--wh);color:var(--dk)"><button class="btn btn-o btn-sm" onclick="addNLTestCase()">Add</button></div></div></div><div id="test-log-output"></div></div></div>
+    <div id="sp-issyr" style="display:none">
+      <div class="card"><div class="ch">Issue Year Diagnostic</div><div class="cb">
+        <p style="font-size:.7rem;color:var(--mu);margin-bottom:10px;">Predeal and Ceded dollar amounts, with ratio validation against the Reins% matrix.</p>
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+          <div class="fg" style="margin:0"><label class="fl">Issue Year</label><select class="fi" id="iy-select" onchange="renderIYDiag()" style="width:auto;min-width:110px"><option value="">select</option></select></div>
+        </div>
+        <div id="iy-diag-content"></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+<!-- SCENARIOS -->
+<div class="panel" id="panel-scenarios">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <div class="stitle" style="margin:0;">Scenarios</div>
+    <button class="btn btn-y btn-sm" onclick="saveScenario()">Save Run</button>
+    <button class="btn btn-o btn-sm" onclick="clearScenarios()">Clear All</button>
+  </div>
+  <div id="sc-list"></div>
+  <div id="sc-compare" style="margin-top:16px"></div>
+</div>
+<!-- AUDIT -->
+<div class="panel" id="panel-audit">
+  <div class="stitle">Audit Log</div>
+  <div id="al-list"></div>
+</div>
+<!-- REVIEW -->
+<div class="panel" id="panel-review">
+  <div class="stitle">Peer Review</div>
+  <div id="rev-content" style="display:none">
+    <div class="g2">
+      <div>
+        <div class="rck"><div class="rckh">1 - Data Integrity</div>
+          <div class="rckr"><input type="checkbox" id="rc1"><div class="rckl"><strong>EV file parsed</strong><span>Columns and row count</span></div><div class="rckev" id="re1">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc2"><div class="rckl"><strong>Issue years span expected range</strong></div><div class="rckev" id="re2">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc3"><div class="rckl"><strong>Projection periods complete</strong></div><div class="rckev" id="re3">-</div></div>
+        </div>
+        <div class="rck"><div class="rckh">2 - Reinsurance Structure</div>
+          <div class="rckr"><input type="checkbox" id="rc4"><div class="rckl"><strong>Reins% matrix populated</strong></div><div class="rckev" id="re4">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc5"><div class="rckl"><strong>Issue year diagnostic passes</strong></div><div class="rckev" id="re5">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc6"><div class="rckl"><strong>Ceding commissions reviewed</strong></div><div class="rckev" id="re6">-</div></div>
+        </div>
+        <div class="rck"><div class="rckh">3 - Income Statement</div>
+          <div class="rckr"><input type="checkbox" id="rc7"><div class="rckl"><strong>Loss ratio reasonable</strong></div><div class="rckev" id="re7">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc8"><div class="rckl"><strong>Net EV vs Predeal EV</strong></div><div class="rckev" id="re8">-</div></div>
+          <div class="rckr"><input type="checkbox" id="rc9"><div class="rckl"><strong>Balance plan reconciliation</strong></div><div class="rckev" id="re9">-</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card"><div class="ch">Run Summary</div><div class="cb" id="rev-summary" style="font-size:.72rem;line-height:1.7;"></div></div>
+        <div class="card"><div class="ch">Sign-Off</div><div class="cb">
+          <div class="fg"><label class="fl">Reviewer</label><input class="fi" id="rev-name" placeholder="Name, FSA MAAA"></div>
+          <div class="fg"><label class="fl">Date</label><input class="fi" id="rev-date" type="date"></div>
+          <div class="fg"><label class="fl">Comments</label><textarea class="fi" id="rev-comment" rows="3"></textarea></div>
+          <div style="display:flex;gap:7px"><button class="btn btn-y" onclick="signOff('approved')">Approve</button><button class="btn btn-o" onclick="signOff('review')">Under Review</button></div>
+          <div id="rev-progress" style="margin-top:8px;font-size:.7rem;color:var(--mu);"></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel-docs"><div class="stitle">Actuarial Documentation</div><div class="card"><div class="ch">Model Documentation v7</div><div class="cb"><div id="docs-content"></div></div></div></div>
+</main>
+<footer style="background:var(--navy);color:rgba(255,215,0,.4);font-size:.6rem;text-align:center;padding:7px;border-top:2px solid var(--yel);font-family:var(--fm);">BLOCKBUSTER DEALS: REINSURANCE - All data processed locally</footer>
+<script src="app.js"></script>
+</body>
+</html>

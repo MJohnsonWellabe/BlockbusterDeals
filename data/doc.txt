@@ -1,0 +1,232 @@
+BLOCKBUSTER DEALS — REINSURANCE PROJECTION MODEL
+
+OVERVIEW
+This model projects the financial impact of a Medicare Supplement quota-share
+reinsurance treaty across two views: Predeal (before the treaty) and Net
+(after the treaty), with the difference shown as Ceded.
+
+It produces income statements, embedded value (EV/PVDE), IRR, balance plan
+comparisons, and a full RBC & Surplus rebuild for the Original, Predeal, and
+Net views, plus a Lift table comparing post-cov RBC ratios across views.
+
+---
+
+1. INPUTS
+
+1.1 EV Projection Data (default: built-in slimmed EV, 30-year monthly)
+Default is an embedded EV file (DEFAULT_EV_CSV): collapsed across product and
+new-business, keyed by issue year only, preserving aggregate premium/claims
+totals. 30-year monthly projection (Value000=Dec base year through Value360=Dec
+yr30). Issue-year buckets: <=2019 (back book) and 2020-2030; the "<=2019" label
+is read as issue year 2019.
+Required columns: VarName, ck.IssYear, and Value000..Value360 (ck.IssMon,
+ck.NewBus, Product optional, ignored when absent).
+Key variables aggregated: EarnedPrem, ReinsPrem, IncClaims, ReinsClaims,
+TabRes, CededALRstat, CLRes, TS, Comm, PremTax, LivesIssued, AEGAdminPolCount.
+Note: the slimmed file supplies LivesInForce1 as the maintenance/admin policy
+count basis; it is mapped to AEGAdminPolCount on load. Upload a file to override.
+
+1.2 RBC & Surplus Data (default: built-in DEFAULT_SURPLUS_ROWS, full precision
+from SurplusRecalc.xlsx; user can upload XLSX or CSV via the RBC_Original_template).
+Required structure: Original section with Med Sup income (Premium/Claims/Income)
+and Med Sup TSC charges (TSC0/TSC1/TSLR016/TSC1CS/TSC2/TSC3/TSC4a/TSC4b),
+followed by an "All product" section with the same TSC labels, then Post Cov,
+Conservatism factor, Adding 1%/3%, Total (Post Cov), and Surplus rows
+(Total Surplus, In LOBs, Portion non-ins cos, AVR, TAC).
+Parser stops at "Predeal" or "Net" headers so only the Original section is read.
+
+1.3 Balance Plan (balanceplan.xlsx)
+Annual income statement plan figures (2026-2035) in $M for variance reporting.
+
+---
+
+2. ASSUMPTIONS
+
+  Annual (calendar year, 2026-2035 with rollover beyond):
+    NIER (Net Investment Earned Rate, calibrated to plan NII targets)
+    Acquisition expense ($M/year, total direct)
+    Maintenance expense ($M/year, total direct)
+    Acquisition expense allowance to reinsurer ($M/year)
+    Maintenance expense allowance to reinsurer ($M/year)
+
+  Treaty:
+    Reinsurance % per Issue Year × Calendar Year (default 10% for IssYrs
+      2019-2030, CalYrs 2026-2031)
+    Ceding commission front-end (one-time, $): default $10M 2026,
+      $5M 2027, $5M 2028
+    Ceding commission ongoing: $200/policy/year
+
+  Scalars:
+    Claim scalar, Lapse scalar (global multipliers, default 1.0)
+    Sales scalar by IssYear (2026-2030)
+    Discount rate (default 8%)
+
+---
+
+3. CALENDAR YEAR MAPPING
+  cy(by, p) = by + 1 + ((p-1) // 12)  for p > 0
+  cy(by, 0) = by
+  Value000 = December of base year (typically 2025)
+  Value001 = January of base year + 1 (typically Jan 2026)
+  Value012 = December of base year + 1, etc.
+
+---
+
+4. INCOME STATEMENT (PREDEAL)
+
+  Premium       = sum(EarnedPrem - ReinsPrem)            [period]
+  NII           = ((1 + NIER[CY])^(1/12) - 1) × Total_Assets[BOP]
+                  Total_Assets = TabRes + CededALRstat + CLRes + TS
+  Total Revenue = Premium + NII
+  Claims        = -(IncClaims - ReinsClaims)
+  ΔReserves     = -Δ(TabRes + CededALRstat)               (both kept positive)
+  Total Benefits= Claims + ΔReserves
+  Selling Exp   = Comm + PremTax + monthly Acq Exp share
+  Op Exp        = monthly Maint Exp share + ongoing ceding commission
+  Pretax Income = Total Revenue - Total Benefits - Selling - Op
+  Distributable Earnings (annual)
+                = Annual_PTI × 0.79 - (Year-End TS - Prior Year-End TS)
+
+  IY Diagnostic Fix (year 1 only): for Benefits and PTI in cy == by+1, the
+  beginning-of-period stock from period 0 (TabRes[0] + CededALRstat[0]) is
+  removed from the change-in-reserves so the first projection month doesn't
+  double-count opening reserves.
+
+---
+
+5. CEDED & NET
+  Ceded line items are computed by applying the per-IssueYear × per-CalYear
+  reinsurance % to the underlying EV variables, then aggregated identically to
+  predeal. Net = Predeal - Ceded for every line.
+
+---
+
+6. RBC & SURPLUS (Original / Predeal / Net)
+
+All three tabs follow the same six-section layout:
+
+  1) Med Sup Income     — Premium, Claims, Pre-Tax Income
+  2) Med Sup RBC Charges— TSC0, TSC1, TSLR016, TSC1CS, TSC2, TSC3, TSC4a, TSC4b
+  3) All Product RBC Charges — same eight TSC labels (using All-product values)
+                          plus Total (Pre Covariance) subtotal
+  4) Post-Covariance    — Post Covariance, Adding 1% conservatism,
+                          Adding 3% loss of covariance, Total (Post Covariance)
+  5) Surplus & Capital  — (Predeal/Net only: Diff in MS income (Cumul.))
+                          Total Surplus, In LOBs, Portion non-ins cos, AVR
+                          (constant across years), TAC (C&S + AVR)
+  6) RBC Ratios         — pre-cov, w/ margin, w/o margin
+
+  Original tab values are computed formulaically from the uploaded data:
+    pre_cov          = sum of all 8 All-product TSC values
+    post_cov         = NAIC Health RBC covariance formula on the All-product TSCs:
+                       = TSC0 + TSC4a +
+                         sqrt((TSC1+TSLR016+TSC3)^2 + TSC1CS^2 + TSC2^2 + TSC4b^2)
+    add_1pct         = post_cov × Conservatism factor (input by year)
+    add_3pct         = post_cov × 3%
+                       (Both additions are 0 in base year per workbook convention.)
+    total_post_cov   = post_cov + add_1pct + add_3pct
+    TAC              = Total Surplus - Portion non-ins cos + AVR
+    ratio_pre_cov    = TAC / pre_cov
+    ratio_w_margin   = TAC / total_post_cov
+    ratio_wo_margin  = TAC / (post_cov + add_3pct)
+
+  Predeal tab applies the predeal income statement to update the original RBC:
+    prem_ratio       = predeal_premium / original_MS_premium
+    claim_ratio      = predeal_claims / original_MS_claims
+    Updated MS TSCs:
+      premium-related (TSC0, TSC1, TSLR016, TSC1CS, TSC3, TSC4a, TSC4b):
+                     = original_MS × prem_ratio
+      claim-related (TSC2):
+                     = original_MS × claim_ratio
+    Updated All-product TSCs:
+                     = original_All + (updated_MS - original_MS)  per TSC
+                       (i.e., the change in MS is added to the All-product baseline)
+    pre_cov, post_cov, add_1pct, add_3pct, total_post_cov, TAC, ratios:
+                     SAME formulas as Original, applied to the UPDATED All-product TSCs.
+    Diff in MS Income (Cumul.):
+                     = sum over years of (predeal_PTI - original_PTI) × 79%
+    Updated Total Surplus = original surplus + cumulative MS income lift
+    AVR is held constant.
+
+  Net tab applies the net (post-deal) income statement to update the predeal RBC:
+    Same logic as Predeal, but starting from PREDEAL TSCs and using the NET
+    income statement's premium/claims as the basis for the ratios. TSC4a and
+    TSC4b remain at predeal values (deal does not change those underlying drivers).
+    Cumulative income lift compounds vs. the predeal baseline.
+
+  Lift Table: 2026-2035 columns × four rows showing the post-cov w/margin
+  RBC ratio for Original, Predeal, Net (Post-Deal), and the Lift (Net - Original).
+
+---
+
+7. BALANCE PLAN COMPARISON
+Compares model annual figures vs. plan figures from balanceplan.xlsx for the
+key income statement lines.
+
+---
+
+8. SCENARIO COMPARISON
+Save any model run as a scenario. Select two scenarios to compare side by side:
+6 metric tiles per scenario (Predeal/Net EV, IRRs, Ceded EV, Strain Relief),
+plus 5-year income statement tables for Predeal/Ceded/Net with an inline
+RBC Ratio (w/Margin) row pulled from the saved formulaic RBC results.
+
+---
+
+9. TEST LOG
+Default tests verify scaling, expense, ceding direction, discount rate, and
+sales scalar behavior. Custom natural-language tests can be added.
+
+---
+
+10. FILE I/O
+- EV upload supports XLSX (via SheetJS) and CSV (native parser)
+- RBC upload auto-detects XLSX (PK signature) vs CSV (Python csv module).
+  CSV comments starting with // are skipped.
+- Templates available for download: EV_Data_template.csv,
+  RBC_Original_template.csv, BalancePlan_template.csv
+- Outputs: per-tab CSV export available from the Results views.
+
+---
+
+DEFAULTS / PRECISION
+The built-in DEFAULT_SURPLUS_ROWS are loaded directly from SurplusRecalc.xlsx
+at full double precision (e.g., MS TSC1 2026 = 1.7003958324999997, not 1.700).
+The engine carries Python double precision end-to-end with no intermediate
+rounding; only display formatting truncates (4 decimals for $M values,
+2 decimals for ratios). All Original tab values match the source workbook
+exactly to ~15 significant digits.
+
+11. CEDANT ECONOMICS & NET DEAL VALUE
+Each run reports cedant decision analytics (Deal Summary "Cedant Economics"
+card; all $M):
+  Net Deal Value = capital-relief value - reinsurer PVDE. Positive = the deal
+    adds value (capital freed outweighs profit ceded).
+  Capital-relief value = required capital freed (predeal minus net total
+    post-covariance RBC) x Cost of Capital (new assumption, default 10%),
+    discounted at the PVDE rate. Uses the built-in RBC/surplus data.
+  Reinsurer PVDE = PV of ceded distributable earnings net of ceding commissions
+    = profit handed to the reinsurer. The model is zero-sum:
+    predeal PVDE = net PVDE + reinsurer PVDE.
+  Cedant recovery % = after-tax PV of commissions / ceded gross value.
+  Back-book (IssYr<=2025) vs new-issue (IssYr>=2026) IRR/PVDE, predeal and net,
+    to show whether healthy-margin business is being ceded.
+
+12. SCENARIO MATRIX
+Results > Scenario Matrix runs a combinatoric cedant sweep: upfront ceding
+commission (2026/27/28), ongoing LR-commission split, and reins% by cohort
+(2019&prior / 2021-24 incl. 2020 / 2025 / 2026+), each scored under four
+claims x lapse environments (base, claims +2.5%, lapse +10%, combined). The
+full grid is 3^8 = 6,561 structures x 4 = 26,244 runs (use Quick Subset for a
+fast preview). Structures are ranked by Net Deal Value, with best/worst tables,
+a value-driver sensitivity table, a downside-protection metric (3-yr earnings
+deterioration absorbed by the reinsurer under combined stress), and CSV export.
+The one-year cession lag (policy year 1 reinsured the following calendar year)
+is preserved throughout.
+
+13. ACCESS
+The page is gated by a client-side password prompt (SHA-256 hash check stored
+in sessionStorage). This is obfuscation only: the static source and embedded
+data remain reachable to a determined visitor. To change the password, recompute
+its SHA-256 and replace the EXPECTED hash in the gate script near the top of the
+page body.

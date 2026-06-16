@@ -1,35 +1,55 @@
 # Blockbuster Deals: Reinsurance
 
-A fully browser-based actuarial projection model for reinsurance deal analysis.
+A browser-based actuarial projection model for Medicare Supplement quota-share
+reinsurance deal analysis, from the ceding company's perspective. Computation
+runs in-browser via Pyodide (Python/WASM); no server or build step is required.
 
-## Deployment (GitHub Pages)
+## Structure (decomposed)
 
-1. Push `index.html` to your GitHub repository's `main` or `gh-pages` branch
-2. Enable GitHub Pages in repository Settings → Pages
-3. The app loads at `https://yourusername.github.io/your-repo/`
+```
+index.html            Password landing page (gate) -> forwards to viewer/
+viewer/index.html     App shell: markup, libraries, auth guard, loads app.js
+viewer/app.js         UI / rendering / interaction layer
+src/engine.py         Actuarial engine (income statements, EV/PVDE/IRR, RBC,
+                      cedant analytics, scenario matrix)
+data/                 Default inputs fetched at startup:
+  EV_Data_Final.csv     30-year monthly EV projection (issue-year only, slim)
+  surplus.json          RBC / surplus rows
+  balanceplan.xlsx      Balance plan
+  ann_assum.json        NIER / expense assumptions
+  doc.txt               In-app documentation text
+```
 
-**No server required.** All computation runs in-browser via Pyodide (Python WASM).
+`viewer/app.js` fetches `../src/engine.py` and `../data/*` on load, so the app
+must be served over **http(s)** (a `file://` open is blocked by fetch). The
+engine and viewer share one source of compute truth: `src/engine.py`.
 
-## Usage
+## Access
 
-1. **Upload** your EV tab Excel file (required). Assumptions are auto-extracted.
-2. **Assumptions** — review and edit the Reins % matrix, NIER, expenses, discount rate, etc.
-3. **Run Model** — computes Predeal, Ceded (EV × Reins%), and Net views
-4. **Results** — view Annual/Monthly income statements, summary metrics (EV, IRR, PVDE), and charts
-5. **Scenarios** — save runs for comparison, reload assumptions from prior runs
-6. **Audit & Review** — peer reviewer signs off with name and comment; immutable run log
+Client-side password gate (SHA-256 hash in `sessionStorage`) — obfuscation
+only on a static site. To change the password, recompute its SHA-256 and
+replace `EXPECTED` in `index.html` and the guard in `viewer/index.html`.
 
-## Calculation Logic
+## Run locally (no Node/Python needed)
 
-| Metric | Formula |
-|--------|---------|
-| NII | avg(TotalReserve_t, TotalReserve_{t-1}) × NIER[CalendarYear] / 12 |
-| EV_Ceded | EV × Reins%[IssueYear][CalendarYear] (lower-triangle aware) |
-| Net view | Predeal − Ceded + Ceding Comms |
-| DE | Pretax Income (surplus adjustment applied on monthly view) |
-| PVDE (EV) | Σ DE_t / (1 + disc/12)^t |
-| IRR | Monthly IRR of DE series, annualized |
+Serve the repo root over http and open `index.html`. On Windows with no
+toolchain, the built-in PowerShell HttpListener works from the repo root:
 
-## First-Load Time
+```bat
+powershell -NoProfile -Command "$root=(Get-Location).Path; $l=[System.Net.HttpListener]::new(); $l.Prefixes.Add('http://localhost:8000/'); $l.Start(); Write-Host 'http://localhost:8000/'; while($l.IsListening){ $c=$l.GetContext(); $p=$c.Request.Url.LocalPath.TrimStart('/'); if([string]::IsNullOrEmpty($p)){$p='index.html'}; $f=Join-Path $root $p; if(Test-Path $f -PathType Leaf){ $b=[System.IO.File]::ReadAllBytes($f); $ext=[System.IO.Path]::GetExtension($f).ToLower(); $m=@{'.html'='text/html';'.js'='text/javascript';'.json'='application/json';'.csv'='text/csv';'.css'='text/css';'.xlsx'='application/octet-stream'}; $ct=$m[$ext]; if(-not $ct){$ct='application/octet-stream'}; $c.Response.ContentType=$ct; $c.Response.OutputStream.Write($b,0,$b.Length) } else { $c.Response.StatusCode=404 }; $c.Response.Close() }"
+```
 
-~15–20 seconds on first load (Pyodide + openpyxl download). Subsequent loads are faster with browser cache.
+Then open `http://localhost:8000/` and enter the password.
+
+## Deploy (GitHub Pages)
+
+Serve the repository root. Pages loads `index.html` (the gate), which forwards
+to `viewer/index.html` after authentication.
+
+## Key analytics
+
+- Predeal / Ceded / Net income statements, EV (PVDE), IRR, RBC & surplus rebuild.
+- Cedant Economics: Net Deal Value (capital-relief value - reinsurer PVDE),
+  cost-of-capital-based capital relief, reinsurer profit, cedant recovery %,
+  back-book vs new-issue IRR.
+- Scenario Matrix: combinatoric cedant sweep ranked by Net Deal Value.
