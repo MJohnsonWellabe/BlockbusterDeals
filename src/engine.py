@@ -982,9 +982,10 @@ def _deal_build_reins(buckets, iss_years, hz_end):
     return rp
 
 
-def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs):
+def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs, predeal_cache=None):
     """Per (claim, lapse) env: the no-deal predeal PVDE ($M) and no-deal RBC 2029
-    ratio. Predeal-under-stress is structure-independent, so computed once."""
+    ratio. Predeal-under-stress is structure-independent, so computed once. Also
+    primes predeal_cache (its no-deal predeal == every scenario's predeal at that env)."""
     base = {}
     for (cs, ls) in stress_envs:
         try:
@@ -993,7 +994,7 @@ def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs):
             nd['reins_pct'] = {}; nd['ceding_comm_front'] = {}
             nd['ceding_comm_table'] = [[0, float('inf'), 0.0]]
             r = run_model(ev_agg, nd, by, rbc_rows=None, bp_rows=None,
-                          surplus_rows=surplus_rows, lite=True)
+                          surplus_rows=surplus_rows, lite=True, predeal_cache=predeal_cache)
             na = r['rbc_net_result']['net_adjustments']
             base[(float(cs), float(ls))] = {
                 'pred_pvde': r['metrics_predeal']['pvde'] / 1e6,
@@ -1004,9 +1005,11 @@ def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs):
 
 
 def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
-                      buckets, upfront_total, ongoing, stress_envs, baselines, n_run=0):
+                      buckets, upfront_total, ongoing, stress_envs, baselines, n_run=0,
+                      predeal_cache=None):
     """Score one drawn structure (5-bucket triangle + upfront + ongoing) across the
-    claims/lapse stress overlay. Returns one record for the constraint finder."""
+    claims/lapse stress overlay. Returns one record for the constraint finder.
+    Base env runs full (RBC + cohort); stress envs run metrics_only (net PVDE only)."""
     hz_end = _frontier_hz_end(ev_agg, by)
     iss_years = sorted(int(k) for k in ev_agg.get('agg_iy', {}).keys())
     reins = _deal_build_reins(buckets, iss_years, hz_end)
@@ -1024,14 +1027,16 @@ def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
 
     net_pvdes = []; pred_pvdes = []; base_rec = None
     for (cs, ls) in stress_envs:
+        is_base = float(cs) == 1.0 and float(ls) == 1.0
         try:
             r = run_model(ev_agg, assum_for(cs, ls), by, rbc_rows=None,
-                          bp_rows=None, surplus_rows=surplus_rows, lite=True)
+                          bp_rows=None, surplus_rows=surplus_rows, lite=True,
+                          metrics_only=not is_base, predeal_cache=predeal_cache)
         except Exception:
             continue
         net_pvdes.append(r['metrics_net']['pvde'] / 1e6)
         pred_pvdes.append((baselines.get((float(cs), float(ls))) or {}).get('pred_pvde', 0.0))
-        if float(cs) == 1.0 and float(ls) == 1.0:
+        if is_base:
             base_rec = r
 
     def _std(arr):
@@ -1080,19 +1085,25 @@ def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
     }
 
 
-def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False):
-    # lite=True skips the per-issue-year diagnostic (unused by the Frontier sweep)
-    # for a large per-call speedup; statements, RBC, cedant cap-relief, and the
-    # back/new cohort metrics are still produced identically.
+def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False,
+              metrics_only=False,predeal_cache=None):
+    # lite=True skips the per-issue-year diagnostic. metrics_only=True returns just the
+    # predeal/ceded/net metrics (skips the RBC pipeline, cedant analytics and back/new
+    # cohort metrics) for the Deal Analysis stress envs. predeal_cache (a dict keyed by
+    # (claim_scalar, lapse_scalar, by)) reuses the structure-independent predeal side
+    # (scaled aggregates, sp, ap, mp) across scenario draws. Full path output unchanged.
     rp={int(iy):{int(c2):v for c2,v in yd.items() if v is not None}
         for iy,yd in assum.get("reins_pct",{}).items()}
-    agg_d=ev_agg.get("agg",{})
-    agg_iy=ev_agg.get("agg_iy",{})
     periods=sorted(ev_agg.get("periods",[]))
     by=int(by)
-    agg_d,agg_iy=apply_scalars(agg_d,agg_iy,assum)
+    _ck=(float(assum.get("claim_scalar",1.0)),float(assum.get("lapse_scalar",1.0)),by)
+    if predeal_cache is not None and _ck in predeal_cache:
+        agg_d,agg_iy,sp,_ap_cache,_mp_cache=predeal_cache[_ck]
+    else:
+        agg_d,agg_iy=apply_scalars(ev_agg.get("agg",{}),ev_agg.get("agg_iy",{}),assum)
+        sp=bld_stmt(agg_d,assum,by,periods,False)
+        _ap_cache=None;_mp_cache=None
     agg_c=apply_rp_agg(agg_iy,rp,by,periods)
-    sp=bld_stmt(agg_d,assum,by,periods,False)
     sc=bld_stmt(agg_c,assum,by,periods,True,zero_bop_ts=True)
     # Build net: predeal - ceded + ceding commissions
     sn={}
@@ -1150,17 +1161,6 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=
         ts=sn.get("target_surplus",{})
         sn["distributable_earnings"][p]=sn["pretax_income"][p]-(ts.get(p,0)-ts.get(p-1,0))
     disc=float(assum.get("discount_rate",0.08))
-    ap=ann_eoy(sp,by,periods);ac=ann_eoy(sc,by,periods);aN=ann_eoy(sn,by,periods)
-    # Override DE with correct annual formula: PTI*0.79 - delta_year_end_TS
-    _sp_ts=sp.get("target_surplus",{}); _sc_ts=sc.get("target_surplus",{})
-    ap["distributable_earnings"]=compute_ann_de(ap["pretax_income"],_sp_ts,_sc_ts,by,periods,"predeal")
-    ac["distributable_earnings"]=compute_ann_de(ac["pretax_income"],_sp_ts,_sc_ts,by,periods,"ceded")
-    # Net DE = Predeal DE - Ceded DE (ensures internal consistency)
-    _de_p=ap["distributable_earnings"];_de_c=ac["distributable_earnings"]
-    _all_yrs=sorted(set(list(_de_p.keys())+list(_de_c.keys())))
-    aN["distributable_earnings"]={yr:(_de_p.get(yr,0)-_de_c.get(yr,0)) for yr in _all_yrs}
-    mp=mtr(sp,disc,periods,by);mc=mtr(sc,disc,periods,by);mn=mtr(sn,disc,periods,by)
-    # Override mtr PVDE/IRR/max_neg with correct annual DEs
     def _ann_pvde(ann_de,disc_r):
         yrs=sorted(int(k) for k in ann_de.keys())
         pvde=sum(ann_de[str(yr)]/(1+disc_r)**i for i,yr in enumerate(yrs,1))
@@ -1176,15 +1176,32 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=
                 lo,hi=-0.5,5.0
                 for _ in range(80):
                     mid=(lo+hi)/2
-                    (lo if npv(mid)>0 else hi).__class__  # dummy
                     if npv(mid)>0:lo=mid
                     else:hi=mid
                 irr=(1+(lo+hi)/2)-1
         except:pass
         return {"pvde":pvde,"irr":irr,"max_neg_cum_de":mn2}
-    mp=_ann_pvde(ap["distributable_earnings"],disc)
+    _sp_ts=sp.get("target_surplus",{}); _sc_ts=sc.get("target_surplus",{})
+    # Predeal side is structure-independent (depends only on claim/lapse) -> cache it.
+    if _ap_cache is not None:
+        ap=_ap_cache; mp=_mp_cache
+    else:
+        ap=ann_eoy(sp,by,periods)
+        ap["distributable_earnings"]=compute_ann_de(ap["pretax_income"],_sp_ts,_sc_ts,by,periods,"predeal")
+        mp=_ann_pvde(ap["distributable_earnings"],disc)
+        if predeal_cache is not None:
+            predeal_cache[_ck]=(agg_d,agg_iy,sp,ap,mp)
+    ac=ann_eoy(sc,by,periods)
+    ac["distributable_earnings"]=compute_ann_de(ac["pretax_income"],_sp_ts,_sc_ts,by,periods,"ceded")
+    aN=ann_eoy(sn,by,periods)
+    # Net DE = Predeal DE - Ceded DE (ensures internal consistency)
+    _de_p=ap["distributable_earnings"];_de_c=ac["distributable_earnings"]
+    _all_yrs=sorted(set(list(_de_p.keys())+list(_de_c.keys())))
+    aN["distributable_earnings"]={yr:(_de_p.get(yr,0)-_de_c.get(yr,0)) for yr in _all_yrs}
     mc=_ann_pvde(ac["distributable_earnings"],disc)
     mn=_ann_pvde(aN["distributable_earnings"],disc)
+    if metrics_only:
+        return {"metrics_predeal":mp,"metrics_ceded":mc,"metrics_net":mn}
     iys=sorted(ev_agg.get("iss_years",[]))
     iyd={}
     for iy in ([] if lite else iys):

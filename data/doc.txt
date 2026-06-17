@@ -115,13 +115,22 @@ every drawn quantity and the model samples between them (default ~150 draws).
   new-business IRR, early-strain relief, and net deal value (capital-relief value − ceded PVDE).
 - **Constraint finder** — set any of: max cost, min RBC lift, min risk transfer, min NB IRR, min
   strain relief, min back-book compensation %, max EV given up, and value-accretive (relief >= ceded
-  PVDE). Blank = ignored. The tool highlights the **feasible** structures (those meeting every
-  condition) and surfaces the **best by net deal value**. The cost-vs-RBC-lift scatter shows the
-  feasible set in teal against the bound lines — the efficient-frontier idea, bounded by your terms.
+  PVDE). Blank = ignored. The tool highlights the **feasible** structures and surfaces the **best by
+  net deal value**. Each scenario shows **which constraints it fails**; when nothing is feasible it
+  reports the **most-binding** rule and the **nearest miss**.
+- **Value-accretive** — every scenario shows the net deal value (capital relief − ceded PVDE) and, for
+  the best/nearest, how far it is from accretive (and the relief/ceded ratio); accretive points are
+  ringed gold on the scatter.
+- **Shadow prices** — a what-if table giving the marginal value of relaxing each active constraint by
+  one step (change in feasible count and best net deal value), re-scored on the stored scenarios with
+  no re-simulation. Effects are not additive.
+- **Stress grid** — set claims and lapse shock lists; their cross-product is the per-scenario stress
+  overlay that drives risk transfer. More shocks = a more robust volatility read.
 
 > Tip: run the model once first so data/assumptions are loaded, then set your bounds + constraints
-> and press Run. Each draw is a full projection (x the stress grid), so the search is paced with a
-> live counter rather than instant; lower the draw count for a quick look.
+> and press Run. Each draw is a full projection x the stress grid; the base environment is the costly
+> part (it computes RBC + cohort EV), while extra shocks are cheap, so add shocks freely and lower the
+> draw count for a quick look. A live counter shows progress.
 
 ## 8. Scenarios
 
