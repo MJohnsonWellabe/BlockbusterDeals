@@ -955,6 +955,131 @@ def run_frontier_grid(ev_agg, base_assum, by, surplus_rows,
     return results
 
 
+# ============================ DEAL ANALYSIS v2 ============================
+# Scenario explorer over a 5-bucket reinsurance triangle with drawn upfront +
+# ongoing commission and a claims/lapse stress overlay (for risk transfer).
+
+def _deal_bucket_rate(iy, buckets):
+    if iy <= 2019: return buckets[0]
+    if 2020 <= iy <= 2024: return buckets[1]
+    if iy == 2025: return buckets[2]
+    if 2026 <= iy <= 2030: return buckets[3]
+    return buckets[4]  # 2031+
+
+
+def _deal_build_reins(buckets, iss_years, hz_end):
+    """5 bucket cede %s (decimals) -> reins_pct triangle.
+    buckets = (pre2019, 2020-24, 2025, 2026-30, 2031+)."""
+    rp = {}
+    for iy in iss_years:
+        rate = float(_deal_bucket_rate(iy, buckets))
+        if rate <= 0: continue
+        iy_key = 2019 if iy <= 2019 else iy
+        start = max(2026, iy + 1)
+        d = rp.setdefault(iy_key, {})
+        for cal in range(start, hz_end + 1):
+            d[cal] = rate
+    return rp
+
+
+def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs):
+    """Per (claim, lapse) env: the no-deal predeal PVDE ($M) and no-deal RBC 2029
+    ratio. Predeal-under-stress is structure-independent, so computed once."""
+    base = {}
+    for (cs, ls) in stress_envs:
+        try:
+            nd = {k: v for k, v in base_assum.items()}
+            nd['claim_scalar'] = float(cs); nd['lapse_scalar'] = float(ls)
+            nd['reins_pct'] = {}; nd['ceding_comm_front'] = {}
+            nd['ceding_comm_table'] = [[0, float('inf'), 0.0]]
+            r = run_model(ev_agg, nd, by, rbc_rows=None, bp_rows=None,
+                          surplus_rows=surplus_rows, lite=True)
+            na = r['rbc_net_result']['net_adjustments']
+            base[(float(cs), float(ls))] = {
+                'pred_pvde': r['metrics_predeal']['pvde'] / 1e6,
+                'nodeal_rbc29': (na.get(2029) or {}).get('ratio_w_margin', 0)}
+        except Exception:
+            base[(float(cs), float(ls))] = {'pred_pvde': 0.0, 'nodeal_rbc29': 0.0}
+    return base
+
+
+def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
+                      buckets, upfront_total, ongoing, stress_envs, baselines, n_run=0):
+    """Score one drawn structure (5-bucket triangle + upfront + ongoing) across the
+    claims/lapse stress overlay. Returns one record for the constraint finder."""
+    hz_end = _frontier_hz_end(ev_agg, by)
+    iss_years = sorted(int(k) for k in ev_agg.get('agg_iy', {}).keys())
+    reins = _deal_build_reins(buckets, iss_years, hz_end)
+    # Upfront total split 50/25/25 over 2026/27/28 (the 10-5-5 shape).
+    ut = float(upfront_total)
+    front = {y: a * 1e6 for y, a in ((2026, ut * 0.5), (2027, ut * 0.25), (2028, ut * 0.25)) if a > 0}
+    table = [[0, float('inf'), float(ongoing)]]
+
+    def assum_for(cs, ls):
+        a = {k: v for k, v in base_assum.items()}
+        a['claim_scalar'] = float(cs); a['lapse_scalar'] = float(ls)
+        a['reins_pct'] = reins; a['ceding_comm_front'] = front
+        a['ceding_comm_table'] = table
+        return a
+
+    net_pvdes = []; pred_pvdes = []; base_rec = None
+    for (cs, ls) in stress_envs:
+        try:
+            r = run_model(ev_agg, assum_for(cs, ls), by, rbc_rows=None,
+                          bp_rows=None, surplus_rows=surplus_rows, lite=True)
+        except Exception:
+            continue
+        net_pvdes.append(r['metrics_net']['pvde'] / 1e6)
+        pred_pvdes.append((baselines.get((float(cs), float(ls))) or {}).get('pred_pvde', 0.0))
+        if float(cs) == 1.0 and float(ls) == 1.0:
+            base_rec = r
+
+    def _std(arr):
+        if len(arr) < 2: return 0.0
+        m = sum(arr) / len(arr)
+        return math.sqrt(sum((x - m) ** 2 for x in arr) / len(arr))
+    sp = _std(pred_pvdes)
+    risk_transfer = (1 - _std(net_pvdes) / sp) if sp else 0.0
+
+    if base_rec is None:
+        return None
+    mp = base_rec['metrics_predeal']; mn = base_rec['metrics_net']; mc = base_rec['metrics_ceded']
+    ap = base_rec['annual_predeal']; an = base_rec['annual_net']
+    na = base_rec['rbc_net_result']['net_adjustments']
+    ca = base_rec.get('cedant_analytics', {})
+    mb = ca.get('metrics_back') or {}; mnew = ca.get('metrics_new') or {}
+
+    def gy(d, yr):
+        return (d.get(yr) or d.get(str(yr)) or 0) / 1e6
+    strain = sum(gy(an['pretax_income'], yr) - gy(ap['pretax_income'], yr) for yr in (2026, 2027, 2028))
+    net_rbc29 = (na.get(2029) or {}).get('ratio_w_margin', 0)
+    nodeal29 = (baselines.get((1.0, 1.0)) or {}).get('nodeal_rbc29', 0)
+    front_pv = ca.get('comm_front_pv') or 0.0
+    back_ceded = mb.get('ceded_pvde') or 0.0
+    pred_pvde = mp['pvde'] / 1e6; net_pvde = mn['pvde'] / 1e6
+
+    return {
+        'n_run': n_run,
+        'buckets': [float(b) for b in buckets],
+        'upfront': ut, 'ongoing': float(ongoing),
+        'cost': mc['pvde'] / 1e6,
+        'rbc_lift': net_rbc29 - nodeal29,
+        'risk_transfer': risk_transfer,
+        'nb_net_irr': mnew.get('net_irr'),
+        'nb_dEV': (mnew.get('predeal_pvde') or 0) - (mnew.get('net_pvde') or 0),
+        'back_dEV': (mb.get('predeal_pvde') or 0) - (mb.get('net_pvde') or 0),
+        'nb_dIRR': (None if mnew.get('net_irr') is None or mnew.get('predeal_irr') is None
+                    else mnew['net_irr'] - mnew['predeal_irr']),
+        'strain_relief': strain,
+        'back_comp_pct': (front_pv / back_ceded) if back_ceded else None,
+        'net_deal_value': ca.get('net_deal_value'),
+        'cap_relief_value': ca.get('cap_relief_value'),
+        'ev_given_up': pred_pvde - net_pvde,
+        'net_pvde': net_pvde,
+        'net_irr': mn['irr'],
+    }
+
+
 def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False):
     # lite=True skips the per-issue-year diagnostic (unused by the Frontier sweep)
     # for a large per-call speedup; statements, RBC, cedant cap-relief, and the

@@ -102,26 +102,26 @@ All in $M unless noted. **What you give up:**
 
 ## 7. Deal Analysis
 
-Most reinsurance levers are **monotonic** for the cedant — more upfront cash and a higher ongoing
-commission are always better — so this is not an efficient-frontier question. Instead the Deal
-Analysis tab quantifies the **cost of each assumption** and flags **where the deal turns bad**.
-From a base deal you set (cede %, ongoing level, upfront schedule, years of new business), each
-lever is varied **one at a time** and three panels are produced:
+A reinsurance-structure **scenario explorer with a constraint finder**. Each scenario is a random
+**draw** of a cede % for five issue-year buckets — **<=2019, 2020-2024, 2025, 2026-2030, 2031+** —
+plus a drawn **upfront payment** and **ongoing ceding commission**. You set a low/high **bound** for
+every drawn quantity and the model samples between them (default ~150 draws).
 
-1. **Cost of each assumption** — a tornado of how much net portfolio EV swings as each lever moves
-   across its range (others held at base), plus a detailed table per lever (new-business net IRR,
-   new-business and back-book net EV, back-book compensation %, ceded PVDE, RBC lift, strain relief,
-   net EV). The longest bars are the assumptions worth negotiating hardest.
-2. **New-business IRR vs cede %** — new-issue net IRR as cession rises, against your hurdle (default
-   10%). The crossing point is the cede level at which new business stops clearing the hurdle.
-3. **Back-book compensation** — does the front-end commission fairly pay for the back-book PVDE we
-   cede? It shows the front-end PV, the back-book ceded PVDE, and the **compensation %** (front-end
-   PV / ceded PVDE) across cede levels. Because the deal also transfers risk, recovering less than
-   100% can still be a fair price.
+- **Stress overlay** — each structure is re-run across a small claims x lapse grid (you set the stress
+  %s). This drives **risk transfer = the reduction in net PVDE volatility vs the no-deal book** across
+  those stresses (e.g. a 10% quota share transfers ~10% of the volatility).
+- **Per-scenario results** — cost (ceded PVDE handed over), RBC lift (ratio points vs no-deal),
+  risk transfer %, new-business net IRR, change in EV for existing and new business, change in
+  new-business IRR, early-strain relief, and net deal value (capital-relief value − ceded PVDE).
+- **Constraint finder** — set any of: max cost, min RBC lift, min risk transfer, min NB IRR, min
+  strain relief, min back-book compensation %, max EV given up, and value-accretive (relief >= ceded
+  PVDE). Blank = ignored. The tool highlights the **feasible** structures (those meeting every
+  condition) and surfaces the **best by net deal value**. The cost-vs-RBC-lift scatter shows the
+  feasible set in teal against the bound lines — the efficient-frontier idea, bounded by your terms.
 
-> Tip: run the model once first so the loaded data and assumptions are available, then open Deal
-> Analysis and press Run. Each point is a full projection, so the sweep is paced (a live counter
-> shows progress) rather than instant.
+> Tip: run the model once first so data/assumptions are loaded, then set your bounds + constraints
+> and press Run. Each draw is a full projection (x the stress grid), so the search is paced with a
+> live counter rather than instant; lower the draw count for a quick look.
 
 ## 8. Scenarios
 
