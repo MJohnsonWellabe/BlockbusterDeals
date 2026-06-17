@@ -1004,6 +1004,176 @@ def deal_draw_baselines(ev_agg, base_assum, by, surplus_rows, stress_envs, prede
     return base
 
 
+# ===================== VECTORIZED FAST DEAL SWEEP =====================
+# Cession + flat commissions are LINEAR in the bucket cede %s, the upfront and the
+# ongoing rate, so the whole cashflow side can be precomputed as per-bucket bases
+# once per stress env and combined per draw with no re-projection (EF-style). Only
+# RBC (non-linear covariance) stays in the engine and is computed lazily.
+DA_BACK = (0, 1, 2)   # buckets <=2019 / 2020-24 / 2025
+DA_NEW = (3, 4)       # buckets 2026-30 / 2031+
+
+
+def _ev_filter_iy(ev_agg, keep):
+    aiy = {iy: vm for iy, vm in ev_agg.get('agg_iy', {}).items() if keep(int(iy))}
+    agg = {}
+    for vm in aiy.values():
+        for vn, pv in vm.items():
+            d = agg.setdefault(vn, {})
+            for p, v in pv.items():
+                d[p] = d.get(p, 0) + v
+    return {'agg': agg, 'agg_iy': aiy, 'periods': ev_agg.get('periods', []),
+            'iss_years': sorted(int(k) for k in aiy)}
+
+
+def _vec(annual, key, years):
+    d = annual.get(key, {}) or {}
+    return [float(d.get(str(y), d.get(y, 0)) or 0) for y in years]
+
+
+def _pvde_list(de, disc):
+    pvde = sum(v / (1 + disc) ** i for i, v in enumerate(de, 1))
+    irr = None
+    try:
+        def npv(r):
+            return sum(v / (1 + r) ** i for i, v in enumerate(de, 1))
+        if npv(-0.5) * npv(5.0) < 0:
+            lo, hi = -0.5, 5.0
+            for _ in range(80):
+                mid = (lo + hi) / 2
+                if npv(mid) > 0:
+                    lo = mid
+                else:
+                    hi = mid
+            irr = (lo + hi) / 2
+    except Exception:
+        pass
+    return pvde, irr
+
+
+def _deal_assum(base_assum, iss, hz_end, cs, ls, buckets, upfront, ongoing):
+    a = {k: v for k, v in base_assum.items()}
+    a['claim_scalar'] = float(cs); a['lapse_scalar'] = float(ls)
+    a['reins_pct'] = _deal_build_reins(buckets, iss, hz_end)
+    ut = float(upfront)
+    a['ceding_comm_front'] = {y: amt * 1e6 for y, amt in
+                              ((2026, ut * 0.5), (2027, ut * 0.25), (2028, ut * 0.25)) if amt > 0}
+    a['ceding_comm_table'] = [[0, float('inf'), float(ongoing)]]
+    return a
+
+
+def deal_precompute_bases(ev_agg, base_assum, by, surplus_rows, stress_envs):
+    """Per stress env: predeal DE, and per-bucket ceded-DE/PTI bases G_b (gross,
+    100% cede), Cann_b/CP_b (ongoing-commission per $1), F/FP (front per $1 upfront).
+    Base env also gets cohort predeal + the PTI bases for strain."""
+    hz_end = _frontier_hz_end(ev_agg, by)
+    years = list(range(2026, hz_end + 1))
+    disc = float(base_assum.get('discount_rate', 0.08))
+    iss = sorted(int(k) for k in ev_agg.get('agg_iy', {}).keys())
+    ev_back = _ev_filter_iy(ev_agg, lambda iy: iy <= 2025)
+    ev_new = _ev_filter_iy(ev_agg, lambda iy: iy >= 2026)
+
+    def ced(cs, ls, buckets, upfront, ongoing):
+        r = run_model(ev_agg, _deal_assum(base_assum, iss, hz_end, cs, ls, buckets, upfront, ongoing),
+                      by, surplus_rows=surplus_rows, metrics_only=True)
+        return (_vec(r['annual_ceded'], 'distributable_earnings', years),
+                _vec(r['annual_ceded'], 'pretax_income', years))
+
+    def pred(cs, ls, ev):
+        r = run_model(ev, _deal_assum(base_assum, iss, hz_end, cs, ls, [0] * 5, 0, 0),
+                      by, surplus_rows=surplus_rows, metrics_only=True)
+        return _vec(r['annual_predeal'], 'distributable_earnings', years)
+
+    one = lambda i: [1.0 if j == i else 0.0 for j in range(5)]
+    ny = len(years)
+    bases = []
+    for (cs, ls) in stress_envs:
+        is_base = float(cs) == 1.0 and float(ls) == 1.0
+        Dpre = pred(cs, ls, ev_agg)
+        G = []; GP = []; Cann = []; CP = []
+        for b in range(5):
+            gde, gpti = ced(cs, ls, one(b), 0, 0)
+            cde, cpti = ced(cs, ls, one(b), 0, 1)            # ongoing = $1
+            G.append(gde); GP.append(gpti)
+            Cann.append([gde[y] - cde[y] for y in range(ny)])  # ongoing-comm DE per $1, per 100% cede
+            CP.append([gpti[y] - cpti[y] for y in range(ny)])
+        fde, fpti = ced(cs, ls, [0] * 5, 1, 0)               # upfront = $1
+        bz = {'env': (cs, ls), 'is_base': is_base, 'Dpre': Dpre,
+              'pred_pvde': _pvde_list(Dpre, disc)[0] / 1e6,
+              'G': G, 'F': [-x for x in fde], 'Cann': Cann}
+        if is_base:
+            bz.update({'GP': GP, 'FP': [-x for x in fpti], 'CP': CP,
+                       'Dpre_back': pred(cs, ls, ev_back), 'Dpre_new': pred(cs, ls, ev_new)})
+        bases.append(bz)
+    return {'years': years, 'disc': disc, 'bases': bases}
+
+
+def deal_fast_sweep(packed, draws):
+    """Combine the precomputed bases for each draw (pure arithmetic, no re-run).
+    Returns the cashflow-side record per draw (RBC filled in lazily later)."""
+    years = packed['years']; disc = packed['disc']; bases = packed['bases']; ny = len(years)
+
+    def _std(a):
+        if len(a) < 2:
+            return 0.0
+        m = sum(a) / len(a)
+        return math.sqrt(sum((x - m) ** 2 for x in a) / len(a))
+
+    out = []
+    for d in draws:
+        bk = [float(x) for x in d['buckets']]; up = float(d['upfront']); on = float(d['ongoing'])
+        net_pvdes = []; pred_pvdes = []; bm = {}
+        for bz in bases:
+            G = bz['G']; F = bz['F']; Cann = bz['Cann']
+            ced_DE = [sum(bk[b] * G[b][y] for b in range(5)) - up * F[y]
+                      - on * sum(bk[b] * Cann[b][y] for b in range(5)) for y in range(ny)]
+            net_DE = [bz['Dpre'][y] - ced_DE[y] for y in range(ny)]
+            net_pvde = _pvde_list(net_DE, disc)[0]
+            net_pvdes.append(net_pvde / 1e6); pred_pvdes.append(bz['pred_pvde'])
+            if bz['is_base']:
+                cost = _pvde_list(ced_DE, disc)[0] / 1e6
+                _, net_irr = _pvde_list(net_DE, disc)
+                back_ced = [sum(bk[b] * G[b][y] for b in DA_BACK) for y in range(ny)]
+                new_ced = [sum(bk[b] * G[b][y] for b in DA_NEW) for y in range(ny)]
+                back_net = [bz['Dpre_back'][y] - back_ced[y] + up * F[y] for y in range(ny)]
+                new_net = [bz['Dpre_new'][y] - new_ced[y]
+                           + on * sum(bk[b] * Cann[b][y] for b in DA_NEW) for y in range(ny)]
+                back_pre = _pvde_list(bz['Dpre_back'], disc)[0] / 1e6
+                new_pre, nb_pre_irr = _pvde_list(bz['Dpre_new'], disc)
+                back_net_pvde = _pvde_list(back_net, disc)[0] / 1e6
+                new_net_pvde, nb_net_irr = _pvde_list(new_net, disc)
+                back_ceded_pvde = _pvde_list(back_ced, disc)[0] / 1e6
+                front_pv = up * _pvde_list(F, disc)[0] / 1e6
+                GP = bz['GP']; FP = bz['FP']; CP = bz['CP']
+                strain = 0.0
+                for yi, y in enumerate(years):
+                    if y in (2026, 2027, 2028):
+                        strain += (-sum(bk[b] * GP[b][yi] for b in range(5)) + up * FP[yi]
+                                   + on * sum(bk[b] * CP[b][yi] for b in range(5))) / 1e6
+                bm = dict(cost=cost, net_pvde=net_pvde / 1e6, net_irr=net_irr,
+                          nb_net_irr=nb_net_irr, nb_dEV=new_pre / 1e6 - new_net_pvde / 1e6,
+                          back_dEV=back_pre - back_net_pvde, strain_relief=strain,
+                          nb_dIRR=(None if nb_net_irr is None or nb_pre_irr is None else nb_net_irr - nb_pre_irr),
+                          back_comp_pct=(front_pv / back_ceded_pvde) if back_ceded_pvde else None)
+        sps = _std(pred_pvdes)
+        rt = (1 - _std(net_pvdes) / sps) if sps else 0.0
+        rec = dict(n_run=d['n'], buckets=bk, upfront=up, ongoing=on, risk_transfer=rt,
+                   rbc_lift=None, cap_relief_value=None)
+        rec.update(bm)
+        out.append(rec)
+    return out
+
+
+def deal_rbc_for(ev_agg, base_assum, by, surplus_rows, buckets, upfront, ongoing, nodeal29):
+    """Base-env full run for the non-linear RBC metrics (lazy pass)."""
+    hz_end = _frontier_hz_end(ev_agg, by)
+    iss = sorted(int(k) for k in ev_agg.get('agg_iy', {}).keys())
+    r = run_model(ev_agg, _deal_assum(base_assum, iss, hz_end, 1.0, 1.0, buckets, upfront, ongoing),
+                  by, surplus_rows=surplus_rows, lite=True)
+    na = r['rbc_net_result']['net_adjustments']
+    return {'rbc_lift': (na.get(2029) or {}).get('ratio_w_margin', 0) - (nodeal29 or 0),
+            'cap_relief_value': r.get('cedant_analytics', {}).get('cap_relief_value')}
+
+
 def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
                       buckets, upfront_total, ongoing, stress_envs, baselines, n_run=0,
                       predeal_cache=None):
@@ -1201,7 +1371,8 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=
     mc=_ann_pvde(ac["distributable_earnings"],disc)
     mn=_ann_pvde(aN["distributable_earnings"],disc)
     if metrics_only:
-        return {"metrics_predeal":mp,"metrics_ceded":mc,"metrics_net":mn}
+        return {"metrics_predeal":mp,"metrics_ceded":mc,"metrics_net":mn,
+                "annual_predeal":ser(ap),"annual_ceded":ser(ac),"annual_net":ser(aN)}
     iys=sorted(ev_agg.get("iss_years",[]))
     iyd={}
     for iy in ([] if lite else iys):

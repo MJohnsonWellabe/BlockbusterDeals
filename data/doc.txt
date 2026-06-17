@@ -105,32 +105,31 @@ All in $M unless noted. **What you give up:**
 A reinsurance-structure **scenario explorer with a constraint finder**. Each scenario is a random
 **draw** of a cede % for five issue-year buckets — **<=2019, 2020-2024, 2025, 2026-2030, 2031+** —
 plus a drawn **upfront payment** and **ongoing ceding commission**. You set a low/high **bound** for
-every drawn quantity and the model samples between them (default ~150 draws).
+every drawn quantity and the model samples between them (default ~200 draws).
 
-- **Stress overlay** — each structure is re-run across a small claims x lapse grid (you set the stress
-  %s). This drives **risk transfer = the reduction in net PVDE volatility vs the no-deal book** across
-  those stresses (e.g. a 10% quota share transfers ~10% of the volatility).
-- **Per-scenario results** — cost (ceded PVDE handed over), RBC lift (ratio points vs no-deal),
-  risk transfer %, new-business net IRR, change in EV for existing and new business, change in
-  new-business IRR, early-strain relief, and net deal value (capital-relief value − ceded PVDE).
+- **Fast (vectorized)** — because cession and the flat commissions are linear in the cede %s, upfront
+  and ongoing, the cashflow side of every draw is a precomputed-basis linear combination (no
+  re-projection), so hundreds of draws are near-instant after a one-time per-stress-env precompute.
+  Only the **RBC** result (a non-linear covariance calc) is computed by the full engine, and only for
+  the structures that pass the cashflow constraints.
+- **Stress overlay** — each structure is scored across a claims x lapse grid (set the shock lists).
+  This drives **risk transfer = the reduction in net PVDE volatility vs the no-deal book**.
+- **Per-structure results** — cost (ceded PVDE handed over) versus the benefits it buys: capital
+  relief, early-strain relief, risk transfer, RBC lift; plus new-business net IRR, back-book
+  compensation %, and the change in EV for existing and new business. There is **no single
+  "net deal value"** — the benefits are shown as components beside the cost so you can judge the trade.
 - **Constraint finder** — set any of: max cost, min RBC lift, min risk transfer, min NB IRR, min
-  strain relief, min back-book compensation %, max EV given up, and value-accretive (relief >= ceded
-  PVDE). Blank = ignored. The tool highlights the **feasible** structures and surfaces the **best by
-  net deal value**. Each scenario shows **which constraints it fails**; when nothing is feasible it
-  reports the **most-binding** rule and the **nearest miss**.
-- **Value-accretive** — every scenario shows the net deal value (capital relief − ceded PVDE) and, for
-  the best/nearest, how far it is from accretive (and the relief/ceded ratio); accretive points are
-  ringed gold on the scatter.
-- **Shadow prices** — a what-if table giving the marginal value of relaxing each active constraint by
-  one step (change in feasible count and best net deal value), re-scored on the stored scenarios with
-  no re-simulation. Effects are not additive.
-- **Stress grid** — set claims and lapse shock lists; their cross-product is the per-scenario stress
-  overlay that drives risk transfer. More shocks = a more robust volatility read.
+  strain relief, min back-book compensation %. Blank = ignored. It highlights the **feasible**
+  structures and ranks the **best** by your chosen objective (capital relief / risk transfer / cost).
+  Each structure shows **which constraints it fails**; when nothing is feasible it reports the
+  **most-binding** rule and the **nearest miss**.
+- **Shadow prices** — for each constraint, how many more structures become feasible if you **drop that
+  one rule** (holding the others) and the threshold you'd relax it to in order to admit the closest
+  blocked structure. Re-scored on the stored draws, no re-simulation.
 
 > Tip: run the model once first so data/assumptions are loaded, then set your bounds + constraints
-> and press Run. Each draw is a full projection x the stress grid; the base environment is the costly
-> part (it computes RBC + cohort EV), while extra shocks are cheap, so add shocks freely and lower the
-> draw count for a quick look. A live counter shows progress.
+> and press Run. Draws are fast, so raise the count or add stress shocks freely; a live counter shows
+> the precompute, the sweep, and the RBC pass.
 
 ## 8. Scenarios
 

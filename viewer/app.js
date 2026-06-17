@@ -1904,52 +1904,56 @@ function renderReinComp() {
 // payment and ongoing commission (each sampled between user bounds); claims and
 // lapse are a per-scenario stress overlay used for the risk-transfer metric.
 var DA_BUCKETS=[
-  {label:'≤2019',lo:'0',hi:'0.30'},
-  {label:'2020-2024',lo:'0',hi:'0.30'},
-  {label:'2025',lo:'0',hi:'0.30'},
-  {label:'2026-2030',lo:'0',hi:'0.20'},
-  {label:'2031+',lo:'0',hi:'0.10'}
+  {label:'≤2019',lo:'0.08',hi:'0.12'},
+  {label:'2020-2024',lo:'0',hi:'0.15'},
+  {label:'2025',lo:'0',hi:'0.10'},
+  {label:'2026-2030',lo:'0.08',hi:'0.15'},
+  {label:'2031+',lo:'0',hi:'0'}
 ];
 // Optional constraints (blank input = ignored). pct=true means the field is a
-// fraction compared against an entered percent. accretive is a checkbox.
+// fraction compared against an entered percent. rbc=true marks the non-linear RBC
+// constraint (evaluated only on cashflow-feasible survivors).
 var DA_CONS=[
-  {key:'maxcost',label:'Max cost (ceded PVDE) $M',def:'60',dir:'le',fld:'cost'},
-  {key:'minlift',label:'Min RBC lift (x)',def:'0.40',dir:'ge',fld:'rbc_lift'},
-  {key:'minrt',label:'Min risk transfer %',def:'10',dir:'ge',fld:'risk_transfer',pct:true},
+  {key:'maxcost',label:'Max cost (ceded PVDE) $M',def:'80',dir:'le',fld:'cost'},
+  {key:'minlift',label:'Min RBC lift (x)',def:'0.30',dir:'ge',fld:'rbc_lift',rbc:true},
+  {key:'minrt',label:'Min risk transfer %',def:'5',dir:'ge',fld:'risk_transfer',pct:true},
   {key:'minnbirr',label:'Min NB net IRR %',def:'20',dir:'ge',fld:'nb_net_irr',pct:true},
-  {key:'minstrain',label:'Min strain relief $M',def:'',dir:'ge',fld:'strain_relief'},
-  {key:'minbackcomp',label:'Min back-book comp %',def:'',dir:'ge',fld:'back_comp_pct',pct:true},
-  {key:'maxevgiveup',label:'Max EV given up $M',def:'',dir:'le',fld:'ev_given_up'}
+  {key:'minstrain',label:'Min strain relief $M',def:'40',dir:'ge',fld:'strain_relief'},
+  {key:'minbackcomp',label:'Min back-book comp %',def:'50',dir:'ge',fld:'back_comp_pct',pct:true}
 ];
+var DA_RANKS=[{key:'cap_relief_value',label:'Capital relief'},{key:'risk_transfer',label:'Risk transfer'},{key:'cost',label:'Cost (lowest)',asc:true}];
 
 function renderFrontierUI(){
   var el=document.getElementById('frontier-content');if(!el)return;
   var hint=function(t){return '<div style="font-size:.63rem;color:var(--mu);margin-top:2px">'+t+'</div>';};
+  var rowS='display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap';
+  var inS='class="fi" style="width:72px;min-width:60px"';
   var bRows=DA_BUCKETS.map(function(b,i){
-    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-      '<div style="width:90px;font-size:.72rem;color:var(--navy);font-weight:bold">'+b.label+'</div>'+
-      '<input id="da-b'+i+'-lo" type="text" value="'+b.lo+'" class="fi" style="width:70px"> &ndash; '+
-      '<input id="da-b'+i+'-hi" type="text" value="'+b.hi+'" class="fi" style="width:70px">'+
-      '<span style="font-size:.62rem;color:var(--mu)">cede % range (0.10 = 10%)</span></div>';
+    return '<div style="'+rowS+'">'+
+      '<div style="width:96px;font-size:.72rem;color:var(--navy);font-weight:bold">'+b.label+'</div>'+
+      '<input id="da-b'+i+'-lo" type="text" value="'+b.lo+'" '+inS+'> &ndash; '+
+      '<input id="da-b'+i+'-hi" type="text" value="'+b.hi+'" '+inS+'>'+
+      '<span style="font-size:.62rem;color:var(--mu)">cede % (0.10=10%)</span></div>';
   }).join('');
   var cRows=DA_CONS.map(function(c){
-    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-      '<div style="width:180px;font-size:.72rem">'+c.label+'</div>'+
-      '<input id="da-c-'+c.key+'" type="text" value="'+c.def+'" class="fi" style="width:80px"></div>';
+    return '<div style="'+rowS+'">'+
+      '<div style="flex:1 1 170px;min-width:150px;font-size:.72rem">'+c.label+'</div>'+
+      '<input id="da-c-'+c.key+'" type="text" value="'+c.def+'" '+inS+'></div>';
   }).join('');
+  var rankOpts=DA_RANKS.map(function(r){return '<option value="'+r.key+'">'+r.label+'</option>';}).join('');
   el.innerHTML='<div class="card"><div class="ch">Deal Analysis &mdash; reinsurance-structure explorer</div><div class="cb">'+
-    '<div style="font-size:.72rem;color:var(--mu);margin-bottom:12px;max-width:880px">Draws random reinsurance <b>structures</b> &mdash; a cede % for each of five issue-year buckets plus an upfront payment and ongoing commission, each sampled between the bounds you set. Each structure is stress-tested across claims&times;lapse for a <b>risk-transfer</b> (PVDE volatility reduction) reading. The <b>constraint finder</b> then highlights the structures that meet all of your conditions and ranks them by net deal value.</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:840px">'+
+    '<div style="font-size:.72rem;color:var(--mu);margin-bottom:12px">Draws random reinsurance <b>structures</b> &mdash; a cede % for each of five issue-year buckets plus an upfront payment and ongoing commission, sampled between the bounds you set. The cashflow side is computed by fast vectorized combination (instant); each structure is stress-tested across claims&times;lapse for a <b>risk-transfer</b> reading. The <b>constraint finder</b> highlights the structures meeting every condition and ranks the best; RBC (non-linear) is computed only for the structures that pass the cashflow constraints.</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px">'+
     '<div><div style="font-size:.74rem;font-weight:bold;color:var(--navy);margin-bottom:5px">Reinsured % by issue-year bucket (low &ndash; high)</div>'+bRows+
-      '<div style="display:flex;align-items:center;gap:6px;margin-top:8px"><div style="width:90px;font-size:.72rem;color:var(--navy);font-weight:bold">Upfront $M</div><input id="da-up-lo" type="text" value="0" class="fi" style="width:70px"> &ndash; <input id="da-up-hi" type="text" value="40" class="fi" style="width:70px"></div>'+
-      '<div style="display:flex;align-items:center;gap:6px;margin-top:3px"><div style="width:90px;font-size:.72rem;color:var(--navy);font-weight:bold">Ongoing $/pol</div><input id="da-ong-lo" type="text" value="150" class="fi" style="width:70px"> &ndash; <input id="da-ong-hi" type="text" value="250" class="fi" style="width:70px"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:8px"><div><label class="fl">Draws (N)</label><input id="da-n" type="text" value="150" class="fi" style="width:70px"></div>'+
-        '<div><label class="fl">Claims shocks +% (list)</label><input id="da-sc" type="text" value="0,5,10" class="fi" style="width:90px">'+hint('cross-product with lapse = stress grid')+'</div>'+
-        '<div><label class="fl">Lapse shocks +% (list)</label><input id="da-sl" type="text" value="0,10" class="fi" style="width:90px"></div></div>'+
+      '<div style="'+rowS+';margin-top:8px"><div style="width:96px;font-size:.72rem;color:var(--navy);font-weight:bold">Upfront $M</div><input id="da-up-lo" type="text" value="10" '+inS+'> &ndash; <input id="da-up-hi" type="text" value="20" '+inS+'></div>'+
+      '<div style="'+rowS+'"><div style="width:96px;font-size:.72rem;color:var(--navy);font-weight:bold">Ongoing $/pol</div><input id="da-ong-lo" type="text" value="150" '+inS+'> &ndash; <input id="da-ong-hi" type="text" value="250" '+inS+'></div>'+
+      '<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap"><div><label class="fl">Draws (N)</label><input id="da-n" type="text" value="200" '+inS+'></div>'+
+        '<div><label class="fl">Claims shocks +%</label><input id="da-sc" type="text" value="0,5,10" '+inS+'>'+hint('x lapse = stress grid')+'</div>'+
+        '<div><label class="fl">Lapse shocks +%</label><input id="da-sl" type="text" value="0,10" '+inS+'></div></div>'+
     '</div>'+
     '<div><div style="font-size:.74rem;font-weight:bold;color:var(--navy);margin-bottom:5px">Constraints (blank = ignore)</div>'+cRows+
-      '<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><input type="checkbox" id="da-c-accr"><label for="da-c-accr" style="font-size:.72rem;cursor:pointer">Value-accretive (capital relief &ge; ceded PVDE)</label></div>'+
-      hint('Feasible scenarios meet every set constraint; the best is ranked by net deal value (capital relief &minus; ceded PVDE).')+
+      '<div style="'+rowS+';margin-top:8px"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Rank best feasible by</div><select id="da-rank" class="fi" style="width:auto;min-width:120px">'+rankOpts+'</select></div>'+
+      hint('Feasible = meets every set constraint. RBC lift is a non-linear metric computed only for cashflow-feasible structures.')+
     '</div>'+
     '</div>'+
     '<div style="margin-top:14px"><button id="frontier-run-btn" class="btn btn-y" onclick="runFrontier()">&#x25b6; Run Scenario Search</button> '+
@@ -1962,40 +1966,22 @@ function daReadConstraints(){
   var num=function(id){var el=document.getElementById(id);if(!el)return null;var s=(el.value||'').trim();if(s==='')return null;var v=parseFloat(s);return isNaN(v)?null:v;};
   var cons={};
   DA_CONS.forEach(function(c){var v=num('da-c-'+c.key);if(v!=null)cons[c.key]=c.pct?v/100:v;});
-  cons.accr=!!(document.getElementById('da-c-accr')||{}).checked;
   return cons;
 }
 var DA_CONLBL={maxcost:'cost',minlift:'RBC lift',minrt:'risk transfer',minnbirr:'NB IRR',
-  minstrain:'strain',minbackcomp:'back-book comp',maxevgiveup:'EV given up',accr:'value-accretive'};
-// constraint -> list of failed-constraint keys (empty = feasible)
-function daFails(r,cons){
+  minstrain:'strain',minbackcomp:'back-book comp'};
+// failed-constraint keys (empty = feasible). 'rbc' arg restricts to constraints
+// whose field is available (RBC lift is null until the lazy pass runs).
+function daFails(r,cons,cfOnly){
   var f=[];
   if(cons.maxcost!=null&&!(r.cost<=cons.maxcost))f.push('maxcost');
-  if(cons.minlift!=null&&!(r.rbc_lift>=cons.minlift))f.push('minlift');
   if(cons.minrt!=null&&!(r.risk_transfer>=cons.minrt))f.push('minrt');
   if(cons.minnbirr!=null&&!(r.nb_net_irr!=null&&r.nb_net_irr>=cons.minnbirr))f.push('minnbirr');
   if(cons.minstrain!=null&&!(r.strain_relief>=cons.minstrain))f.push('minstrain');
   if(cons.minbackcomp!=null&&!(r.back_comp_pct!=null&&r.back_comp_pct>=cons.minbackcomp))f.push('minbackcomp');
-  if(cons.maxevgiveup!=null&&!(r.ev_given_up<=cons.maxevgiveup))f.push('maxevgiveup');
-  if(cons.accr&&!(r.net_deal_value!=null&&r.net_deal_value>=0))f.push('accr');
+  if(!cfOnly&&cons.minlift!=null&&!(r.rbc_lift!=null&&r.rbc_lift>=cons.minlift))f.push('minlift');
   return f;
 }
-// feasible count + best net-deal-value under a (possibly perturbed) constraint set
-function daEvalFeasUnder(recs,cons){
-  var n=0,best=null;
-  recs.forEach(function(r){if(daFails(r,cons).length===0){n++;var v=r.net_deal_value;if(v!=null&&(best==null||v>best))best=v;}});
-  return {n:n,best:best};
-}
-// one-step relaxations for shadow pricing (only applied to active constraints)
-var DA_SHADOW=[
-  {key:'maxcost',d:10,lbl:'Max cost +$10M'},
-  {key:'minlift',d:-0.05,lbl:'Min RBC lift −0.05x'},
-  {key:'minrt',d:-0.02,lbl:'Min risk transfer −2%'},
-  {key:'minnbirr',d:-0.01,lbl:'Min NB IRR −1%'},
-  {key:'minstrain',d:-5,lbl:'Min strain −$5M'},
-  {key:'minbackcomp',d:-0.05,lbl:'Min back-book comp −5%'},
-  {key:'maxevgiveup',d:10,lbl:'Max EV given up +$10M'}
-];
 
 async function runFrontier(){  // runs the Deal Analysis scenario search
   if(!S.out){alert('Run the model first so there is loaded data to analyze.');return;}
@@ -2027,9 +2013,10 @@ async function runFrontier(){  // runs the Deal Analysis scenario search
       "_ev['periods']=[int(p) for p in _ev['periods']]",
       "_FSURP=_surplus_rows if '_surplus_rows' in dir() else None",
       "_DENV=[tuple(e) for e in json.loads(_fenv)]",
-      "_pcache={}",
-      "_dbl=deal_draw_baselines(_ev,_base,int(_FBY),_FSURP,_DENV,predeal_cache=_pcache)"
+      "_packed=deal_precompute_bases(_ev,_base,int(_FBY),_FSURP,_DENV)",
+      "_nodeal29=deal_draw_baselines(_ev,_base,int(_FBY),_FSURP,[(1.0,1.0)]).get((1.0,1.0),{}).get('nodeal_rbc29',0)"
       ].join("\n");
+    if(prog)prog.textContent='Precomputing bases…';
     await py.runPythonAsync(setup);
     // N uniform random draws within the bounds.
     function rnd(lo,hi){return lo+Math.random()*(hi-lo);}
@@ -2038,24 +2025,29 @@ async function runFrontier(){  // runs the Deal Analysis scenario search
       draws.push({buckets:bounds.map(function(b){return rnd(b[0],b[1]);}),
         upfront:rnd(upB[0],upB[1]),ongoing:rnd(ongB[0],ongB[1]),n:d+1});
     }
-    var perScenario=["import json","_p=json.loads(_fone)",
-      "try:",
-      "    _rec=run_deal_scenario(_ev,_base,int(_FBY),_FSURP,[float(x) for x in _p['buckets']],float(_p['upfront']),float(_p['ongoing']),_DENV,_dbl,int(_p['n']),predeal_cache=_pcache)",
-      "    _out=json.dumps(_rec)",
-      "except Exception as _e:",
-      "    _out=json.dumps(None)",
-      "_out"].join("\n");
-    var recs=[];
-    for(var i=0;i<draws.length;i++){
-      py.globals.set('_fone',JSON.stringify(draws[i]));
-      var rj=await py.runPythonAsync(perScenario);
-      var rec=JSON.parse(rj);
-      if(rec)recs.push(rec);
-      if(prog)prog.textContent=(i+1)+' / '+N+' scenarios…';
-      await new Promise(function(r){setTimeout(r);});
+    if(prog)prog.textContent='Combining '+N+' structures…';
+    await new Promise(function(r){setTimeout(r);});
+    // Fast vectorized cashflow sweep over all draws (one call, no re-projection).
+    py.globals.set('_fdraws',JSON.stringify(draws));
+    var rj=await py.runPythonAsync(["import json","_recs=deal_fast_sweep(_packed,json.loads(_fdraws))","json.dumps(_recs)"].join("\n"));
+    var recs=JSON.parse(rj);
+    // Lazy RBC pass: only the structures passing the cashflow constraints.
+    var cons=daReadConstraints();
+    recs.forEach(function(r){r.cfFails=daFails(r,cons,true);});
+    var survivors=recs.filter(function(r){return r.cfFails.length===0;})
+      .sort(function(a,b){return (b.net_pvde||-1e9)-(a.net_pvde||-1e9);});
+    var cap=Math.min(survivors.length,80);
+    for(var s=0;s<cap;s++){
+      var r=survivors[s];
+      py.globals.set('_frbc',JSON.stringify({b:r.buckets,u:r.upfront,o:r.ongoing}));
+      var rb=await py.runPythonAsync(["import json","_p=json.loads(_frbc)",
+        "json.dumps(deal_rbc_for(_ev,_base,int(_FBY),_FSURP,[float(x) for x in _p['b']],float(_p['u']),float(_p['o']),_nodeal29))"].join("\n"));
+      var rbv=JSON.parse(rb);r.rbc_lift=rbv.rbc_lift;r.cap_relief_value=rbv.cap_relief_value;
+      if(prog)prog.textContent='RBC '+(s+1)+' / '+cap+' (of '+survivors.length+' cashflow-feasible)…';
+      await new Promise(function(rr){setTimeout(rr);});
     }
-    S.deal={recs:recs};
-    if(prog)prog.textContent=recs.length+' / '+N+' scenarios done.';
+    S.deal={recs:recs,rbcRun:cap,survivors:survivors.length};
+    if(prog)prog.textContent=N+' structures · '+survivors.length+' cashflow-feasible · RBC on '+cap+'.';
     renderDealAnalysis();
   }catch(e){if(warn)warn.textContent='Error: '+e.message;console.error(e);}
   finally{if(btn)btn.disabled=false;}
@@ -2068,115 +2060,109 @@ function renderDealAnalysis(){
   var cons=daReadConstraints();
   var pct=function(v,d){return v==null?'-':(v*100).toFixed(d==null?1:d)+'%';};
   var m=function(v){return v==null?'-':Number(v).toFixed(1);};
-  var liftS=function(v){return v==null?'-':(v>=0?'+':'')+v.toFixed(2)+'x';};
-  recs.forEach(function(r){r.fails=daFails(r,cons);r.feasible=r.fails.length===0;
-    r.accr_ratio=(r.cap_relief_value!=null&&r.cost)?r.cap_relief_value/r.cost:null;});
+  var liftS=function(v){return v==null?'—':(v>=0?'+':'')+v.toFixed(2)+'x';};
+  var rankSel=(document.getElementById('da-rank')||{}).value||'cap_relief_value';
+  var rk=DA_RANKS.filter(function(x){return x.key===rankSel;})[0]||DA_RANKS[0];
+  var rankKey=rk.key,asc=!!rk.asc;
+  function rankVal(r){return r[rankKey];}
+  recs.forEach(function(r){r.fails=daFails(r,cons);r.feasible=r.fails.length===0;});
   var feas=recs.filter(function(r){return r.feasible;});
-  var byNDV=function(a,b){return (b.net_deal_value==null?-1e9:b.net_deal_value)-(a.net_deal_value==null?-1e9:a.net_deal_value);};
-  feas.sort(byNDV);
+  var cmpRank=function(a,b){var va=rankVal(a),vb=rankVal(b);va=(va==null)?(asc?1e9:-1e9):va;vb=(vb==null)?(asc?1e9:-1e9):vb;return asc?va-vb:vb-va;};
+  feas.sort(cmpRank);
   var best=feas[0]||null;
   var bktLbls=DA_BUCKETS.map(function(b){return b.label;});
   var failChips=function(r){return r.fails.map(function(k){return '<span style="background:#F4D7D2;color:#8a2a1c;border-radius:3px;padding:0 4px;margin-right:3px;white-space:nowrap">'+DA_CONLBL[k]+'</span>';}).join('');};
+  var survivors=recs.filter(function(r){return daFails(r,cons,true).length===0;});
 
-  // ---- Active-constraint summary text ----
   var consTxt=[];
   DA_CONS.forEach(function(c){if(cons[c.key]!=null)consTxt.push(DA_CONLBL[c.key]+' '+(c.dir==='le'?'≤':'≥')+' '+(c.pct?(cons[c.key]*100).toFixed(0)+'%':cons[c.key]));});
-  if(cons.accr)consTxt.push('value-accretive');
 
-  // ---- Best feasible (or nearest miss) + value-accretive emphasis ----
-  var bestHtml='';
-  function accLine(r){
-    if(r.net_deal_value==null)return 'capital-relief value unavailable (needs RBC/surplus data)';
-    var rel=r.cap_relief_value,co=r.cost;
-    if(r.net_deal_value>=0)return '<b style="color:#1A8F5A">value-accretive by $'+m(r.net_deal_value)+'M</b> (capital relief $'+m(rel)+'M vs ceded PVDE $'+m(co)+'M)';
-    return '<b style="color:#B53323">$'+m(-r.net_deal_value)+'M short of accretive</b> (capital relief $'+m(rel)+'M vs ceded PVDE $'+m(co)+'M; ratio '+(r.accr_ratio==null?'-':r.accr_ratio.toFixed(2))+'x)';
+  // ---- Best / nearest-miss: cost vs benefit components (no single net value) ----
+  function compTiles(r){
+    var tiles=[
+      ['Triangle',r.buckets.map(function(v){return (v*100).toFixed(0)+'%';}).join('/'),bktLbls.join(' / '),'var(--bdr)'],
+      ['Upfront / ongoing','$'+m(r.upfront)+'M / $'+r.ongoing.toFixed(0),'drawn terms','var(--bdr)'],
+      ['COST: ceded PVDE','$'+m(r.cost)+'M','profit handed to reinsurer','#B53323'],
+      ['Capital relief','$'+m(r.cap_relief_value)+'M','RBC freed × cost of capital, PV','#1A8F5A'],
+      ['Early-strain relief','$'+m(r.strain_relief)+'M','2026-28 capital/liquidity freed','#1A8F5A'],
+      ['Risk transfer',pct(r.risk_transfer,0),'PVDE volatility reduction','#1A8F5A'],
+      ['RBC lift',liftS(r.rbc_lift),'net RBC ratio − no-deal, 2029','#1A8F5A'],
+      ['Back-book comp',pct(r.back_comp_pct,0),'front-end PV / back-book PVDE ceded','var(--bdr)'],
+      ['NB net IRR',pct(r.nb_net_irr),'new business','var(--bdr)']
+    ];
+    return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'+tiles.map(function(c){
+      return '<div style="flex:1 1 140px;min-width:130px;padding:8px 10px;background:var(--off);border-radius:5px;border-left:3px solid '+c[3]+'"><div style="font-size:.6rem;color:var(--mu);text-transform:uppercase">'+c[0]+'</div><div style="font-size:1.0rem;font-weight:bold;color:var(--navy)">'+c[1]+'</div><div style="font-size:.6rem;color:var(--mu)">'+c[2]+'</div></div>';}).join('')+'</div>';
   }
-  function bestTiles(r){
-    return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'+
-      [['Triangle',r.buckets.map(function(v){return (v*100).toFixed(0)+'%';}).join(' / '),bktLbls.join(' / ')],
-       ['Upfront / ongoing','$'+m(r.upfront)+'M / $'+r.ongoing.toFixed(0),'drawn terms'],
-       ['Cost (ceded PVDE)','$'+m(r.cost)+'M','profit handed over'],
-       ['RBC lift',liftS(r.rbc_lift),'vs no-deal, 2029'],
-       ['Risk transfer',pct(r.risk_transfer,0),'PVDE volatility cut'],
-       ['NB net IRR',pct(r.nb_net_irr),'new business'],
-       ['Net deal value','$'+m(r.net_deal_value)+'M','relief − ceded PVDE']
-      ].map(function(c){return '<div style="flex:1 1 150px;min-width:140px;padding:8px 10px;background:var(--off);border-radius:5px;border-left:3px solid '+(c[0]==='Net deal value'&&r.net_deal_value!=null?(r.net_deal_value>=0?'#1A8F5A':'#B53323'):'#1A8F5A')+'"><div style="font-size:.6rem;color:var(--mu);text-transform:uppercase">'+c[0]+'</div><div style="font-size:1.0rem;font-weight:bold;color:var(--navy)">'+c[1]+'</div><div style="font-size:.6rem;color:var(--mu)">'+c[2]+'</div></div>';}).join('')+
-      '</div>';
-  }
+  var bestHtml;
   if(best){
-    bestHtml='<div style="font-size:.7rem;color:var(--mu);margin-top:4px">Best feasible structure (ranked by net deal value):</div>'+bestTiles(best)+
-      '<div style="font-size:.72rem;margin-top:6px">'+accLine(best)+'</div>';
+    bestHtml='<div style="font-size:.7rem;color:var(--mu);margin-top:4px">Best feasible structure (ranked by '+rk.label.toLowerCase()+'): cost vs the benefits it buys —</div>'+compTiles(best);
   }else{
-    // nearest miss: fewest failed constraints, then highest net deal value
-    var nm=recs.slice().sort(function(a,b){return (a.fails.length-b.fails.length)||byNDV(a,b);})[0];
-    // binding-constraint summary
+    var nm=recs.slice().sort(function(a,b){return (a.fails.length-b.fails.length)||cmpRank(a,b);})[0];
     var failCount={};recs.forEach(function(r){r.fails.forEach(function(k){failCount[k]=(failCount[k]||0)+1;});});
     var binding=Object.keys(failCount).sort(function(a,b){return failCount[b]-failCount[a];})
       .map(function(k){return DA_CONLBL[k]+' ('+failCount[k]+'/'+recs.length+')';}).join(', ');
     bestHtml='<div style="font-size:.74rem;color:var(--err);margin-top:6px">No scenario meets all constraints. Most-binding: <b>'+(binding||'-')+'</b>.</div>'+
-      '<div style="font-size:.7rem;color:var(--mu);margin-top:6px">Nearest miss (fails '+nm.fails.length+': '+failChips(nm)+'):</div>'+bestTiles(nm)+
-      '<div style="font-size:.72rem;margin-top:6px">'+accLine(nm)+'</div>';
+      '<div style="font-size:.7rem;color:var(--mu);margin-top:6px">Nearest miss (fails '+nm.fails.length+': '+failChips(nm)+'):</div>'+compTiles(nm);
   }
 
-  // ---- Shadow prices (perturbation on stored scenarios, no re-run) ----
-  var base0=daEvalFeasUnder(recs,cons);
-  var shadowRows=DA_SHADOW.filter(function(s){return cons[s.key]!=null;}).map(function(s){
-    var c2=Object.assign({},cons);c2[s.key]=c2[s.key]+s.d;
-    var e=daEvalFeasUnder(recs,c2);
-    var dN=e.n-base0.n,dB=(e.best==null?0:e.best)-(base0.best==null?0:base0.best);
-    var unlock=dN>0||dB>1e-9;
-    return '<tr'+(unlock?' style="background:#EEF8F2"':'')+'><td>'+s.lbl+'</td><td>'+base0.n+' &rarr; '+e.n+' ('+(dN>=0?'+':'')+dN+')</td><td>'+(e.best==null?'-':'$'+m(e.best)+'M')+'</td><td>'+(dB>0?'+':'')+m(dB)+'</td></tr>';
+  // ---- Shadow prices: value of relaxing each constraint (hold the others) ----
+  var shadowRows=DA_CONS.filter(function(c){return cons[c.key]!=null;}).map(function(c){
+    var cfOnly=!c.rbc, pool=c.rbc?survivors:recs, isMin=(c.dir==='ge');
+    var baseF=pool.filter(function(r){return daFails(r,cons,cfOnly).length===0;});
+    var o=Object.assign({},cons);delete o[c.key];
+    var dropF=pool.filter(function(r){return daFails(r,o,cfOnly).length===0;});
+    var unlocked=dropF.filter(function(r){return baseF.indexOf(r)<0;});
+    var relaxTo=null;unlocked.forEach(function(r){var v=r[c.fld];if(v==null)return;relaxTo=(relaxTo==null)?v:(isMin?Math.max(relaxTo,v):Math.min(relaxTo,v));});
+    var dN=dropF.length-baseF.length;
+    var fmtThr=function(v){return c.pct?(v*100).toFixed(1)+'%':(c.rbc?v.toFixed(2)+'x':v.toFixed(1));};
+    var relaxTxt=relaxTo==null?'—':(fmtThr(cons[c.key])+' → '+fmtThr(relaxTo));
+    return '<tr'+(dN>0?' style="background:#EEF8F2"':'')+'><td>'+DA_CONLBL[c.key]+(c.rbc?' (of survivors)':'')+'</td><td>'+baseF.length+' → '+dropF.length+' ('+(dN>=0?'+':'')+dN+')</td><td>'+relaxTxt+'</td></tr>';
   });
-  if(cons.accr){
-    var c2=Object.assign({},cons);c2.accr=false;var e=daEvalFeasUnder(recs,c2);var dN=e.n-base0.n,dB=(e.best==null?0:e.best)-(base0.best==null?0:base0.best);
-    shadowRows.push('<tr'+((dN>0||dB>1e-9)?' style="background:#EEF8F2"':'')+'><td>Drop value-accretive rule</td><td>'+base0.n+' &rarr; '+e.n+' ('+(dN>=0?'+':'')+dN+')</td><td>'+(e.best==null?'-':'$'+m(e.best)+'M')+'</td><td>'+(dB>0?'+':'')+m(dB)+'</td></tr>');
-  }
   var shadowHtml=shadowRows.length?
     '<div class="card"><div class="ch">What-if — constraint shadow prices</div><div class="cb">'+
-      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">The marginal value of relaxing each rule by one step, re-scored on this run\'s scenarios (no re-simulation). "Δ best" is the change in the best feasible net deal value. Each row relaxes one rule only; effects are not additive.</div>'+
-      '<div class="tw"><table class="bbt" style="font-size:.68rem"><thead><tr><th>Relax constraint</th><th>Feasible (Δ)</th><th>Best net deal value</th><th>Δ best $M</th></tr></thead><tbody>'+shadowRows.join('')+'</tbody></table></div>'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">For each constraint, how many more structures become feasible if you <b>drop that one rule</b> (holding the others), and the threshold you\'d relax it to in order to admit the closest blocked structure. Re-scored on this run, no re-simulation. RBC-lift is judged among the cashflow-feasible survivors.</div>'+
+      '<div class="tw"><table class="bbt" style="font-size:.68rem"><thead><tr><th>Relax (drop) constraint</th><th>Feasible if dropped (Δ)</th><th>Relax-to (admit nearest)</th></tr></thead><tbody>'+shadowRows.join('')+'</tbody></table></div>'+
     '</div></div>':'';
 
   // ---- Scenario table ----
-  var rows=recs.slice().sort(function(a,b){return (b.feasible-a.feasible)||byNDV(a,b);});
+  var rows=recs.slice().sort(function(a,b){return (b.feasible-a.feasible)||cmpRank(a,b);});
   var hdr=[['#','scenario id'],['≤2019','cede % on issue years 2019 & prior'],['20-24','cede % on 2020-2024'],
     ['2025','cede % on 2025'],['26-30','cede % on 2026-2030'],['31+','cede % on 2031+'],
     ['Upfront $M','upfront payment drawn'],['Ongoing $/pol','ongoing ceding commission drawn'],
-    ['Cost $M','ceded PVDE handed to reinsurer'],['RBC lift x','net RBC ratio − no-deal (2029)'],
+    ['Cost $M','ceded PVDE handed to reinsurer (what you give up)'],['Cap relief $M','RBC capital freed × cost of capital, PV (— until RBC pass)'],
+    ['RBC lift x','net RBC ratio − no-deal, 2029 (— until RBC pass)'],
     ['Risk xfer %','reduction in net PVDE volatility vs no-deal'],['NB IRR','new-business net IRR'],
     ['ΔEV exist $M','existing-book EV given up'],['ΔEV new $M','new-business EV given up'],
-    ['ΔIRR new','new-business IRR change'],['Strain $M','early-strain relief'],
-    ['Net deal val $M','capital relief − ceded PVDE (>0 = accretive)'],['Fails','constraints not met']];
+    ['ΔIRR new','new-business IRR change'],['Strain $M','early-strain relief'],['Fails','constraints not met']];
   var tbl='<div class="tw" style="max-height:420px"><table class="bbt" style="font-size:.66rem"><thead><tr>'+
     hdr.map(function(h){return '<th title="'+h[1]+'">'+h[0]+'</th>';}).join('')+'</tr></thead><tbody>'+
     rows.map(function(r){
-      var ndvCol=r.net_deal_value==null?'':('color:'+(r.net_deal_value>=0?'#1A8F5A':'#B53323')+';font-weight:bold');
       return '<tr'+(r.feasible?' style="background:#EEF8F2"':'')+'><td>'+r.n_run+'</td>'+
         r.buckets.map(function(v){return '<td>'+(v*100).toFixed(0)+'%</td>';}).join('')+
-        '<td>'+m(r.upfront)+'</td><td>'+r.ongoing.toFixed(0)+'</td><td>'+m(r.cost)+'</td><td>'+liftS(r.rbc_lift)+'</td>'+
+        '<td>'+m(r.upfront)+'</td><td>'+r.ongoing.toFixed(0)+'</td><td>'+m(r.cost)+'</td><td>'+m(r.cap_relief_value)+'</td><td>'+liftS(r.rbc_lift)+'</td>'+
         '<td>'+pct(r.risk_transfer,0)+'</td><td>'+pct(r.nb_net_irr)+'</td><td>'+m(r.back_dEV)+'</td><td>'+m(r.nb_dEV)+'</td>'+
-        '<td>'+pct(r.nb_dIRR)+'</td><td>'+m(r.strain_relief)+'</td><td style="'+ndvCol+'">'+m(r.net_deal_value)+'</td>'+
+        '<td>'+pct(r.nb_dIRR)+'</td><td>'+m(r.strain_relief)+'</td>'+
         '<td style="font-size:.6rem">'+(r.feasible?'<span style="color:#1A8F5A">✓</span>':failChips(r))+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 
   out.innerHTML=
     '<div class="card"><div class="ch">Feasible set</div><div class="cb">'+
-      '<div style="font-size:.72rem;color:var(--navy)"><b>'+feas.length+'</b> of '+recs.length+' scenarios meet all constraints'+(consTxt.length?' ('+consTxt.join(', ')+')':'')+'.</div>'+
+      '<div style="font-size:.72rem;color:var(--navy)"><b>'+feas.length+'</b> of '+recs.length+' meet all constraints'+(consTxt.length?' ('+consTxt.join(', ')+')':'')+'. '+
+        S.deal.survivors+' passed the cashflow constraints; RBC computed for '+S.deal.rbcRun+'.</div>'+
       bestHtml+
     '</div></div>'+
     shadowHtml+
-    '<div class="card"><div class="ch">Cost vs RBC lift</div><div class="cb">'+
-      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each point is a drawn structure. X = cost (ceded PVDE given up) · Y = RBC lift. Teal = meets all constraints; amber ring = value-accretive; gray = fails a constraint.</div>'+
-      '<div style="position:relative;height:380px"><canvas id="da-scatter"></canvas></div>'+
+    '<div class="card"><div class="ch">Cost vs risk transfer</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each point is a drawn structure. X = cost (ceded PVDE given up) · Y = risk transfer (PVDE volatility reduction). Teal = meets all constraints; gray = fails; ★ = best.</div>'+
+      '<div style="position:relative;height:360px"><canvas id="da-scatter"></canvas></div>'+
     '</div></div>'+
     '<div class="card"><div class="ch">Scenarios ('+recs.length+')</div><div class="cb">'+tbl+'</div></div>';
 
   if(S.daScatter)S.daScatter.destroy();
-  var pt=function(r){return {x:r.cost,y:r.rbc_lift,r:r};};
+  var pt=function(r){return {x:r.cost,y:r.risk_transfer,r:r};};
   var ds=[
-    {label:'Infeasible',data:recs.filter(function(r){return!r.feasible;}).map(pt),backgroundColor:'rgba(130,130,130,.28)',pointRadius:4,order:4},
-    {label:'Feasible',data:feas.filter(function(r){return!(r.net_deal_value>=0);}).map(pt),backgroundColor:'#0a7080',pointRadius:5,order:2},
-    {label:'Feasible & accretive',data:feas.filter(function(r){return r.net_deal_value>=0;}).map(pt),backgroundColor:'#1A8F5A',borderColor:'#E6C200',borderWidth:2,pointRadius:6,order:1}
+    {label:'Fails a constraint',data:recs.filter(function(r){return!r.feasible;}).map(pt),backgroundColor:'rgba(130,130,130,.28)',pointRadius:4,order:3},
+    {label:'Feasible',data:feas.map(pt),backgroundColor:'#0a7080',pointRadius:5,order:1}
   ];
   if(best)ds.push({label:'Best',data:[pt(best)],backgroundColor:'#E6C200',borderColor:'#1C2B6B',borderWidth:2,pointStyle:'star',pointRadius:14,order:0});
   S.daScatter=new Chart(document.getElementById('da-scatter'),{type:'scatter',data:{datasets:ds},
@@ -2184,9 +2170,9 @@ function renderDealAnalysis(){
       plugins:{legend:{labels:{boxWidth:10,font:{size:10}}},
         tooltip:{callbacks:{label:function(c){var r=(c.raw||{}).r;if(!r)return '';
           return ['#'+r.n_run+'  triangle '+r.buckets.map(function(v){return (v*100).toFixed(0)+'%';}).join('/')+' | up $'+m(r.upfront)+'M | ong $'+r.ongoing.toFixed(0),
-            'cost $'+m(r.cost)+'M | RBC lift '+liftS(r.rbc_lift)+' | risk xfer '+pct(r.risk_transfer,0),
-            'NB IRR '+pct(r.nb_net_irr)+' | strain $'+m(r.strain_relief)+'M | net deal val $'+m(r.net_deal_value)+'M',
+            'cost $'+m(r.cost)+'M | risk xfer '+pct(r.risk_transfer,0)+' | cap relief $'+m(r.cap_relief_value)+'M | RBC lift '+liftS(r.rbc_lift),
+            'NB IRR '+pct(r.nb_net_irr)+' | strain $'+m(r.strain_relief)+'M',
             (r.fails.length?'fails: '+r.fails.map(function(k){return DA_CONLBL[k];}).join(', '):'feasible')];}}}},
       scales:{x:{title:{display:true,text:'Cost — ceded PVDE given up ($M, lower better)'}},
-              y:{title:{display:true,text:'RBC lift (x, higher better)'}}}}});
+              y:{title:{display:true,text:'Risk transfer (higher better)'}}}}});
 }
