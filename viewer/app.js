@@ -836,16 +836,28 @@ function renderDocs(){
       .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--navy)">$1</strong>')
       .replace(/`(.+?)`/g,'<code style="background:var(--gray);padding:1px 5px;border-radius:3px;font-size:.92em;font-family:var(--fm)">$1</code>');
   }
-  let html='<div style="max-width:900px">';
-  text.split('\n').forEach(raw=>{
-    const t=raw.replace(/\s+$/,'');
-    if(/^#\s+/.test(t)){html+='<div style="font-family:var(--ft);font-size:1.4rem;color:var(--navy);font-weight:bold;margin:0 0 2px">'+inline(t.slice(2))+'</div>';}
-    else if(/^##\s+/.test(t)){html+='<div style="font-family:var(--ft);font-size:1.0rem;color:var(--yel);background:var(--navy);padding:7px 13px;border-radius:4px;margin:22px 0 9px;letter-spacing:.02em">'+inline(t.slice(3))+'</div>';}
-    else if(/^###\s+/.test(t)){html+='<div style="font-size:.85rem;font-weight:bold;color:var(--navy);margin:13px 0 4px;border-bottom:1px solid var(--bdr);padding-bottom:3px">'+inline(t.slice(4))+'</div>';}
-    else if(/^>\s+/.test(t)){html+='<div style="font-size:.76rem;color:var(--navy);background:#EEF2FF;border-left:3px solid var(--navy);padding:7px 11px;margin:7px 0;border-radius:3px;line-height:1.5">'+inline(t.slice(2))+'</div>';}
-    else if(/^\s*-\s+/.test(t)){const sub=/^\s\s+-/.test(t);html+='<div style="display:flex;gap:8px;padding-left:'+(sub?'30':'14')+'px;margin-bottom:3px;font-size:.79rem;line-height:1.5"><span style="color:var(--gold)">&#9642;</span><span>'+inline(t.replace(/^\s*-\s+/,''))+'</span></div>';}
-    else if(t.trim()===''){html+='<div style="height:7px"></div>';}
-    else{html+='<p style="margin-bottom:5px;font-size:.79rem;line-height:1.62;color:var(--dk)">'+inline(t)+'</p>';}
+  function body(t){  // non-section lines -> inner HTML
+    if(/^###\s+/.test(t))return '<div style="font-size:.85rem;font-weight:bold;color:var(--navy);margin:13px 0 4px;border-bottom:1px solid var(--bdr);padding-bottom:3px">'+inline(t.slice(4))+'</div>';
+    if(/^>\s+/.test(t))return '<div style="font-size:.76rem;color:var(--navy);background:#EEF2FF;border-left:3px solid var(--navy);padding:7px 11px;margin:7px 0;border-radius:3px;line-height:1.5">'+inline(t.slice(2))+'</div>';
+    if(/^\s*-\s+/.test(t)){const sub=/^\s\s+-/.test(t);return '<div style="display:flex;gap:8px;padding-left:'+(sub?'30':'14')+'px;margin-bottom:3px;font-size:.79rem;line-height:1.5"><span style="color:var(--gold)">&#9642;</span><span>'+inline(t.replace(/^\s*-\s+/,''))+'</span></div>';}
+    if(t.trim()==='')return '<div style="height:7px"></div>';
+    return '<p style="margin-bottom:5px;font-size:.79rem;line-height:1.62;color:var(--dk)">'+inline(t)+'</p>';
+  }
+  // Group lines into collapsible <details> per "## " section; intro (# title etc.) stays open above.
+  const lines=text.split('\n').map(r=>r.replace(/\s+$/,''));
+  let head='',sections=[],cur=null;
+  lines.forEach(t=>{
+    if(/^#\s+/.test(t)){head+='<div style="font-family:var(--ft);font-size:1.4rem;color:var(--navy);font-weight:bold;margin:0 0 2px">'+inline(t.slice(2))+'</div>';}
+    else if(/^##\s+/.test(t)){cur={title:inline(t.slice(3)),html:''};sections.push(cur);}
+    else if(cur){cur.html+=body(t);}
+    else{head+=body(t);}
+  });
+  const summary='font-family:var(--ft);font-size:1.0rem;color:var(--yel);background:var(--navy);padding:7px 13px;border-radius:4px;margin:14px 0 0;letter-spacing:.02em;cursor:pointer;list-style:none';
+  let html='<div style="max-width:900px">'+head+
+    '<div style="margin:14px 0 4px"><button class="btn" style="font-size:.7rem;padding:3px 9px" onclick="document.querySelectorAll(\'#docs-content details\').forEach(function(d){d.open=true})">Expand all</button> '+
+    '<button class="btn" style="font-size:.7rem;padding:3px 9px" onclick="document.querySelectorAll(\'#docs-content details\').forEach(function(d){d.open=false})">Collapse all</button></div>';
+  sections.forEach(s=>{
+    html+='<details open style="margin-bottom:6px"><summary style="'+summary+'">'+s.title+'</summary><div style="padding:4px 4px 8px">'+s.html+'</div></details>';
   });
   html+='</div>';div.innerHTML=html;
 }
@@ -1952,8 +1964,9 @@ function renderFrontierUI(){
         '<div><label class="fl">Lapse shocks +%</label><input id="da-sl" type="text" value="0,10" '+inS+'></div></div>'+
     '</div>'+
     '<div><div style="font-size:.74rem;font-weight:bold;color:var(--navy);margin-bottom:5px">Constraints (blank = ignore)</div>'+cRows+
-      '<div style="'+rowS+';margin-top:8px"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Rank best feasible by</div><select id="da-rank" class="fi" style="width:auto;min-width:120px">'+rankOpts+'</select></div>'+
-      hint('Feasible = meets every set constraint. RBC lift is a non-linear metric computed only for cashflow-feasible structures.')+
+      '<div style="'+rowS+';margin-top:8px"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Rank best feasible by</div><select id="da-rank" class="fi" style="width:auto;min-width:120px" onchange="if(S.deal)renderDealAnalysis()">'+rankOpts+'</select></div>'+
+      '<div style="'+rowS+'"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Good-deal line: $M cost per 1.0x RBC lift</div><input id="da-price" type="text" value="100" '+inS+' onchange="if(S.deal)renderDealAnalysis()"></div>'+
+      hint('On the chart, deals buying more RBC lift per dollar than this price fall in the light-green good-deal zone.')+
     '</div>'+
     '</div>'+
     '<div style="margin-top:14px"><button id="frontier-run-btn" class="btn btn-y" onclick="runFrontier()">&#x25b6; Run Scenario Search</button> '+
@@ -2031,23 +2044,20 @@ async function runFrontier(){  // runs the Deal Analysis scenario search
     py.globals.set('_fdraws',JSON.stringify(draws));
     var rj=await py.runPythonAsync(["import json","_recs=deal_fast_sweep(_packed,json.loads(_fdraws))","json.dumps(_recs)"].join("\n"));
     var recs=JSON.parse(rj);
-    // Lazy RBC pass: only the structures passing the cashflow constraints.
-    var cons=daReadConstraints();
-    recs.forEach(function(r){r.cfFails=daFails(r,cons,true);});
-    var survivors=recs.filter(function(r){return r.cfFails.length===0;})
-      .sort(function(a,b){return (b.net_pvde||-1e9)-(a.net_pvde||-1e9);});
-    var cap=Math.min(survivors.length,80);
+    // RBC pass: re-run the full model (ceded EV + RBC) for EVERY structure so
+    // capital relief and RBC lift populate for all rows. Capped for very large N.
+    var cap=Math.min(recs.length,400);
     for(var s=0;s<cap;s++){
-      var r=survivors[s];
+      var r=recs[s];
       py.globals.set('_frbc',JSON.stringify({b:r.buckets,u:r.upfront,o:r.ongoing}));
       var rb=await py.runPythonAsync(["import json","_p=json.loads(_frbc)",
         "json.dumps(deal_rbc_for(_ev,_base,int(_FBY),_FSURP,[float(x) for x in _p['b']],float(_p['u']),float(_p['o']),_nodeal29))"].join("\n"));
       var rbv=JSON.parse(rb);r.rbc_lift=rbv.rbc_lift;r.cap_relief_value=rbv.cap_relief_value;
-      if(prog)prog.textContent='RBC '+(s+1)+' / '+cap+' (of '+survivors.length+' cashflow-feasible)…';
+      if(prog)prog.textContent='Recalculating RBC '+(s+1)+' / '+cap+'…';
       await new Promise(function(rr){setTimeout(rr);});
     }
-    S.deal={recs:recs,rbcRun:cap,survivors:survivors.length};
-    if(prog)prog.textContent=N+' structures · '+survivors.length+' cashflow-feasible · RBC on '+cap+'.';
+    S.deal={recs:recs,rbcRun:cap};
+    if(prog)prog.textContent=N+' structures · RBC recalculated for '+cap+'.';
     renderDealAnalysis();
   }catch(e){if(warn)warn.textContent='Error: '+e.message;console.error(e);}
   finally{if(btn)btn.disabled=false;}
@@ -2061,6 +2071,7 @@ function renderDealAnalysis(){
   var pct=function(v,d){return v==null?'-':(v*100).toFixed(d==null?1:d)+'%';};
   var m=function(v){return v==null?'-':Number(v).toFixed(1);};
   var liftS=function(v){return v==null?'—':(v>=0?'+':'')+v.toFixed(2)+'x';};
+  var price=parseFloat((document.getElementById('da-price')||{}).value);if(isNaN(price)||price<=0)price=100;
   var rankSel=(document.getElementById('da-rank')||{}).value||'cap_relief_value';
   var rk=DA_RANKS.filter(function(x){return x.key===rankSel;})[0]||DA_RANKS[0];
   var rankKey=rk.key,asc=!!rk.asc;
@@ -2132,6 +2143,7 @@ function renderDealAnalysis(){
     ['Cost $M','ceded PVDE handed to reinsurer (what you give up)'],['Cap relief $M','RBC capital freed × cost of capital, PV (— until RBC pass)'],
     ['RBC lift x','net RBC ratio − no-deal, 2029 (— until RBC pass)'],
     ['Risk xfer %','reduction in net PVDE volatility vs no-deal'],['NB IRR','new-business net IRR'],
+    ['Back comp %','front-end commission PV / back-book PVDE ceded'],
     ['ΔEV exist $M','existing-book EV given up'],['ΔEV new $M','new-business EV given up'],
     ['ΔIRR new','new-business IRR change'],['Strain $M','early-strain relief'],['Fails','constraints not met']];
   var tbl='<div class="tw" style="max-height:420px"><table class="bbt" style="font-size:.66rem"><thead><tr>'+
@@ -2140,39 +2152,62 @@ function renderDealAnalysis(){
       return '<tr'+(r.feasible?' style="background:#EEF8F2"':'')+'><td>'+r.n_run+'</td>'+
         r.buckets.map(function(v){return '<td>'+(v*100).toFixed(0)+'%</td>';}).join('')+
         '<td>'+m(r.upfront)+'</td><td>'+r.ongoing.toFixed(0)+'</td><td>'+m(r.cost)+'</td><td>'+m(r.cap_relief_value)+'</td><td>'+liftS(r.rbc_lift)+'</td>'+
-        '<td>'+pct(r.risk_transfer,0)+'</td><td>'+pct(r.nb_net_irr)+'</td><td>'+m(r.back_dEV)+'</td><td>'+m(r.nb_dEV)+'</td>'+
+        '<td>'+pct(r.risk_transfer,0)+'</td><td>'+pct(r.nb_net_irr)+'</td><td>'+pct(r.back_comp_pct,0)+'</td><td>'+m(r.back_dEV)+'</td><td>'+m(r.nb_dEV)+'</td>'+
         '<td>'+pct(r.nb_dIRR)+'</td><td>'+m(r.strain_relief)+'</td>'+
         '<td style="font-size:.6rem">'+(r.feasible?'<span style="color:#1A8F5A">✓</span>':failChips(r))+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 
   out.innerHTML=
     '<div class="card"><div class="ch">Feasible set</div><div class="cb">'+
-      '<div style="font-size:.72rem;color:var(--navy)"><b>'+feas.length+'</b> of '+recs.length+' meet all constraints'+(consTxt.length?' ('+consTxt.join(', ')+')':'')+'. '+
-        S.deal.survivors+' passed the cashflow constraints; RBC computed for '+S.deal.rbcRun+'.</div>'+
+      '<div style="font-size:.72rem;color:var(--navy)"><b>'+feas.length+'</b> of '+recs.length+' meet all constraints'+(consTxt.length?' ('+consTxt.join(', ')+')':'')+'. RBC recalculated for '+S.deal.rbcRun+'.</div>'+
       bestHtml+
     '</div></div>'+
     shadowHtml+
-    '<div class="card"><div class="ch">Cost vs risk transfer</div><div class="cb">'+
-      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each point is a drawn structure. X = cost (ceded PVDE given up) · Y = risk transfer (PVDE volatility reduction). Teal = meets all constraints; gray = fails; ★ = best.</div>'+
-      '<div style="position:relative;height:360px"><canvas id="da-scatter"></canvas></div>'+
+    '<div class="card"><div class="ch">Cost vs RBC lift</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each dark point is a drawn structure: X = cost (ceded PVDE given up) · Y = RBC lift. Light dots are its claims×lapse stress (the ceded PVDE moves with the shocks; RBC lift is a single base-env number). The <b style="color:#1A8F5A">light-green zone</b> = deals buying more RBC lift per dollar than your good-deal price ($'+m(price)+'M / 1.0x). Teal = feasible; gray = fails; ★ = best.</div>'+
+      '<div style="position:relative;height:380px"><canvas id="da-scatter"></canvas></div>'+
     '</div></div>'+
     '<div class="card"><div class="ch">Scenarios ('+recs.length+')</div><div class="cb">'+tbl+'</div></div>';
 
   if(S.daScatter)S.daScatter.destroy();
-  var pt=function(r){return {x:r.cost,y:r.risk_transfer,r:r};};
+  var pt=function(r){return {x:r.cost,y:r.rbc_lift,r:r};};
+  // claims×lapse stress cloud: each structure's ceded PVDE under each stress env, at its base RBC-lift y
+  var sens=[];
+  recs.forEach(function(r){if(r.rbc_lift==null||!r.env_costs)return;for(var e=1;e<r.env_costs.length;e++)sens.push({x:r.env_costs[e],y:r.rbc_lift,r:r});});
   var ds=[
-    {label:'Fails a constraint',data:recs.filter(function(r){return!r.feasible;}).map(pt),backgroundColor:'rgba(130,130,130,.28)',pointRadius:4,order:3},
-    {label:'Feasible',data:feas.map(pt),backgroundColor:'#0a7080',pointRadius:5,order:1}
+    {label:'Stress sensitivities',data:sens,backgroundColor:'rgba(120,140,170,.18)',pointRadius:2,order:5},
+    {label:'Fails a constraint',data:recs.filter(function(r){return!r.feasible&&r.rbc_lift!=null;}).map(pt),backgroundColor:'rgba(130,130,130,.45)',pointRadius:4,order:3},
+    {label:'Feasible',data:feas.filter(function(r){return r.rbc_lift!=null;}).map(pt),backgroundColor:'#0a7080',pointRadius:5,order:1}
   ];
-  if(best)ds.push({label:'Best',data:[pt(best)],backgroundColor:'#E6C200',borderColor:'#1C2B6B',borderWidth:2,pointStyle:'star',pointRadius:14,order:0});
-  S.daScatter=new Chart(document.getElementById('da-scatter'),{type:'scatter',data:{datasets:ds},
+  if(best&&best.rbc_lift!=null)ds.push({label:'Best',data:[pt(best)],backgroundColor:'#E6C200',borderColor:'#1C2B6B',borderWidth:2,pointStyle:'star',pointRadius:14,order:0});
+  // good-deal line + shaded triangle (rbc_lift >= cost/price): inline canvas plugin
+  var goodDeal={id:'goodDeal',beforeDatasetsDraw:function(ch){
+    var xa=ch.scales.x,ya=ch.scales.y,ctx=ch.ctx;if(!xa||!ya||!(price>0))return;
+    var x0=Math.max(0,xa.min),xMax=xa.max,yMax=ya.max,yMin=Math.max(0,ya.min);
+    // line cost = price*lift  ->  lift = cost/price; good zone is lift >= cost/price (upper-left)
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(xa.getPixelForValue(x0),ya.getPixelForValue(Math.max(yMin,x0/price)));
+    ctx.lineTo(xa.getPixelForValue(x0),ya.getPixelForValue(yMax));
+    var xAtTop=Math.min(xMax,price*yMax);
+    ctx.lineTo(xa.getPixelForValue(xAtTop),ya.getPixelForValue(yMax));
+    ctx.lineTo(xa.getPixelForValue(xAtTop),ya.getPixelForValue(xAtTop/price));
+    ctx.closePath();
+    ctx.fillStyle='rgba(26,143,90,.12)';ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(xa.getPixelForValue(x0),ya.getPixelForValue(Math.max(yMin,x0/price)));
+    ctx.lineTo(xa.getPixelForValue(xAtTop),ya.getPixelForValue(xAtTop/price));
+    ctx.strokeStyle='rgba(26,143,90,.7)';ctx.setLineDash([6,4]);ctx.lineWidth=1.5;ctx.stroke();
+    ctx.restore();
+  }};
+  S.daScatter=new Chart(document.getElementById('da-scatter'),{type:'scatter',data:{datasets:ds},plugins:[goodDeal],
     options:{animation:false,responsive:true,maintainAspectRatio:false,
       plugins:{legend:{labels:{boxWidth:10,font:{size:10}}},
         tooltip:{callbacks:{label:function(c){var r=(c.raw||{}).r;if(!r)return '';
           return ['#'+r.n_run+'  triangle '+r.buckets.map(function(v){return (v*100).toFixed(0)+'%';}).join('/')+' | up $'+m(r.upfront)+'M | ong $'+r.ongoing.toFixed(0),
-            'cost $'+m(r.cost)+'M | risk xfer '+pct(r.risk_transfer,0)+' | cap relief $'+m(r.cap_relief_value)+'M | RBC lift '+liftS(r.rbc_lift),
-            'NB IRR '+pct(r.nb_net_irr)+' | strain $'+m(r.strain_relief)+'M',
+            'cost $'+m(r.cost)+'M | RBC lift '+liftS(r.rbc_lift)+' | cap relief $'+m(r.cap_relief_value)+'M | risk xfer '+pct(r.risk_transfer,0),
+            'NB IRR '+pct(r.nb_net_irr)+' | back-book comp '+pct(r.back_comp_pct,0)+' | strain $'+m(r.strain_relief)+'M',
             (r.fails.length?'fails: '+r.fails.map(function(k){return DA_CONLBL[k];}).join(', '):'feasible')];}}}},
       scales:{x:{title:{display:true,text:'Cost — ceded PVDE given up ($M, lower better)'}},
-              y:{title:{display:true,text:'Risk transfer (higher better)'}}}}});
+              y:{title:{display:true,text:'RBC lift (x, higher better)'}}}}});
 }

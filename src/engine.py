@@ -1121,16 +1121,17 @@ def deal_fast_sweep(packed, draws):
     out = []
     for d in draws:
         bk = [float(x) for x in d['buckets']]; up = float(d['upfront']); on = float(d['ongoing'])
-        net_pvdes = []; pred_pvdes = []; bm = {}
+        net_pvdes = []; pred_pvdes = []; env_costs = []; bm = {}
         for bz in bases:
             G = bz['G']; F = bz['F']; Cann = bz['Cann']
             ced_DE = [sum(bk[b] * G[b][y] for b in range(5)) - up * F[y]
                       - on * sum(bk[b] * Cann[b][y] for b in range(5)) for y in range(ny)]
             net_DE = [bz['Dpre'][y] - ced_DE[y] for y in range(ny)]
             net_pvde = _pvde_list(net_DE, disc)[0]
-            net_pvdes.append(net_pvde / 1e6); pred_pvdes.append(bz['pred_pvde'])
+            cost_env = _pvde_list(ced_DE, disc)[0] / 1e6
+            net_pvdes.append(net_pvde / 1e6); pred_pvdes.append(bz['pred_pvde']); env_costs.append(cost_env)
             if bz['is_base']:
-                cost = _pvde_list(ced_DE, disc)[0] / 1e6
+                cost = cost_env
                 _, net_irr = _pvde_list(net_DE, disc)
                 back_ced = [sum(bk[b] * G[b][y] for b in DA_BACK) for y in range(ny)]
                 new_ced = [sum(bk[b] * G[b][y] for b in DA_NEW) for y in range(ny)]
@@ -1157,7 +1158,7 @@ def deal_fast_sweep(packed, draws):
         sps = _std(pred_pvdes)
         rt = (1 - _std(net_pvdes) / sps) if sps else 0.0
         rec = dict(n_run=d['n'], buckets=bk, upfront=up, ongoing=on, risk_transfer=rt,
-                   rbc_lift=None, cap_relief_value=None)
+                   env_costs=env_costs, rbc_lift=None, cap_relief_value=None)
         rec.update(bm)
         out.append(rec)
     return out

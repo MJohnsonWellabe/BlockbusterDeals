@@ -25,7 +25,8 @@ browser via Pyodide (Python/WASM) — there is no server.
 ### EV Projection Data
 - A 30-year monthly economic-value projection, keyed by issue year. The built-in default is a
   slimmed file collapsed across product and new-business, preserving aggregate premium and claim
-  totals. The `<=2019` bucket is the back book (read as issue year 2019); 2020-2030 are explicit.
+  totals. The `<=2019` bucket is the back book (read as issue year 2019); issue years 2020-2035 are
+  explicit (2031-2035 are forward new-business cohorts).
 - Upload your own CSV on the Upload tab to override the default.
 
 ### RBC & Surplus
@@ -78,7 +79,7 @@ browser via Pyodide (Python/WASM) — there is no server.
 - **RBC & Surplus** — Original / Predeal / Net / Lift.
 - **Data** — browse the raw EV input rows (direct and ceded).
 - **Validation** — Balance Plan reconciliation, Issue-Year diagnostic, Test Log, and a data-integrity checklist.
-- **Frontier** — the deal-structure efficient frontier (Section 7).
+- **Deal Analysis** — the reinsurance-structure scenario explorer with constraints (Section 7).
 
 ## 6. Cedant Economics (Summary metrics)
 
@@ -107,17 +108,23 @@ A reinsurance-structure **scenario explorer with a constraint finder**. Each sce
 plus a drawn **upfront payment** and **ongoing ceding commission**. You set a low/high **bound** for
 every drawn quantity and the model samples between them (default ~200 draws).
 
-- **Fast (vectorized)** — because cession and the flat commissions are linear in the cede %s, upfront
-  and ongoing, the cashflow side of every draw is a precomputed-basis linear combination (no
-  re-projection), so hundreds of draws are near-instant after a one-time per-stress-env precompute.
-  Only the **RBC** result (a non-linear covariance calc) is computed by the full engine, and only for
-  the structures that pass the cashflow constraints.
+- **Fast (vectorized) cashflow** — because cession and the flat commissions are linear in the cede %s,
+  upfront and ongoing, the cashflow side of every draw (cost, net PVDE/IRR, EV changes, strain, risk
+  transfer, back-book comp) is a precomputed-basis linear combination — no re-projection — so hundreds
+  of draws are near-instant after a one-time per-stress-env precompute.
+- **RBC recalculated per structure** — RBC (a non-linear covariance calc) and the capital-relief value
+  are then recomputed by the full engine for **every** drawn structure (it re-runs the ceded EV and the
+  surplus calc). This is the slow part — a live counter shows progress — but it means capital relief
+  and RBC lift are populated for every row.
 - **Stress overlay** — each structure is scored across a claims x lapse grid (set the shock lists).
   This drives **risk transfer = the reduction in net PVDE volatility vs the no-deal book**.
 - **Per-structure results** — cost (ceded PVDE handed over) versus the benefits it buys: capital
   relief, early-strain relief, risk transfer, RBC lift; plus new-business net IRR, back-book
   compensation %, and the change in EV for existing and new business. There is **no single
   "net deal value"** — the benefits are shown as components beside the cost so you can judge the trade.
+- **Cost vs RBC-lift chart** — each structure is a dark point (cost x, RBC lift y) with a light cloud
+  of its claims x lapse stress points (the ceded PVDE moves with the shocks). A user-set **good-deal
+  line** ($M cost per 1.0x RBC lift) shades the light-green zone of deals that buy more lift per dollar.
 - **Constraint finder** — set any of: max cost, min RBC lift, min risk transfer, min NB IRR, min
   strain relief, min back-book compensation %. Blank = ignored. It highlights the **feasible**
   structures and ranks the **best** by your chosen objective (capital relief / risk transfer / cost).
@@ -128,8 +135,8 @@ every drawn quantity and the model samples between them (default ~200 draws).
   blocked structure. Re-scored on the stored draws, no re-simulation.
 
 > Tip: run the model once first so data/assumptions are loaded, then set your bounds + constraints
-> and press Run. Draws are fast, so raise the count or add stress shocks freely; a live counter shows
-> the precompute, the sweep, and the RBC pass.
+> and press Run. The cashflow sweep is instant; the per-structure RBC recalculation is the paced part,
+> so lower the draw count for a quick look. A live counter shows the precompute, sweep and RBC passes.
 
 ## 8. Scenarios
 
