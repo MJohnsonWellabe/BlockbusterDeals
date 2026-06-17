@@ -122,9 +122,14 @@ every drawn quantity and the model samples between them (default ~200 draws).
   relief, early-strain relief, risk transfer, RBC lift; plus new-business net IRR, back-book
   compensation %, and the change in EV for existing and new business. There is **no single
   "net deal value"** — the benefits are shown as components beside the cost so you can judge the trade.
-- **Cost vs RBC-lift chart** — each structure is a dark point (cost x, RBC lift y) with a light cloud
+- **Cost vs RBC-lift chart** — each structure is a dark point (cost x, RBC lift % y) with a light cloud
   of its claims x lapse stress points (the ceded PVDE moves with the shocks). A user-set **good-deal
-  line** ($M cost per 1.0x RBC lift) shades the light-green zone of deals that buy more lift per dollar.
+  line** ($M cost per 100% RBC lift; default $300M, so $60M should buy ≥20%) shades the light-green
+  zone of deals that buy more lift per dollar.
+- **Executive read** — a plain-English board summary of the best structure: what we **give up**
+  (lifetime profit, existing/new EV) versus what we **get** (cash up front, a higher RBC ratio, freed
+  capital, strain relief, downside transferred), with the honest punch line that the deal isn't a
+  money-maker — it buys regulatory headroom and risk protection at a known price in profit.
 - **Constraint finder** — set any of: max cost, min RBC lift, min risk transfer, min NB IRR, min
   strain relief, min back-book compensation %. Blank = ignored. It highlights the **feasible**
   structures and ranks the **best** by your chosen objective (capital relief / risk transfer / cost).

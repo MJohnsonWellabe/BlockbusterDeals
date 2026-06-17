@@ -1171,7 +1171,8 @@ def deal_rbc_for(ev_agg, base_assum, by, surplus_rows, buckets, upfront, ongoing
     r = run_model(ev_agg, _deal_assum(base_assum, iss, hz_end, 1.0, 1.0, buckets, upfront, ongoing),
                   by, surplus_rows=surplus_rows, lite=True)
     na = r['rbc_net_result']['net_adjustments']
-    return {'rbc_lift': (na.get(2029) or {}).get('ratio_w_margin', 0) - (nodeal29 or 0),
+    net_rbc29 = (na.get(2029) or {}).get('ratio_w_margin', 0)
+    return {'rbc_lift': net_rbc29 - (nodeal29 or 0), 'net_rbc29': net_rbc29,
             'cap_relief_value': r.get('cedant_analytics', {}).get('cap_relief_value')}
 
 

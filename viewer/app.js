@@ -1965,8 +1965,8 @@ function renderFrontierUI(){
     '</div>'+
     '<div><div style="font-size:.74rem;font-weight:bold;color:var(--navy);margin-bottom:5px">Constraints (blank = ignore)</div>'+cRows+
       '<div style="'+rowS+';margin-top:8px"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Rank best feasible by</div><select id="da-rank" class="fi" style="width:auto;min-width:120px" onchange="if(S.deal)renderDealAnalysis()">'+rankOpts+'</select></div>'+
-      '<div style="'+rowS+'"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Good-deal line: $M cost per 1.0x RBC lift</div><input id="da-price" type="text" value="100" '+inS+' onchange="if(S.deal)renderDealAnalysis()"></div>'+
-      hint('On the chart, deals buying more RBC lift per dollar than this price fall in the light-green good-deal zone.')+
+      '<div style="'+rowS+'"><div style="flex:1 1 170px;min-width:150px;font-size:.72rem">Good-deal line: $M cost per 1.0 (100%) RBC lift</div><input id="da-price" type="text" value="300" '+inS+' onchange="if(S.deal)renderDealAnalysis()"></div>'+
+      hint('Chart line cost = price × lift. At $300M/100%: $60M should buy ≥20% lift, $90M ≥30%, $300M ≥100%. Deals above the line are in the green good-deal zone.')+
     '</div>'+
     '</div>'+
     '<div style="margin-top:14px"><button id="frontier-run-btn" class="btn btn-y" onclick="runFrontier()">&#x25b6; Run Scenario Search</button> '+
@@ -2052,11 +2052,12 @@ async function runFrontier(){  // runs the Deal Analysis scenario search
       py.globals.set('_frbc',JSON.stringify({b:r.buckets,u:r.upfront,o:r.ongoing}));
       var rb=await py.runPythonAsync(["import json","_p=json.loads(_frbc)",
         "json.dumps(deal_rbc_for(_ev,_base,int(_FBY),_FSURP,[float(x) for x in _p['b']],float(_p['u']),float(_p['o']),_nodeal29))"].join("\n"));
-      var rbv=JSON.parse(rb);r.rbc_lift=rbv.rbc_lift;r.cap_relief_value=rbv.cap_relief_value;
+      var rbv=JSON.parse(rb);r.rbc_lift=rbv.rbc_lift;r.cap_relief_value=rbv.cap_relief_value;r.net_rbc29=rbv.net_rbc29;
       if(prog)prog.textContent='Recalculating RBC '+(s+1)+' / '+cap+'…';
       await new Promise(function(rr){setTimeout(rr);});
     }
-    S.deal={recs:recs,rbcRun:cap};
+    var nd29=py.globals.get('_nodeal29');
+    S.deal={recs:recs,rbcRun:cap,nodeal29:(nd29==null?null:Number(nd29))};
     if(prog)prog.textContent=N+' structures · RBC recalculated for '+cap+'.';
     renderDealAnalysis();
   }catch(e){if(warn)warn.textContent='Error: '+e.message;console.error(e);}
@@ -2116,6 +2117,35 @@ function renderDealAnalysis(){
       '<div style="font-size:.7rem;color:var(--mu);margin-top:6px">Nearest miss (fails '+nm.fails.length+': '+failChips(nm)+'):</div>'+compTiles(nm);
   }
 
+  // ---- Executive cost-vs-benefit story (plain English, board tone) ----
+  function daStory(r){
+    if(!r)return '';
+    var nodeal=S.deal.nodeal29,net=r.net_rbc29,lift=r.rbc_lift,cost=r.cost,cap=r.cap_relief_value;
+    var liftPct=lift==null?'—':(lift>=0?'+':'')+(lift*100).toFixed(0)+'%';
+    var perLift=(cost!=null&&lift)?cost/lift:null;
+    var ratioStr=(nodeal!=null&&net!=null)?(nodeal.toFixed(2)+'x → '+net.toFixed(2)+'x'):'—';
+    var give=[['≈$'+m(cost)+'M','lifetime profit handed to the reinsurer (present value)'],
+      ['≈$'+m(r.back_dEV)+'M','less value in the existing (in-force) book'],
+      ['≈$'+m(r.nb_dEV)+'M','less value in new business']];
+    var get=[['$'+m(r.upfront)+'M','cash up front'],
+      [ratioStr,'regulatory capital cushion (RBC ratio), '+liftPct],
+      ['≈$'+m(cap)+'M','value of the capital this frees up'],
+      ['≈$'+m(r.strain_relief)+'M','near-term (2026-28) capital strain relieved'],
+      ['≈'+pct(r.risk_transfer,0),'of our claims/lapse downside handed off']];
+    function col(title,items,color){return '<div style="flex:1 1 280px;min-width:230px"><div style="font-weight:bold;color:'+color+';font-size:.8rem;margin-bottom:4px">'+title+'</div>'+
+      items.map(function(it){return '<div style="display:flex;gap:8px;margin-bottom:4px;font-size:.76rem"><div style="min-width:82px;font-weight:bold;color:var(--navy)">'+it[0]+'</div><div style="color:var(--dk)">'+it[1]+'</div></div>';}).join('')+'</div>';}
+    var headline='Do this deal and we give up <b>≈$'+m(cost)+'M</b> of future profit to lift our capital cushion to <b>'+(net==null?'—':net.toFixed(2)+'x')+'</b> ('+liftPct+') and hand off <b>≈'+pct(r.risk_transfer,0)+'</b> of our claims/lapse downside.';
+    var punch='The capital this frees is worth only <b>≈$'+m(cap)+'M</b> on its own — far less than the ≈$'+m(cost)+'M of profit given up — so this is <b>not a money-maker</b>. We\'d be paying '+(perLift==null?'—':'<b>≈$'+m(perLift)+'M of profit for every +100% of RBC lift</b>')+' to buy regulatory headroom and downside protection. <b>Are we comfortable giving up ≈$'+m(cost)+'M of profit for that?</b>';
+    return '<div class="card" style="border-left:4px solid var(--navy)"><div class="ch">Executive read — what we give up vs. what we get</div><div class="cb">'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">'+(best?'Best feasible':'Nearest-to-feasible')+' structure: cede '+r.buckets.map(function(v){return (v*100).toFixed(0)+'%';}).join('/')+' ('+bktLbls.join('/')+'), upfront $'+m(r.upfront)+'M, ongoing $'+r.ongoing.toFixed(0)+'/pol. Change the rank or constraints to narrate a different one.</div>'+
+      '<div style="font-size:.86rem;color:var(--navy);margin-bottom:10px;line-height:1.5">'+headline+'</div>'+
+      '<div style="display:flex;gap:20px;flex-wrap:wrap">'+col('WE GIVE UP',give,'#B53323')+col('WE GET',get,'#1A8F5A')+'</div>'+
+      '<div style="font-size:.78rem;color:var(--dk);margin-top:12px;background:#FFFBEC;border-left:3px solid var(--gold);padding:8px 11px;border-radius:3px;line-height:1.55">'+punch+'</div>'+
+    '</div></div>';
+  }
+  var narrate=best||recs.slice().sort(function(a,b){return (a.fails.length-b.fails.length)||cmpRank(a,b);})[0];
+  var storyHtml=daStory(narrate);
+
   // ---- Shadow prices: value of relaxing each constraint (hold the others) ----
   var shadowRows=DA_CONS.filter(function(c){return cons[c.key]!=null;}).map(function(c){
     var cfOnly=!c.rbc, pool=c.rbc?survivors:recs, isMin=(c.dir==='ge');
@@ -2158,13 +2188,14 @@ function renderDealAnalysis(){
     }).join('')+'</tbody></table></div>';
 
   out.innerHTML=
+    storyHtml+
     '<div class="card"><div class="ch">Feasible set</div><div class="cb">'+
       '<div style="font-size:.72rem;color:var(--navy)"><b>'+feas.length+'</b> of '+recs.length+' meet all constraints'+(consTxt.length?' ('+consTxt.join(', ')+')':'')+'. RBC recalculated for '+S.deal.rbcRun+'.</div>'+
       bestHtml+
     '</div></div>'+
     shadowHtml+
     '<div class="card"><div class="ch">Cost vs RBC lift</div><div class="cb">'+
-      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each dark point is a drawn structure: X = cost (ceded PVDE given up) · Y = RBC lift. Light dots are its claims×lapse stress (the ceded PVDE moves with the shocks; RBC lift is a single base-env number). The <b style="color:#1A8F5A">light-green zone</b> = deals buying more RBC lift per dollar than your good-deal price ($'+m(price)+'M / 1.0x). Teal = feasible; gray = fails; ★ = best.</div>'+
+      '<div style="font-size:.66rem;color:var(--mu);margin-bottom:6px">Each dark point is a drawn structure: X = cost (ceded PVDE given up) · Y = RBC lift (%). Light dots are its claims×lapse stress (the ceded PVDE moves with the shocks; RBC lift is a single base-env number). The <b style="color:#1A8F5A">light-green zone</b> = deals buying more RBC lift per dollar than your good-deal price ($'+m(price)+'M per 100% lift, so $60M&rarr;≥20%). Teal = feasible; gray = fails; ★ = best.</div>'+
       '<div style="position:relative;height:380px"><canvas id="da-scatter"></canvas></div>'+
     '</div></div>'+
     '<div class="card"><div class="ch">Scenarios ('+recs.length+')</div><div class="cb">'+tbl+'</div></div>';
@@ -2209,5 +2240,5 @@ function renderDealAnalysis(){
             'NB IRR '+pct(r.nb_net_irr)+' | back-book comp '+pct(r.back_comp_pct,0)+' | strain $'+m(r.strain_relief)+'M',
             (r.fails.length?'fails: '+r.fails.map(function(k){return DA_CONLBL[k];}).join(', '):'feasible')];}}}},
       scales:{x:{title:{display:true,text:'Cost — ceded PVDE given up ($M, lower better)'}},
-              y:{title:{display:true,text:'RBC lift (x, higher better)'}}}}});
+              y:{title:{display:true,text:'RBC lift (%, higher better)'},ticks:{callback:function(v){return (v*100).toFixed(0)+'%';}}}}}});
 }
