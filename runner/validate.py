@@ -10,7 +10,9 @@ The deal mirrors the Excel Assumptions tab: 10% quota-share on issue years
 2019-2030 (carried to every calendar year), FLAT $200 ongoing ceding
 commission (the workbook is not loss-ratio split; the online model keeps the
 sliding scale), and a 10-5-5 front-end schedule. EV input is data/EV_Data_Final.csv
-(already equal to the workbook EV tab); RBC charges come from data/surplus.json.
+(already equal to the workbook EV tab); the new surplus methodology reads
+data/input_surplus.json + data/surplus_ts.json (Surplus Calc = predeal RBC,
+Surplus Recalc = net RBC).
 """
 import csv, json, math, os, re, sys
 
@@ -29,11 +31,12 @@ T_PRED_PV, T_CED_PV, T_NET_PV = 1455214209.5104718, 94090444.69550136, 136112376
 T_PRED_PTI = [-121101932.04611076, -100616411.43403262, -53679465.31813805, 15381391.345005073, 76358086.97474386, 130989187.301274, 186353851.1525973, 223120550.39628565, 255488349.46755308, 278009465.6039558, 314926651.8174915, 305619564.299919, 291974708.26535904, 278870135.0184477, 268318801.31718102, 260904989.9107015, 246793222.33700934, 231182920.75200757, 218373447.8507943, 206937698.58638757, 195359592.8803895, 183943975.6419137, 173371012.6857284, 163764425.83055335, 154520622.28677547, 145299661.11419195, 136352613.3664125, 127247949.62126507, 118106478.4063903, 108800195.56305732]
 T_CED_PTI = [-19549512.56450016, -13665475.05250083, -9625856.293084448, 2245870.7268634713, 8198969.9405804565, 13520472.698784925, 18331326.02679724, 19911834.262310997, 21139449.227930672, 21537513.55564603, 22239145.15473425, 21429780.58458346, 20172686.20630191, 19104795.770407684, 18125210.994539157, 17121725.500708044, 16239288.24301054, 15513774.791541934, 14891089.215387275, 14333311.574388972, 13831776.401069818, 13278080.136416249, 12663239.919148393, 12048937.952838896, 11400323.92648054, 10696280.287475713, 9965138.63100611, 9172451.151036179, 8352039.171711634, 7545591.286351269]
 T_NET_PTI = [-101552419.48161039, -86950936.38153177, -44053609.02505342, 13135520.618141562, 68159117.0341641, 117468714.60248867, 168022525.1257998, 203208716.1339743, 234348900.2396223, 256471952.0483098, 292687506.6627578, 284189783.7153348, 271802022.059057, 259765339.24804002, 250193590.3226419, 243783264.4099931, 230553934.09399873, 215669145.96046564, 203482358.63540688, 192604387.01199868, 181527816.47931984, 170665895.5054977, 160707772.76657987, 151715487.87771437, 143120298.36029476, 134603380.82671627, 126387474.73540637, 118075498.47022882, 109754439.23467857, 101254604.27670605]
-# After-deal RBC (Surplus net block) rows 131 / 133; cols c3..c12 = CY 2026..2035.
-T_RBC_WMARGIN = [5.041271692111881, 4.679513840002421, 3.9924314215620966, 3.8660922144627397, 4.25664808976961, 4.449357346044651, 4.654063155603137, 5.376658455175165, 6.172826964914427, 7.022283350457481]
-T_RBC_WOMARGIN = [5.076231967369244, 4.7768684968679365, 4.130865243391573, 4.053766593805591, 4.463281492185611, 4.6653455667264305, 4.879988551506202, 5.637661292805027, 6.472478759327749, 7.363170891741825]
+# RBC ratios from the new surplus methodology: Surplus Calc r52 (predeal) and
+# Surplus Recalc r52 (net), CY 2025..2034.
+T_RBC_PREDEAL = [7.194, 5.674, 5.148, 4.351, 4.273, 4.723, 4.984, 5.306, 6.208, 7.239]
+T_RBC_NET = [7.194, 6.040, 5.688, 4.928, 4.800, 5.193, 5.353, 5.554, 6.361, 7.304]
 PTI_YEARS = list(range(2026, 2056))   # 30 cols C..AF
-RBC_YEARS = list(range(2026, 2036))   # 10 cols c3..c12
+RBC_YEARS = list(range(2025, 2035))
 
 
 def load_ev(path):
@@ -110,7 +113,8 @@ def check_vec(name, got, want, rtol=2e-3, atol=5e3, fails=None):
 
 def main():
     ev = load_ev(os.path.join(ROOT, "data", "EV_Data_Final.csv"))
-    surplus = json.load(open(os.path.join(ROOT, "data", "surplus.json")))
+    surplus = {"input_surplus": json.load(open(os.path.join(ROOT, "data", "input_surplus.json"))),
+               "surplus_ts": json.load(open(os.path.join(ROOT, "data", "surplus_ts.json")))}
     out = engine.run_model(ev, deal_assumptions(), 2025, surplus_rows=surplus, lite=False)
     fails = []
 
@@ -128,18 +132,24 @@ def main():
         if rel >= 2e-3:
             fails.append("%s PV rel %.2e" % (name, rel))
 
-    print("After-deal RBC ratios (engine vs Excel):")
+    print("RBC ratios vs workbook (Surplus Calc=predeal, Surplus Recalc=net):")
+    pa = out.get("rbc_predeal_result", {}).get("predeal_adjustments", {})
     na = out.get("rbc_net_result", {}).get("net_adjustments", {})
-    for label, key, target in [("w/margin", "ratio_w_margin", T_RBC_WMARGIN),
-                               ("wo/margin", "ratio_wo_margin", T_RBC_WOMARGIN)]:
+    # predeal ties exactly (1e-2); net within ~1% (engine computes ceded lives/claims
+    # proportionally vs the workbook's separately-projected EV_Ceded tab).
+    for label, adjs, target, tol in [("predeal", pa, T_RBC_PREDEAL, 0.01),
+                                     ("net", na, T_RBC_NET, 0.08)]:
+        md = 0.0; worst = None
         for i, y in enumerate(RBC_YEARS):
-            adj = na.get(y) or na.get(str(y)) or {}
-            g = adj.get(key)
+            g = (adjs.get(y) or adjs.get(str(y)) or {}).get("ratio_w_margin")
             w = target[i]
-            if g is None or abs(g - w) > 0.02:
-                fails.append("RBC %s %d: got %s want %.3f" % (label, y, g, w))
-        g26 = (na.get(2026) or na.get("2026") or {}).get(key)
-        print("  %-9s 2026 engine %s excel %.3f" % (label, ("%.3f" % g26) if g26 else g26, target[0]))
+            if g is None:
+                fails.append("RBC %s %d: missing" % (label, y)); continue
+            if abs(g - w) > md:
+                md, worst = abs(g - w), y
+            if abs(g - w) > tol:
+                fails.append("RBC %s %d: got %.3f want %.3f" % (label, y, g, w))
+        print("  %-8s max abs diff %.3f at %s (tol %.2f)" % (label, md, worst, tol))
 
     print("Cohort reconciliation (back + new == portfolio, $M):")
     ca = out["cedant_analytics"]; mb, mn = ca["metrics_back"], ca["metrics_new"]

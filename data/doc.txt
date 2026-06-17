@@ -30,8 +30,9 @@ browser via Pyodide (Python/WASM) — there is no server.
 - Upload your own CSV on the Upload tab to override the default.
 
 ### RBC & Surplus
-- Required-capital and surplus inputs (NAIC covariance charges, target surplus, TAC) drive the
-  RBC ratios and the capital-relief calculation. A full-precision default set is built in.
+- Two inputs drive the RBC calculation: **Input Surplus** (Total Surplus, Portion-in-non-insurance-cos,
+  AVR by year -> TAC) and **Input TS** (seriatim target-surplus charges by product, RBC line and
+  projection date). A full-precision default set is built in.
 
 ### Balance Plan
 - Optional plan figures used only on the Validation tab to reconcile the model against plan.
@@ -69,8 +70,15 @@ browser via Pyodide (Python/WASM) — there is no server.
   Net = Predeal minus Ceded plus the ceding commissions paid back to the cedant.
 
 ### RBC & Surplus
-- Required capital and the post-covariance RBC ratio are recomputed for Original, Predeal and Net.
-  The deal **lifts** the RBC ratio by freeing required capital — that lift is the capital benefit.
+- Required capital is rolled up from Input TS by product group (Med Sup / Hosp Ind / PreNeed /
+  All Other) and RBC line at each year-end: **PostCov = TSC0 + TSC4a + sqrt((TSC1+TSLR016+TSC3)^2 +
+  TSC1cs^2 + TSC2^2 + TSC4b^2)**, then a **3% margin** (Final required TS = PostCov x 1.03). **TAC =
+  Total Surplus - Portion-in-non-ins + AVR**, and **RBC ratio = TAC / Final TS** (predeal = "Surplus
+  Calc").
+- The deal (net = "Surplus Recalc") scales the **Med Sup** charges by the retained share (lives for
+  TSC1/TSLR016/TSC1cs/TSC3, claims for TSC2; TSC4a/TSC4b unchanged) and grows TAC by the cumulative
+  (Net - Predeal) pretax income. The deal **lifts** the RBC ratio by freeing Med Sup required capital —
+  that lift is the capital benefit.
 
 ## 5. Results tabs
 

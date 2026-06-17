@@ -1257,6 +1257,79 @@ def run_deal_scenario(ev_agg, base_assum, by, surplus_rows,
     }
 
 
+# ===================== SURPLUS / RBC v2 (workbook Surplus Calc/Recalc) =====================
+_RBC_LINES = ['TSC0', 'TSC1', 'TSC2', 'TSC3', 'TSC4a', 'TSC4b', 'TSLR016', 'TSC1cs']
+_RBC_LIVES = ('TSC0', 'TSC1', 'TSLR016', 'TSC1cs', 'TSC3')   # Med Sup lines scaled by retained lives
+
+
+def _rbc_postcov(T):
+    return T['TSC0'] + T['TSC4a'] + math.sqrt(
+        (T['TSC1'] + T['TSLR016'] + T['TSC3']) ** 2 + T['TSC1cs'] ** 2 + T['TSC2'] ** 2 + T['TSC4b'] ** 2)
+
+
+def compute_rbc_v2(surplus, predeal_annual, net_annual, retained, by):
+    """New surplus/RBC methodology (workbook Surplus Calc = predeal, Surplus Recalc = net).
+    surplus = {'input_surplus':{years,total_surplus,portion_non_ins,avr},
+               'surplus_ts':{years,lines,groups:{MS,HI,PN,Other:{line:[by year $M]}}}}.
+    retained = {year:{'lives':r,'claims':r}} (net Med Sup scaling).
+    PostCov = TSC0+TSC4a+sqrt((TSC1+TSLR016+TSC3)^2+TSC1cs^2+TSC2^2+TSC4b^2); FinalTS = PostCov*1.03;
+    TAC_pre = TotalSurplus - PortionNonIns + AVR; net TAC = predeal TAC + cumulative (Net-Predeal) PTI.
+    Returns (orig_computed, predeal_result, net_result) in the legacy result shape (original = predeal)."""
+    ins = (surplus or {}).get('input_surplus', {}) or {}
+    st = (surplus or {}).get('surplus_ts', {}) or {}
+    years = st.get('years') or ins.get('years') or []
+    groups = st.get('groups', {})
+    empty = ({"years": [], "original_values": {}}, {"years": [], "predeal_adjustments": {}},
+             {"years": [], "net_adjustments": {}})
+    if not years or not groups:
+        return empty
+    tot = ins.get('total_surplus', []); port = ins.get('portion_non_ins', []); avr = ins.get('avr', [])
+
+    def at(a, i):
+        return a[i] if i < len(a) else 0
+
+    def gpti(ann, y):
+        d = (ann or {}).get('pretax_income', {}) or {}
+        return (d.get(y) or d.get(str(y)) or 0) / 1e6
+
+    def total_lines(ms, i):
+        return {ln: ms[ln] + groups['HI'][ln][i] + groups['PN'][ln][i] + groups['Other'][ln][i]
+                for ln in _RBC_LINES}
+
+    def _alias(d):  # the RBC tab reads 'TSC1CS' (uppercase); internal key is 'TSC1cs'
+        d = dict(d); d['TSC1CS'] = d.get('TSC1cs'); return d
+
+    def rec(tac, T, ms, i, cum):
+        precov = sum(T.values()); postcov = _rbc_postcov(T); margin = postcov * 0.03; fts = postcov + margin
+        ps = at(port, i); av = at(avr, i); ts = at(tot, i)
+        return {"tac": tac, "pre_cov": precov, "post_cov": postcov, "add_1pct": 0.0,
+                "add_3pct": margin, "total_post_cov": fts,
+                "ratio_pre_cov": (tac / precov if precov else None),
+                "ratio_w_margin": (tac / fts if fts else None),
+                "ratio_wo_margin": (tac / postcov if postcov else None),
+                "total_surplus": ts, "portion_non_ins": ps, "avr": av, "in_lobs": ts - ps,
+                "cum_surplus_adj": cum, "ms_tsc": _alias(ms), "allprod_tsc": _alias(T)}
+
+    pre = {}; net = {}; prev_tn = None; prev_tp = None; cum = 0.0
+    for i, y in enumerate(years):
+        y = int(y)
+        tac_pre = at(tot, i) - at(port, i) + at(avr, i)
+        ms_pre = {ln: groups['MS'][ln][i] for ln in _RBC_LINES}
+        rl = (retained.get(y) or {}).get('lives', 1.0); rc = (retained.get(y) or {}).get('claims', 1.0)
+        ms_net = {ln: (groups['MS'][ln][i] * (rl if ln in _RBC_LIVES else rc if ln == 'TSC2' else 1.0))
+                  for ln in _RBC_LINES}
+        Tpre = total_lines(ms_pre, i); Tnet = total_lines(ms_net, i)
+        dpti = 0.0 if i == 0 else (gpti(net_annual, y) - gpti(predeal_annual, y))
+        cum += dpti
+        tac_net = tac_pre if i == 0 else prev_tn + (tac_pre - prev_tp) + dpti
+        pre[y] = rec(tac_pre, Tpre, ms_pre, i, 0.0)
+        net[y] = rec(tac_net, Tnet, ms_net, i, cum)
+        prev_tn = tac_net; prev_tp = tac_pre
+    return ({"years": years, "original_values": pre},
+            {"years": years, "predeal_adjustments": pre},
+            {"years": years, "net_adjustments": net})
+
+
 def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=False,
               metrics_only=False,predeal_cache=None):
     # lite=True skips the per-issue-year diagnostic. metrics_only=True returns just the
@@ -1434,16 +1507,24 @@ def run_model(ev_agg,assum,by,rbc_rows=None,bp_rows=None,surplus_rows=None,lite=
                            "expected_rate":adj_exp,"actual_rate":ar_raw,"ok":ok,"zero_skip":False})
             rows.append({"cal_year":cy3,"expected_rate":exp,"lines":lr})
         iyd[iy]=rows
-    rbc_orig={};bp={}
-    if rbc_rows:rbc_orig=parse_rbc(rbc_rows,surplus_rows)
+    rbc_orig={};rbc_net={};bp={}
     if bp_rows:bp=parse_bp(bp_rows)
-    rbc_net=compute_rbc_net(rbc_orig,ser(ap),ser(ac))
-    # Compute new-style RBC tabs
-    _src_rows=rbc_rows if rbc_rows else surplus_rows
-    _rbc_full=parse_rbc_full(_src_rows) if _src_rows else {"years":[],"data":{}}
-    _rbc_orig_computed=compute_original_rbc(_rbc_full) if _rbc_full["data"] else {"years":[],"original_values":{}}
-    _rbc_predeal_result=compute_predeal_rbc(_rbc_full,ser(ap),ser(rbc_orig)) if _rbc_full["data"] else {}
-    _rbc_net_result=compute_net_rbc(_rbc_predeal_result,ser(aN),ser(ap),_rbc_full) if _rbc_predeal_result else {}
+    # ---- Surplus / RBC v2: roll up the workbook's Input TS + Input Surplus ----
+    _rbc_full={"years":[],"data":{}}
+    _rbc_orig_computed={"years":[],"original_values":{}};_rbc_predeal_result={};_rbc_net_result={}
+    if isinstance(surplus_rows,dict) and surplus_rows.get("surplus_ts"):
+        def _g(a,vn,p):return (a.get(vn,{}) or {}).get(p,0)
+        retained={}
+        for _y in surplus_rows["surplus_ts"].get("years",[]):
+            _p=(int(_y)-by)*12
+            _pl=_g(agg_d,"AEGAdminPolCount",_p);_cl=_g(agg_c,"AEGAdminPolCount",_p)
+            _pcl=_g(agg_d,"IncClaims",_p)-_g(agg_d,"ReinsClaims",_p)
+            _ccl=_g(agg_c,"IncClaims",_p)-_g(agg_c,"ReinsClaims",_p)
+            retained[int(_y)]={"lives":((_pl-_cl)/_pl if _pl else 1.0),
+                               "claims":((_pcl-_ccl)/_pcl if _pcl else 1.0)}
+        _rbc_orig_computed,_rbc_predeal_result,_rbc_net_result=compute_rbc_v2(
+            surplus_rows,ser(ap),ser(aN),retained,by)
+        _rbc_full={"years":_rbc_predeal_result.get("years",[]),"data":{}}
     # ===================== CEDANT DECISION ANALYTICS =====================
     # All decision figures expressed in $M for readability.
     # (1) Reinsurer economics. The model is internally zero-sum: mp = mn + mc,

@@ -26,7 +26,7 @@ async function initPy(){
     PY_ENGINE=await _f('../src/engine.py?v='+Date.now(),'text');
     DEFAULT_EV_CSV=await _f('../data/EV_Data_Final.csv','text');
     DOC_TEXT=await _f('../data/doc.txt','text');
-    DEFAULT_SURPLUS_ROWS=await _f('../data/surplus.json','json');
+    DEFAULT_SURPLUS_ROWS={input_surplus:await _f('../data/input_surplus.json','json'),surplus_ts:await _f('../data/surplus_ts.json','json')};
     DEFAULT_ANN_ASSUM=await _f('../data/ann_assum.json','json');
     DEFAULT_EV_AGG=await _f('../data/ev_agg_empty.json','json');
     S.files.bp=await _f('../data/balanceplan.xlsx','buf');
